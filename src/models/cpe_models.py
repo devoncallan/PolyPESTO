@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.optimize import least_squares
 from scipy.integrate import solve_ivp
-from typing import Optional, List
+from typing import Optional, List, Sequence, Dict
 
 
 # ------------------------------------------------------------------------
@@ -145,7 +145,7 @@ def dfa_dX_kruger(X, fA, M0, k):
 # ------------------------------------------------------------------------
 # Copolymer Equation Model
 # ------------------------------------------------------------------------
-class CPE:
+class Model:
     """
     Reaction rate constants are passed like so:
         inputs = [kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB]
@@ -167,7 +167,7 @@ class CPE:
         }
 
     @staticmethod
-    def from_ratios(inputs: List[float]) -> "CPE":
+    def from_ratios(inputs: List[float]) -> "Model":
         """
         inputs = [rA, rB, rX, KAA, KAB, KBA, KBB]
         """
@@ -183,7 +183,7 @@ class CPE:
         kdBA = KBA * kpBA
         kdBB = KBB * kpBB
 
-        return CPE([kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB])
+        return Model([kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB])
 
     def solve(
         self,
@@ -191,7 +191,6 @@ class CPE:
         M0: float,
         approach: str = "izu",
         t_eval: Optional[np.ndarray] = None,
-        method: str = "BDF",
         **kwargs,
     ):
         """
@@ -214,7 +213,7 @@ class CPE:
 
         # Solve via solve_ivp
         sol = solve_ivp(
-            fun=wrapper, t_span=bounds, y0=[fA0], t_eval=t_eval, method=method, **kwargs
+            fun=wrapper, t_span=bounds, y0=[fA0], t_eval=t_eval, **kwargs
         )
 
         X_sol = sol.t
@@ -234,3 +233,21 @@ class CPE:
         xB = (B0 - B_vals) / (B0 + 1e-40)
 
         return X_sol, xA, xB
+
+
+def run_CPE_sim(
+    model: Model,
+    timepoints: Sequence[float],
+    conditions: Dict[str, float],
+    sigma: float = 0.0,
+    approach: str = "izu",
+    **kwargs,
+) -> np.ndarray:
+
+    # Conditions will either be fA0 and M0
+    # or A0 and B0 -> calculate fA0 and M0, handle both cases!
+
+    # model.solve(fA0, M0, approach, t_eval, **kwargs)
+    
+    # return X, xA, xB
+    pass

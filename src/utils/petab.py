@@ -11,6 +11,7 @@ from libsbml import Model
 
 from . import amici as am
 from . import sbml as sbml
+from ..models import cpe_models as CPE
 
 
 @dataclass
@@ -107,7 +108,7 @@ def get_meas_from_amici_sim(
     return meas_df
 
 
-def define_measurements(
+def define_measurements_amici(
     amici_model: amici.Model,
     timepoints: Sequence[float],
     conditions_df: pd.DataFrame,
@@ -141,6 +142,39 @@ def define_measurements(
     if debug_return_rdatas:
         return measurement_df, rdatas
     return measurement_df
+
+
+def get_meas_from_cpe_sim(
+    cpe_ouput: np.ndarray,
+    observables_df: pd.DataFrame,
+    cond_id: str = "none",
+    obs_sigma: float = 0.00,
+) -> pd.DataFrame:
+    # Transform CPE_output to measurements_df
+    
+    # This should throw an error if observables_df has anything other 
+    # than 'xA' and 'xB' in the C.FORMULA column
+    pass
+
+
+def define_measurements_cpe(
+    cpe_model: CPE.Model,
+    timepoints: Sequence[float],
+    conditions_df: pd.DataFrame,
+    observables_df: pd.DataFrame,
+    obs_sigma: float = 0.00,
+    meas_sigma: float = 0.005,
+    approach: str = "izu",
+    **kwargs,
+) -> pd.DataFrame:
+    # Loop over all conditions in conditions_df
+    
+        # Call CPE.run_CPE_sim, pass in args and kwargs
+    
+        # Use get_meas_from_cpe_sim to transform output to measurements_df
+    
+    # return measurements_df
+    pass
 
 
 # Maybe add a petab file directory
