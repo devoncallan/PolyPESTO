@@ -84,20 +84,19 @@ def run_amici_simulation(
     # Get valid state IDs from the model
     state_ids = model.getStateIds()
 
-    # Filter conditions to include only those matching state IDs
-    valid_conditions = {
-        key: value for key, value in conditions.items() if key in state_ids
-    }
-
     # Dynamically set initial states
     init_states = list(model.getInitialStates())
     for i, state_id in enumerate(state_ids):
-        if state_id in valid_conditions:
-            init_states[i] = valid_conditions[state_id]
+        if state_id in conditions:
+            init_states[i] = conditions[state_id]
+
+    # Set the model's parameters if in the conditions
+    for pname in model.getParameterIds():
+        if pname in conditions:
+            model.setParameterById(pname, conditions[pname])
 
     model.setInitialStates(init_states)
     model.setTimepoints(timepoints)
 
     rdata = amici.runAmiciSimulation(model, solver)
-
     return rdata
