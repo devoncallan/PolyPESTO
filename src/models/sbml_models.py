@@ -13,21 +13,21 @@ def define_CRP_rate_constants(
 
     print("Creating CRP parameters.")
     kpAA = sbml._create_parameter(model, "kpAA", value=1, constant=kpAA_constant)
-    kpAB = sbml._create_parameter(model, "kpAB", value=1, constant=False)
-    kpBA = sbml._create_parameter(model, "kpBA", value=1, constant=False)
-    kpBB = sbml._create_parameter(model, "kpBB", value=1, constant=False)
-    kdAA = sbml._create_parameter(model, "kdAA", value=1, constant=False)
-    kdAB = sbml._create_parameter(model, "kdAB", value=1, constant=False)
-    kdBA = sbml._create_parameter(model, "kdBA", value=1, constant=False)
-    kdBB = sbml._create_parameter(model, "kdBB", value=1, constant=False)
+    kpAB = sbml._create_parameter(model, "kpAB", value=1)
+    kpBA = sbml._create_parameter(model, "kpBA", value=1)
+    kpBB = sbml._create_parameter(model, "kpBB", value=1)
+    kdAA = sbml._create_parameter(model, "kdAA", value=1)
+    kdAB = sbml._create_parameter(model, "kdAB", value=1)
+    kdBA = sbml._create_parameter(model, "kdBA", value=1)
+    kdBB = sbml._create_parameter(model, "kdBB", value=1)
 
-    rA = sbml._create_parameter(model, "rA", value=1, constant=False)
-    rB = sbml._create_parameter(model, "rB", value=1, constant=False)
-    rX = sbml._create_parameter(model, "rX", value=1, constant=False)
-    KAA = sbml._create_parameter(model, "KAA", value=0, constant=False)
-    KAB = sbml._create_parameter(model, "KAB", value=0, constant=False)
-    KBA = sbml._create_parameter(model, "KBA", value=0, constant=False)
-    KBB = sbml._create_parameter(model, "KBB", value=0, constant=False)
+    rA = sbml._create_parameter(model, "rA", value=1)
+    rB = sbml._create_parameter(model, "rB", value=1)
+    rX = sbml._create_parameter(model, "rX", value=1)
+    KAA = sbml._create_parameter(model, "KAA", value=0)
+    KAB = sbml._create_parameter(model, "KAB", value=0)
+    KBA = sbml._create_parameter(model, "KBA", value=0)
+    KBB = sbml._create_parameter(model, "KBB", value=0)
 
     # Define assignment rules
     sbml._create_rule(model, kpAB, formula=f"{kpAA.getId()} / {rA.getId()}")
@@ -46,12 +46,13 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     print("Creating SBML model (CRP2_CPE).")
 
     document, model = sbml._create_model()
-    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="")
+    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
 
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_CRP_rate_constants(
         model, kpAA_constant=True
     )
 
+    # Define initial concenetrations
     A0 = sbml._create_species(
         model, "A0", initialAmount=0.0, units="mole", constant=True
     )
@@ -59,39 +60,32 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
         model, "B0", initialAmount=0.0, units="mole", constant=True
     )
 
-    # Define algebraic rules
+    # Define monomer concentration and conversion
     xA = sbml._create_species(model, "xA", initialAmount=0.0)
-    xB = sbml._create_parameter(model, "xB", value=0, constant=False)
+    A = sbml._create_parameter(model, "A", value=0, units="mole")
+    sbml._create_rule(model, A, formula=f"A0 * (1 - xA)")
+
+    xB = sbml._create_parameter(model, "xB", value=0)
+    B = sbml._create_parameter(model, "B", value=0, units="mole")
+    sbml._create_rule(model, B, formula=f"(1 - time) * (A0 + B0) - (1 - xA)*A0")
+    sbml._create_rule(model, xB, formula="1 - B / B0")
 
     # Define terminal chain-end fractions
-    pA = sbml._create_parameter(model, "pA", value=0.5, constant=False)
-    pB = sbml._create_parameter(model, "pB", value=0.5, constant=False)
-    pAA = sbml._create_parameter(model, "pAA", value=0.5, constant=False)
-    pAB = sbml._create_parameter(model, "pAB", value=0.5, constant=False)
-    pBA = sbml._create_parameter(model, "pBA", value=0.5, constant=False)
-    pBB = sbml._create_parameter(model, "pBB", value=0.5, constant=False)
+    pA = sbml._create_parameter(model, "pA", value=0.5)
+    pB = sbml._create_parameter(model, "pB", value=0.5)
 
+    # Define chain-end dyad fractions
+    pAA = sbml._create_parameter(model, "pAA", value=0.5)
+    pAB = sbml._create_parameter(model, "pAB", value=0.5)
+    pBA = sbml._create_parameter(model, "pBA", value=0.5)
+    pBB = sbml._create_parameter(model, "pBB", value=0.5)
+
+    # Identity rules
     sbml._create_algebraic_rule(model, formula="1 - pA - pB")
     sbml._create_algebraic_rule(model, formula="1 - pAA - pBA")
     sbml._create_algebraic_rule(model, formula="1 - pAB - pBB")
 
-    A = sbml._create_parameter(model, "A", value=0, units="mole", constant=False)
-    sbml._create_rule(model, A, formula=f"A0 * (1 - xA)")
-
-    B = sbml._create_parameter(model, "B", value=0, units="mole", constant=False)
-    sbml._create_rule(model, B, formula=f"(1 - time) * (A0 + B0) - (1 - xA)*A0")
-    sbml._create_rule(model, xB, formula="1 - B / B0")
-
-    dA = sbml._create_parameter(model, "dA", value=0, constant=False)
-    sbml._create_rule(
-        model, dA, formula=f"-A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)"
-    )
-
-    dB = sbml._create_parameter(model, "dB", value=0, constant=False)
-    sbml._create_rule(
-        model, dB, formula=f"-B*(kpBB*pB + kpAB*pA) + pB*(kdBB*pBB + kdAB*pAB)"
-    )
-
+    # Define chain-end triad balances
     sbml._create_algebraic_rule(
         model, formula="kpAA*pBA*pA*A + kdAB*pAA*pAB*pB - pAA*pA*(kpAB*B + kdAA*pBA)"
     )
@@ -103,17 +97,21 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
         formula="kpAB*pA*B + pAB*(kdBA*pBA*pA + kdBB*pBB*pB) - pAB*pB*(kpBA*A + kpBB*B + kdAB)",
     )
 
+    # Define rates of change of monomer concentration
+    dA = sbml._create_parameter(model, "dA", value=0)
+    sbml._create_rule(
+        model, dA, formula=f"-A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)"
+    )
+
+    dB = sbml._create_parameter(model, "dB", value=0)
+    sbml._create_rule(
+        model, dB, formula=f"-B*(kpBB*pB + kpAB*pA) + pB*(kdBB*pBB + kdAB*pAB)"
+    )
+
+    # Define dxA/dt (dX)
     sbml._create_rate_rule(model, xA, formula="(A0+B0)/A0 * (dA/(dA+dB))")
 
-    is_valid_xA = sbml._create_parameter(model, "is_valid_xA", value=1, constant=False)
-    # formula = sbml._and(
-    #     sbml._lt(xA.getId(), '0'),
-    #     sbml._gt(xA.getId(), '1')
-    # )
-    # print(formula)
-    # sbml._create_rule(model, is_valid_xA, formula=formula)
-
-    # sbml._add_termination_event(model, formula='dA < 0 || dB < 0')
+    is_valid_xA = sbml._create_parameter(model, "is_valid_xA", value=1)
 
     return document, model
 
@@ -146,10 +144,10 @@ def CRP2_v1() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_CRP_rate_constants(model)
 
     # Calculates monomer conversion
-    A0 = sbml._create_parameter(model, "A0", value=0, constant=False)
-    B0 = sbml._create_parameter(model, "B0", value=0, constant=False)
-    xA = sbml._create_parameter(model, "xA", value=0, constant=False)
-    xB = sbml._create_parameter(model, "xB", value=0, constant=False)
+    A0 = sbml._create_parameter(model, "A0", value=0)
+    B0 = sbml._create_parameter(model, "B0", value=0)
+    xA = sbml._create_parameter(model, "xA", value=0)
+    xB = sbml._create_parameter(model, "xB", value=0)
 
     sbml._create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
     sbml._create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
@@ -158,10 +156,10 @@ def CRP2_v1() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     sbml._create_rule(model, xB, formula=f"1 - {B.getId()}/{B0.getId()}")
 
     # Define chain-end dyad fractions
-    fPAA = sbml._create_parameter(model, "fPAA", value=1, constant=False)
-    fPAB = sbml._create_parameter(model, "fPAB", value=1, constant=False)
-    fPBA = sbml._create_parameter(model, "fPBA", value=1, constant=False)
-    fPBB = sbml._create_parameter(model, "fPBB", value=1, constant=False)
+    fPAA = sbml._create_parameter(model, "fPAA", value=1)
+    fPAB = sbml._create_parameter(model, "fPAB", value=1)
+    fPBA = sbml._create_parameter(model, "fPBA", value=1)
+    fPBB = sbml._create_parameter(model, "fPBB", value=1)
     sbml._create_rule(model, PA, formula=f"{PAA.getId()} + {PBA.getId()}")
     sbml._create_rule(model, PB, formula=f"{PAB.getId()} + {PBB.getId()}")
 

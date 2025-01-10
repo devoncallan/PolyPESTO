@@ -157,7 +157,7 @@ def _create_parameter(
     model: libsbml.Model,
     id: str,
     value: float = 0.0,
-    constant: bool = True,
+    constant: bool = False,
     units: str = "dimensionless",
 ) -> libsbml.Parameter:
     k: libsbml.Parameter = model.createParameter()
