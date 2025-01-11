@@ -9,9 +9,9 @@ import petab.v1.C as C
 import amici
 from libsbml import Model
 
-from . import amici as am
-from . import sbml as sbml
-from ..models import cpe_models as CPE
+from src.utils import amici as am
+from src.utils import sbml as sbml
+from src.models import cpe_models as CPE
 
 
 @dataclass
@@ -151,8 +151,8 @@ def get_meas_from_cpe_sim(
     obs_sigma: float = 0.00,
 ) -> pd.DataFrame:
     # Transform CPE_output to measurements_df
-    
-    # This should throw an error if observables_df has anything other 
+
+    # This should throw an error if observables_df has anything other
     # than 'xA' and 'xB' in the C.FORMULA column
     pass
 
@@ -168,11 +168,11 @@ def define_measurements_cpe(
     **kwargs,
 ) -> pd.DataFrame:
     # Loop over all conditions in conditions_df
-    
-        # Call CPE.run_CPE_sim, pass in args and kwargs
-    
-        # Use get_meas_from_cpe_sim to transform output to measurements_df
-    
+
+    # Call CPE.run_CPE_sim, pass in args and kwargs
+
+    # Use get_meas_from_cpe_sim to transform output to measurements_df
+
     # return measurements_df
     pass
 

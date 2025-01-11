@@ -3,11 +3,12 @@ import shutil
 import logging
 from typing import Dict, Sequence, Tuple
 
+import amici.petab_import
 import pandas as pd
 import amici
 from petab.v1.C import OBSERVABLE_FORMULA
 
-from .sbml import _model_name_from_filepath
+from src.utils.sbml import _model_name_from_filepath
 
 
 def compile_amici_model(
