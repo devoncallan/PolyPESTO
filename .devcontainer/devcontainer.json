@@ -1,22 +1,21 @@
 {
-  "name": "PyPESTO Development Container",
-  // "dockerFile": "/Users/shivanimadhan/Documents/research/pyPESTO/docker/Dockerfile",
-  "dockerFile": "/Users/devoncallan/Documents/GitHub/pyPESTO/docker/Dockerfile",
+  "name": "PolyPESTO",
+  "dockerFile": "../docker/Dockerfile",
   "context": "..",
-  "workspaceFolder": "/SBML",
-  "mounts": ["source=${localWorkspaceFolder},target=/SBML,type=bind"],
+  "workspaceFolder": "/PolyPESTO",
+  "mounts": ["source=${localWorkspaceFolder},target=/PolyPESTO,type=bind"],
   "customizations": {
     "vscode": {
       "extensions": [
         "ms-python.python",
         "ms-toolsai.jupyter",
         "ms-python.black-formatter",
-        "mechatroner.rainbow-csv"
-        
+        "mechatroner.rainbow-csv",
+        "ms-azuretools.vscode-docker"
       ],
       "settings": {
         "terminal.integrated.env.linux": {
-          "PYTHONPATH": "/SBML:$PYTHONPATH"
+          "PYTHONPATH": "/PolyPESTO:$PYTHONPATH"
         },
         "editor.formatOnSave": true,
         "[python]": {

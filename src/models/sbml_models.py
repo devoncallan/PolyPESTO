@@ -1,5 +1,5 @@
 import libsbml
-from utils import sbml
+from src.utils import sbml
 from typing import Tuple, List
 
 ##########################
@@ -52,13 +52,9 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
         model, kpAA_constant=True
     )
 
-    # Define initial concenetrations
-    A0 = sbml._create_species(
-        model, "A0", initialAmount=0.0, units="mole", constant=True
-    )
-    B0 = sbml._create_species(
-        model, "B0", initialAmount=0.0, units="mole", constant=True
-    )
+    # Define initial concenetrations.
+    A0 = sbml._create_parameter(model, "A0", value=0.0, units="mole", constant=True)
+    B0 = sbml._create_parameter(model, "B0", value=0.0, units="mole", constant=True)
 
     # Define monomer concentration and conversion
     xA = sbml._create_species(model, "xA", initialAmount=0.0)
@@ -67,23 +63,18 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
     xB = sbml._create_parameter(model, "xB", value=0)
     B = sbml._create_parameter(model, "B", value=0, units="mole")
-    sbml._create_rule(model, B, formula=f"(1 - time) * (A0 + B0) - (1 - xA)*A0")
+    sbml._create_rule(model, B, formula=f"(A0 + B0)*(1 - time) - A")
     sbml._create_rule(model, xB, formula="1 - B / B0")
 
     # Define terminal chain-end fractions
-    pA = sbml._create_parameter(model, "pA", value=0.5)
-    pB = sbml._create_parameter(model, "pB", value=0.5)
+    pA = sbml._create_species(model, "pA", initialAmount=0.5)
+    pB = sbml._create_species(model, "pB", initialAmount=0.5)
 
     # Define chain-end dyad fractions
-    pAA = sbml._create_parameter(model, "pAA", value=0.5)
-    pAB = sbml._create_parameter(model, "pAB", value=0.5)
-    pBA = sbml._create_parameter(model, "pBA", value=0.5)
-    pBB = sbml._create_parameter(model, "pBB", value=0.5)
-
-    # Identity rules
-    sbml._create_algebraic_rule(model, formula="1 - pA - pB")
-    sbml._create_algebraic_rule(model, formula="1 - pAA - pBA")
-    sbml._create_algebraic_rule(model, formula="1 - pAB - pBB")
+    pAA = sbml._create_species(model, "pAA", initialAmount=0.0)
+    pAB = sbml._create_species(model, "pAB", initialAmount=0.0)
+    pBA = sbml._create_species(model, "pBA", initialAmount=0.0)
+    pBB = sbml._create_species(model, "pBB", initialAmount=0.0)
 
     # Define chain-end triad balances
     sbml._create_algebraic_rule(
@@ -96,6 +87,11 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
         model,
         formula="kpAB*pA*B + pAB*(kdBA*pBA*pA + kdBB*pBB*pB) - pAB*pB*(kpBA*A + kpBB*B + kdAB)",
     )
+
+    # Identity rules
+    sbml._create_rule(model, pB, formula="1 - pA")
+    sbml._create_rule(model, pBB, formula="1 - pAB")
+    sbml._create_rule(model, pBA, formula="1 - pAA")
 
     # Define rates of change of monomer concentration
     dA = sbml._create_parameter(model, "dA", value=0)

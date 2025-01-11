@@ -1,0 +1,11 @@
+--- /usr/local/lib/python3.10/dist-packages/amici/sbml_import.py.orig	2025-01-11 02:29:01.225321001 +0000
++++ /usr/local/lib/python3.10/dist-packages/amici/sbml_import.py	2025-01-11 02:30:01.538307001 +0000
+@@ -1461,7 +1461,7 @@
+             # must not be determined by reactions, which means that it
+             # must either have the attribute boundaryCondition=“false”
+             # or else not be involved in any reaction at all.
+-            is_species = isinstance(sbml_var, sbml.Species)
++            is_species = isinstance(sbml_var, sbml.Species) and str(symbol) in self.symbols[SymbolId.SPECIES]
+             is_boundary_condition = (
+                 is_species
+                 and sbml_var.isSetBoundaryCondition()
