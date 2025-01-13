@@ -243,11 +243,19 @@ def run_CPE_sim(
     approach: str = "izu",
     **kwargs,
 ) -> np.ndarray:
-
-    # Conditions will either be fA0 and M0
-    # or A0 and B0 -> calculate fA0 and M0, handle both cases!
-
-    # model.solve(fA0, M0, approach, t_eval, **kwargs)
     
-    # return X, xA, xB
-    pass
+    fA0 = 0.0
+    M0 = 0.0
+
+    if "fA0" in conditions and "M0" in conditions:
+        fA0 = conditions["fA0"]
+        M0 = conditions["M0"]
+    elif "A0" in conditions and "B0" in conditions:
+        M0 = conditions["A0"] + conditions["B0"]
+        fA0 = conditions["A0"] / M0
+    else:
+        raise Exception("Invalid input for conditions.")
+    
+    X_sol, xA, xB = model.solve(fA0, M0, approach, timepoints, **kwargs)
+
+    return X_sol, xA, xB
