@@ -41,7 +41,7 @@ RUN pip3 install --no-cache-dir pyswarm
 RUN pip3 install --no-cache-dir SBMLDiagrams
 
 # Copy the patch file
-COPY ../docker/patches/sbml_import_changes.patch /mnt/tmp/sbml_import_changes.patch
+COPY docker/patches/sbml_import_changes.patch /mnt/tmp/sbml_import_changes.patch
 RUN patch /usr/local/lib/python3.10/dist-packages/amici/sbml_import.py mnt/tmp/sbml_import_changes.patch
 
 
