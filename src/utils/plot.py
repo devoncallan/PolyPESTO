@@ -81,10 +81,12 @@ def plot_all_measurements(
     """
 
     MAX_NUM_ROWS = 4
+    
     # Parse the unique conditions and observables
     # group_by must be either C.CONDITION_ID or C.OBSERVABLE_ID (raise ValueError otherwise)
     # Determine num_panels (num conditions or observables) based on group_by
     # If axes is not provided, create a figure with subplots (with MAX_NUM_ROWS)
+    
     # Assign plot formatting based on observables, conditions, and plot_style (get_plot_formatting)
 
     # Loop through each condition:
