@@ -51,10 +51,14 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_CRP_rate_constants(
         model, kpAA_constant=True
     )
+    
+    
+    # fA0, and M
+    # xA = fA0*M
 
     # Define initial concenetrations.
-    A0 = sbml._create_parameter(model, "A0", value=0.0, units="mole", constant=True)
-    B0 = sbml._create_parameter(model, "B0", value=0.0, units="mole", constant=True)
+    A0 = sbml._create_parameter(model, "A0", value=1.0, units="mole", constant=True)
+    B0 = sbml._create_parameter(model, "B0", value=1.0, units="mole", constant=True)
 
     # Define monomer concentration and conversion
     xA = sbml._create_species(model, "xA", initialAmount=0.0)
@@ -65,16 +69,19 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     B = sbml._create_parameter(model, "B", value=0, units="mole")
     sbml._create_rule(model, B, formula=f"(A0 + B0)*(1 - time) - A")
     sbml._create_rule(model, xB, formula="1 - B / B0")
+    
+    # sbml._create_initial_assignment(model, A0.getId(), formula="A")
+    # sbml._create_initial_assignment(model, B0.getId(), formula="B")
 
     # Define terminal chain-end fractions
     pA = sbml._create_species(model, "pA", initialAmount=0.5)
     pB = sbml._create_species(model, "pB", initialAmount=0.5)
 
     # Define chain-end dyad fractions
-    pAA = sbml._create_species(model, "pAA", initialAmount=0.0)
-    pAB = sbml._create_species(model, "pAB", initialAmount=0.0)
-    pBA = sbml._create_species(model, "pBA", initialAmount=0.0)
-    pBB = sbml._create_species(model, "pBB", initialAmount=0.0)
+    pAA = sbml._create_species(model, "pAA", initialAmount=0.5)
+    pAB = sbml._create_species(model, "pAB", initialAmount=0.5)
+    pBA = sbml._create_species(model, "pBA", initialAmount=0.5)
+    pBB = sbml._create_species(model, "pBB", initialAmount=0.5)
 
     # Define chain-end triad balances
     sbml._create_algebraic_rule(
@@ -105,7 +112,7 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     )
 
     # Define dxA/dt (dX)
-    sbml._create_rate_rule(model, xA, formula="(A0+B0)/A0 * (dA/(dA+dB))")
+    sbml._create_rate_rule(model, xA, formula="(A0+B0)/A0 * ((dA+1e-10)/(dA+dB+1e-10))")
 
     is_valid_xA = sbml._create_parameter(model, "is_valid_xA", value=1)
 

@@ -31,7 +31,7 @@ def visualize_model(
 
 
 def _base_sbml_model_filepath(model_name: str) -> str:
-    return f"/SBML/src/models/{model_name}/sbml_model.xml"
+    return f"/PolyPESTO/src/models/{model_name}/sbml_model.xml"
 
 
 def _model_name_from_filepath(model_filepath: str) -> str:

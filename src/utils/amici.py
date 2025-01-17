@@ -11,13 +11,22 @@ from petab.v1.C import OBSERVABLE_FORMULA
 from src.utils.sbml import _model_name_from_filepath
 
 
+def get_amici_model_name_and_output_dir(sbml_model_filepath: str) -> Tuple[str, str]:
+
+    model_name = _model_name_from_filepath(sbml_model_filepath)
+    model_output_dir = os.path.join("/PolyPESTO/amici_models/", model_name)
+
+    return model_name, model_output_dir
+
+
 def compile_amici_model(
     sbml_model_filepath: str, observables_df: pd.DataFrame, verbose=False
-) -> Tuple[str, str]:
+):
 
     # Define the amici output directory
-    model_name = _model_name_from_filepath(sbml_model_filepath)
-    model_output_dir = os.path.join("/SBML/amici_models/", model_name)
+    model_name, model_output_dir = get_amici_model_name_and_output_dir(
+        sbml_model_filepath
+    )
 
     # Clear the output directory if it exists
     if os.path.exists(model_output_dir):
@@ -42,12 +51,20 @@ def compile_amici_model(
         observables=observables,
     )
 
-    return model_name, model_output_dir
 
+def load_amici_model(
+    sbml_model_filepath: str,
+    observables_df: pd.DataFrame,
+    force_compile=False,
+    verbose=False,
+) -> amici.Model:
 
-def load_amici_model(model_name: str, model_output_dir: str) -> amici.Model:
-    """
-    Loads an AMICI model from a compiled model directory."""
+    if force_compile:
+        compile_amici_model(sbml_model_filepath, observables_df, verbose=verbose)
+
+    model_name, model_output_dir = get_amici_model_name_and_output_dir(
+        sbml_model_filepath
+    )
 
     model_module = amici.import_model_module(model_name, model_output_dir)
     return model_module.getModel()
