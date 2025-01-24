@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Iterable, Tuple, Sequence, List
+from typing import Dict, Iterable, Tuple, Sequence, List, Optional
 from dataclasses import dataclass
 
 import numpy as np
@@ -115,6 +115,7 @@ def define_measurements_amici(
     observables_df: pd.DataFrame,
     obs_sigma: float = 0.00,
     meas_sigma: float = 0.005,
+    solver: Optional[amici.Solver] = None,
     debug_return_rdatas: bool = False,
 ) -> pd.DataFrame | Tuple[pd.DataFrame, List[amici.ReturnDataView]]:
 
@@ -127,7 +128,7 @@ def define_measurements_amici(
 
         # Run the simulation with these conditions
         rdata = am.run_amici_simulation(
-            amici_model, timepoints, conditions, sigma=meas_sigma
+            amici_model, timepoints, conditions, sigma=meas_sigma, solver=solver
         )
         rdatas.append(rdata)
 
@@ -184,31 +185,37 @@ def write_petab_files(
     observables_df: pd.DataFrame,
     conditions_df: pd.DataFrame,
     measurements_df: pd.DataFrame,
+    petab_dir_name: Optional[str] = None,
 ) -> str:
 
     model_dir = os.path.dirname(sbml_model_filepath)
     model_filename = os.path.basename(sbml_model_filepath)
 
+    # Define the PEtab directory
+    petab_dir = os.path.join(model_dir, petab_dir_name) if petab_dir_name else model_dir
+    os.makedirs(petab_dir, exist_ok=True)
+
     petab.v1.write_condition_df(
-        conditions_df, os.path.join(model_dir, "conditions.tsv")
+        conditions_df, os.path.join(petab_dir, "conditions.tsv")
     )
     petab.v1.write_measurement_df(
-        measurements_df, os.path.join(model_dir, "measurements.tsv")
+        measurements_df, os.path.join(petab_dir, "measurements.tsv")
     )
     petab.v1.write_observable_df(
-        observables_df, os.path.join(model_dir, "observables.tsv")
+        observables_df, os.path.join(petab_dir, "observables.tsv")
     )
     petab.v1.write_parameter_df(
-        parameters_df, os.path.join(model_dir, "parameters.tsv")
+        parameters_df, os.path.join(petab_dir, "parameters.tsv")
     )
 
     # Define PEtab configuration
+    rel_model_filepath = os.path.join("..", model_filename) if petab_dir_name else model_filename
     yaml_config = {
         C.FORMAT_VERSION: 1,
         C.PARAMETER_FILE: "parameters.tsv",
         C.PROBLEMS: [
             {
-                C.SBML_FILES: [model_filename],
+                C.SBML_FILES: [rel_model_filepath],
                 C.CONDITION_FILES: ["conditions.tsv"],
                 C.MEASUREMENT_FILES: ["measurements.tsv"],
                 C.OBSERVABLE_FILES: ["observables.tsv"],
@@ -216,7 +223,7 @@ def write_petab_files(
         ],
     }
 
-    yaml_filepath = os.path.join(model_dir, f"petab.yaml")
+    yaml_filepath = os.path.join(petab_dir, f"petab.yaml")
     petab.v1.yaml.write_yaml(yaml_config, yaml_filepath)
 
     # validate written PEtab files

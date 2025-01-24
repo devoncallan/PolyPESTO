@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from typing import Dict, Sequence, Tuple
+from typing import Dict, Sequence, Tuple, Optional
 
 import amici.petab_import
 import pandas as pd
@@ -9,6 +9,10 @@ import amici
 from petab.v1.C import OBSERVABLE_FORMULA
 
 from src.utils.sbml import _model_name_from_filepath
+
+DEFAULT_SOLVER_OPTIONS = {
+    "setAbsoluteTolerance": 1e-10,
+}
 
 
 def get_amici_model_name_and_output_dir(sbml_model_filepath: str) -> Tuple[str, str]:
@@ -89,15 +93,29 @@ def set_model_parameters(
     return model
 
 
+def get_solver(model: amici.Model, **solver_options) -> amici.Solver:
+
+    # Check if kwarg are valid solver functions and then call the function to set the value
+    solver = model.getSolver()
+    for method, value in solver_options.items():
+        if not hasattr(solver, method):
+            raise ValueError(f"Solver does not have method: {method}")
+        solver_func = getattr(solver, method)
+        if not callable(solver_func):
+            raise ValueError(f"Solver method {method} is not callable")
+        solver_func(value)
+    return solver
+
 def run_amici_simulation(
     model: amici.Model,
     timepoints: Sequence[float],
     conditions: Dict[str, float],
     sigma: float = 0.0,
+    solver: Optional[amici.Solver] = None,
 ) -> amici.ReturnDataView:
 
-    solver = model.getSolver()
-    solver.setAbsoluteTolerance(1e-10)
+    if solver is None:
+        solver = get_solver(model, **DEFAULT_SOLVER_OPTIONS)
 
     # Get valid state IDs from the model
     state_ids = model.getStateIds()
