@@ -7,6 +7,107 @@ from typing import Tuple, List
 ##########################
 
 
+#######################
+### Robertson Model ###
+#######################
+
+# r1: A -k1-> B
+# r2: 2B -k2-> B + C
+# r3: B + C -k3-> A + C
+
+
+def define_rob_rate_constants(model: libsbml.Model) -> List[libsbml.Parameter]:
+
+    print("Creating Robertson parameters.")
+    k1 = sbml._create_parameter(model, "k1", value=0.04)
+    k2 = sbml._create_parameter(model, "k2", value=1.0e4)
+    k3 = sbml._create_parameter(model, "k3", value=3.0e7)
+
+    return [k1, k2, k3]
+
+
+def define_rob_species(model: libsbml.Model) -> List[libsbml.Species]:
+
+    print("Creating Robertson species.")
+    A = sbml._create_species(model, "A", initialAmount=1.0)
+    B = sbml._create_species(model, "B", initialAmount=0.0)
+    C = sbml._create_species(model, "C", initialAmount=0.0)
+
+    return [A, B, C]
+
+
+def robertson_dae() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+
+    print("Creating SBML model (Robertson).")
+
+    document, model = sbml._create_model()
+    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+
+    # Define rate constants
+    (k1, k2, k3) = define_rob_rate_constants(model)
+
+    # Define species
+    (A, B, C) = define_rob_species(model)
+
+    # Define rate rules
+    sbml._create_rate_rule(model, A, formula=f"-k1*A + k3*B*C")
+    sbml._create_rate_rule(model, B, formula=f"k1*A - k3*B*C - k2*B*B")
+    sbml._create_algebraic_rule(model, formula=f"1 - A - B - C")
+
+    return document, model
+
+
+def robertson_rxn() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+
+    print("Creating SBML model (Robertson).")
+
+    document, model = sbml._create_model()
+    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+
+    # Define rate constants
+    (k1, k2, k3) = define_rob_rate_constants(model)
+
+    # Define species
+    (A, B, C) = define_rob_species(model)
+
+    # Define reactions
+    # Syntax: (reaction_id, {reactants: stoich}, {products: stoich}, kinetic_law)
+    reactions = [
+        # First propagation
+        (
+            "r1",
+            {"A": 1},
+            {"B": 1},
+            "k1*A",
+        ),
+        (
+            "r2",
+            {"B": 2},
+            {"B": 1, "C": 1},
+            "k2*B*B",
+        ),
+        (
+            "r3",
+            {"B": 1, "C": 1},
+            {"A": 1, "C": 1},
+            "k3*B*C",
+        ),
+    ]
+
+    print("Creating reactions.")
+    generated_reactions = []
+    for r in reactions:  # (reaction_id, reactants_dict, products_dict, kinetic_law)
+        reaction = sbml._create_reaction(model, r[0], r[1], r[2], r[3])
+        generated_reactions.append(reaction)
+
+    return document, model
+
+
+######################################################
+### Controlled Radical Polymerization (CRP) models ###
+######################################################
+
+
 def define_CRP_rate_constants(
     model: libsbml.Model, kpAA_constant=False
 ) -> List[libsbml.Parameter]:
@@ -51,8 +152,7 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_CRP_rate_constants(
         model, kpAA_constant=True
     )
-    
-    
+
     # fA0, and M
     # xA = fA0*M
 
@@ -69,7 +169,7 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     B = sbml._create_parameter(model, "B", value=0, units="mole")
     sbml._create_rule(model, B, formula=f"(A0 + B0)*(1 - time) - A")
     sbml._create_rule(model, xB, formula="1 - B / B0")
-    
+
     # sbml._create_initial_assignment(model, A0.getId(), formula="A")
     # sbml._create_initial_assignment(model, B0.getId(), formula="B")
 
@@ -120,7 +220,7 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
 
 # ODE Model
-def CRP2_v1() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def CRP2_ODE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
     print(f"Creating SBML model (CRP2_v1).")
 
