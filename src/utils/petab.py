@@ -146,7 +146,7 @@ def define_measurements_amici(
 
 
 def get_meas_from_cpe_sim(
-    cpe_ouput: np.ndarray,
+    cpe_output: Dict[str, np.ndarray],
     observables_df: pd.DataFrame,
     cond_id: str = "none",
     obs_sigma: float = 0.00,
@@ -155,7 +155,33 @@ def get_meas_from_cpe_sim(
 
     # This should throw an error if observables_df has anything other
     # than 'xA' and 'xB' in the C.FORMULA column
-    pass
+
+    meas_dfs = []
+    for obs_id, row in observables_df.iterrows():
+        observables = row.to_dict()
+        #print(observables)
+
+        obs_formula = observables[C.OBSERVABLE_FORMULA]
+        if obs_formula not in ['xA', 'xB']:
+            raise Exception('Invalid observable.')
+
+        #print(cpe_output)
+        obs_data = cpe_output[obs_formula]
+        obs_data = np.array(obs_data) * (1 + obs_sigma * np.random.randn(len(obs_data)))
+        num_pts = len(obs_data)
+
+        obs_meas_df = pd.DataFrame(
+            {
+                C.OBSERVABLE_ID: [obs_id] * num_pts,
+                C.SIMULATION_CONDITION_ID: [cond_id] * num_pts,
+                C.TIME: cpe_output['X_sol'],
+                C.MEASUREMENT: obs_data,
+            }
+        )
+        meas_dfs.append(obs_meas_df)
+    meas_df = pd.concat(meas_dfs, ignore_index=True)
+
+    return meas_df
 
 
 def define_measurements_cpe(
@@ -175,7 +201,29 @@ def define_measurements_cpe(
     # Use get_meas_from_cpe_sim to transform output to measurements_df
 
     # return measurements_df
-    pass
+
+    measurement_dfs = []
+    cpe_outputs = []
+
+    for cond_id, row in conditions_df.iterrows():
+        # Extract conditions for this row as a dictionary
+        conditions = row.to_dict()
+
+        # Run the simulation with these conditions
+        cpe_output = CPE.run_CPE_sim(
+            cpe_model, timepoints, conditions, sigma=meas_sigma, **kwargs
+        )
+        # cpe_outputs.append(cpe_output)
+
+        # Generate measurements from the simulation
+        meas_df = get_meas_from_cpe_sim(
+            cpe_output, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
+        )
+        measurement_dfs.append(meas_df)
+
+    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
+
+    return measurement_df
 
 
 # Maybe add a petab file directory
