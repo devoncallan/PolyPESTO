@@ -1,7 +1,10 @@
+from typing import Optional, List, Sequence, Dict
+
 import numpy as np
+import pandas as pd
 from scipy.optimize import least_squares
 from scipy.integrate import solve_ivp
-from typing import Optional, List, Sequence, Dict
+import petab.v1.C as C
 
 
 # ------------------------------------------------------------------------
@@ -212,10 +215,8 @@ class Model:
             return [ode_func(X, y[0], M0, self.k)]
 
         # Solve via solve_ivp
-        #print(fA0)
-        sol = solve_ivp(
-            fun=wrapper, t_span=bounds, y0=[fA0], t_eval=t_eval, **kwargs
-        )
+        # print(fA0)
+        sol = solve_ivp(fun=wrapper, t_span=bounds, y0=[fA0], t_eval=t_eval, **kwargs)
 
         X_sol = sol.t
         fA_sol = sol.y[0]
@@ -244,10 +245,10 @@ def run_CPE_sim(
     approach: str = "izu",
     **kwargs,
 ) -> Dict[str, np.ndarray]:
-    
+
     fA0 = 0.0
     M0 = 0.0
-        
+
     if "fA0" in conditions and "M0" in conditions:
         fA0 = conditions["fA0"]
         M0 = conditions["M0"]
@@ -256,13 +257,87 @@ def run_CPE_sim(
         fA0 = conditions["A0"] / M0
     else:
         raise Exception("Invalid input for conditions.")
-    
+
     # print(fA0)
     # print(M0)
     # print(type(fA0))
     # print(type(M0))
 
-    X_sol, xA, xB = model.solve(fA0=float(fA0), M0=float(M0), approach=approach, t_eval=timepoints, **kwargs)
+    X_sol, xA, xB = model.solve(
+        fA0=float(fA0), M0=float(M0), approach=approach, t_eval=timepoints, **kwargs
+    )
 
-    cpe_outputs = {'X_sol': X_sol, 'xA': xA, 'xB': xB}
+    cpe_outputs = {"X_sol": X_sol, "xA": xA, "xB": xB}
     return cpe_outputs
+
+
+def get_meas_from_cpe_sim(
+    cpe_output: Dict[str, np.ndarray],
+    observables_df: pd.DataFrame,
+    cond_id: str = "none",
+    obs_sigma: float = 0.00,
+) -> pd.DataFrame:
+    # Transform CPE_output to measurements_df
+
+    # This should throw an error if observables_df has anything other
+    # than 'xA' and 'xB' in the C.FORMULA column
+
+    meas_dfs = []
+    for obs_id, row in observables_df.iterrows():
+        observables = row.to_dict()
+        # print(observables)
+
+        obs_formula = observables[C.OBSERVABLE_FORMULA]
+        if obs_formula not in ["xA", "xB"]:
+            raise Exception("Invalid observable.")
+
+        # print(cpe_output)
+        obs_data = cpe_output[obs_formula]
+        obs_data = np.array(obs_data) * (1 + obs_sigma * np.random.randn(len(obs_data)))
+        num_pts = len(obs_data)
+
+        obs_meas_df = pd.DataFrame(
+            {
+                C.OBSERVABLE_ID: [obs_id] * num_pts,
+                C.SIMULATION_CONDITION_ID: [cond_id] * num_pts,
+                C.TIME: cpe_output["X_sol"],
+                C.MEASUREMENT: obs_data,
+            }
+        )
+        meas_dfs.append(obs_meas_df)
+    meas_df = pd.concat(meas_dfs, ignore_index=True)
+
+    return meas_df
+
+
+def define_measurements_cpe(
+    cpe_model: Model,
+    timepoints: Sequence[float],
+    conditions_df: pd.DataFrame,
+    observables_df: pd.DataFrame,
+    obs_sigma: float = 0.00,
+    meas_sigma: float = 0.005,
+    approach: str = "izu",
+    **kwargs,
+) -> pd.DataFrame:
+
+    measurement_dfs = []
+
+    for cond_id, row in conditions_df.iterrows():
+        # Extract conditions for this row as a dictionary
+        conditions = row.to_dict()
+
+        # Run the simulation with these conditions
+        cpe_output = run_CPE_sim(
+            cpe_model, timepoints, conditions, sigma=meas_sigma, **kwargs
+        )
+
+        # Generate measurements from the simulation
+        meas_df = get_meas_from_cpe_sim(
+            cpe_output, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
+        )
+        measurement_dfs.append(meas_df)
+
+    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
+
+    return measurement_df

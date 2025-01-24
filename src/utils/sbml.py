@@ -7,10 +7,11 @@ import SBMLDiagrams
 SBML_LEVEL = 3
 SBML_VERSION = 2
 
+SBML_Document = libsbml.SBMLDocument
+SBML_Model = libsbml.Model
 
-def write_model(
-    model_fun: Callable[[], Tuple[libsbml.SBMLDocument, libsbml.Model]]
-) -> str:
+
+def write_model(model_fun: Callable[[], Tuple[SBML_Document, SBML_Model]]) -> str:
     """Writes an SBML model from the given file path."""
     document, model = model_fun()
 
@@ -38,7 +39,7 @@ def _model_name_from_filepath(model_filepath: str) -> str:
     return os.path.basename(os.path.dirname(model_filepath))
 
 
-def _save_sbml(document: libsbml.SBMLDocument, model_filepath: str = "sbml_model.xml"):
+def _save_sbml(document: SBML_Document, model_filepath: str = "sbml_model.xml"):
     """Outputs the given model string to the given filename."""
     model_xml_string = libsbml.writeSBMLToString(document)
 
@@ -84,10 +85,10 @@ def _check(value, message):
         return
 
 
-def _create_model() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def _create_model() -> Tuple[SBML_Document, SBML_Model]:
 
     try:
-        document = libsbml.SBMLDocument(SBML_LEVEL, SBML_VERSION)
+        document = SBML_Document(SBML_LEVEL, SBML_VERSION)
     except ValueError:
         raise SystemExit("Could not create SBMLDocumention object")
 
@@ -113,7 +114,7 @@ def _create_model() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
 
 def _create_compartment(
-    model: libsbml.Model,
+    model: SBML_Model,
     id: str,
     size: float = 1.0,
     spatialDimensions: int = 3,
@@ -131,7 +132,7 @@ def _create_compartment(
 
 
 def _create_species(
-    model: libsbml.Model,
+    model: SBML_Model,
     id: str,
     initialAmount: float = 0.0,
     constant=False,
@@ -154,7 +155,7 @@ def _create_species(
 
 
 def _create_parameter(
-    model: libsbml.Model,
+    model: SBML_Model,
     id: str,
     value: float = 0.0,
     constant: bool = False,
@@ -174,7 +175,7 @@ def _create_parameter(
 
 
 def _create_initial_assignment(
-    model: libsbml.Model, variable_id: str, formula: str
+    model: SBML_Model, variable_id: str, formula: str
 ) -> libsbml.InitialAssignment:
     """
     Create an initial assignment in the SBML model.
@@ -200,7 +201,7 @@ def _create_initial_assignment(
 
 
 def _create_reaction(
-    model: libsbml.Model,
+    model: SBML_Model,
     id: str,
     reactantsDict: Dict[str, int],
     productsDict: Dict[str, int],
@@ -245,9 +246,7 @@ def _create_reaction(
     return r
 
 
-def _create_rule(
-    model: libsbml.Model, var, formula: str = ""
-) -> libsbml.AssignmentRule:
+def _create_rule(model: SBML_Model, var, formula: str = "") -> libsbml.AssignmentRule:
 
     rule: libsbml.AssignmentRule = model.createAssignmentRule()
     _check(rule.setVariable(var.getId()), "set variable")
@@ -259,7 +258,7 @@ def _create_rule(
     return rule
 
 
-def _create_rate_rule(model: libsbml.Model, var, formula: str = "") -> libsbml.RateRule:
+def _create_rate_rule(model: SBML_Model, var, formula: str = "") -> libsbml.RateRule:
 
     rate_rule: libsbml.RateRule = model.createRateRule()
     _check(rate_rule.setVariable(var.getId()), "set variable")
@@ -272,7 +271,7 @@ def _create_rate_rule(model: libsbml.Model, var, formula: str = "") -> libsbml.R
 
 
 def _create_algebraic_rule(
-    model: libsbml.Model, formula: str = ""
+    model: SBML_Model, formula: str = ""
 ) -> libsbml.AlgebraicRule:
 
     rule: libsbml.AlgebraicRule = model.createAlgebraicRule()
@@ -285,7 +284,7 @@ def _create_algebraic_rule(
     return rule
 
 
-def _add_termination_event(model: libsbml.Model, formula: str = "") -> libsbml.Event:
+def _add_termination_event(model: SBML_Model, formula: str = "") -> libsbml.Event:
     """
     Adds an event to terminate the simulation when dA or dB is negative.
 

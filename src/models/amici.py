@@ -1,14 +1,14 @@
 import os
 import shutil
 import logging
-from typing import Dict, Sequence, Tuple, Optional
+from typing import Dict, Sequence, Tuple, Optional, List, Callable
 
-import amici.petab_import
+import numpy as np
 import pandas as pd
 import amici
-from petab.v1.C import OBSERVABLE_FORMULA
+import petab.v1.C as C
 
-from src.utils.sbml import _model_name_from_filepath
+from src.utils import sbml
 
 DEFAULT_SOLVER_OPTIONS = {
     "setAbsoluteTolerance": 1e-10,
@@ -17,7 +17,7 @@ DEFAULT_SOLVER_OPTIONS = {
 
 def get_amici_model_name_and_output_dir(sbml_model_filepath: str) -> Tuple[str, str]:
 
-    model_name = _model_name_from_filepath(sbml_model_filepath)
+    model_name = sbml._model_name_from_filepath(sbml_model_filepath)
     model_output_dir = os.path.join("/PolyPESTO/amici_models/", model_name)
 
     return model_name, model_output_dir
@@ -39,7 +39,7 @@ def compile_amici_model(
 
     observables = {
         str(observable_id): {"formula": str(formula)}
-        for observable_id, formula in observables_df[OBSERVABLE_FORMULA].items()
+        for observable_id, formula in observables_df[C.OBSERVABLE_FORMULA].items()
     }
 
     print("Compiling AMICI model from SBML.")
@@ -54,6 +54,24 @@ def compile_amici_model(
         verbose=verbose,
         observables=observables,
     )
+
+
+def load_amici_model_from_definition(
+    model_fun: Callable[[], Tuple[sbml.SBML_Document, sbml.SBML_Model]],
+    observables_df: pd.DataFrame,
+    **kwargs,
+) -> amici.Model:
+
+    sbml_model_filepath = sbml.write_model(model_fun=model_fun)
+
+    validator = sbml.validateSBML(ucheck=False)
+    validator.validate(sbml_model_filepath)
+
+    model = load_amici_model(
+        sbml_model_filepath, observables_df=observables_df, **kwargs
+    )
+
+    return model
 
 
 def load_amici_model(
@@ -106,6 +124,7 @@ def get_solver(model: amici.Model, **solver_options) -> amici.Solver:
         solver_func(value)
     return solver
 
+
 def run_amici_simulation(
     model: amici.Model,
     timepoints: Sequence[float],
@@ -136,3 +155,68 @@ def run_amici_simulation(
 
     rdata = amici.runAmiciSimulation(model, solver)
     return rdata
+
+
+def get_meas_from_amici_sim(
+    rdata: amici.ReturnDataView,
+    observables_df: pd.DataFrame,
+    cond_id: str = "none",
+    obs_sigma: float = 0.00,
+) -> pd.DataFrame:
+
+    meas_dfs = []
+    for obs_id in observables_df.index:
+
+        obs_data = rdata.by_id(obs_id)
+        obs_data = np.array(obs_data) * (1 + obs_sigma * np.random.randn(len(obs_data)))
+        num_pts = len(obs_data)
+
+        obs_meas_df = pd.DataFrame(
+            {
+                C.OBSERVABLE_ID: [obs_id] * num_pts,
+                C.SIMULATION_CONDITION_ID: [cond_id] * num_pts,
+                C.TIME: rdata.ts,
+                C.MEASUREMENT: obs_data,
+            }
+        )
+        meas_dfs.append(obs_meas_df)
+    meas_df = pd.concat(meas_dfs, ignore_index=True)
+
+    return meas_df
+
+
+def define_measurements_amici(
+    amici_model: amici.Model,
+    timepoints: Sequence[float],
+    conditions_df: pd.DataFrame,
+    observables_df: pd.DataFrame,
+    obs_sigma: float = 0.00,
+    meas_sigma: float = 0.005,
+    solver: Optional[amici.Solver] = None,
+    debug_return_rdatas: bool = False,
+) -> pd.DataFrame | Tuple[pd.DataFrame, List[amici.ReturnDataView]]:
+
+    measurement_dfs = []
+    rdatas = []
+
+    for cond_id, row in conditions_df.iterrows():
+        # Extract conditions for this row as a dictionary
+        conditions = row.to_dict()
+
+        # Run the simulation with these conditions
+        rdata = run_amici_simulation(
+            amici_model, timepoints, conditions, sigma=meas_sigma, solver=solver
+        )
+        rdatas.append(rdata)
+
+        # Generate measurements from the simulation
+        meas_df = get_meas_from_amici_sim(
+            rdata, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
+        )
+        measurement_dfs.append(meas_df)
+
+    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
+
+    if debug_return_rdatas:
+        return measurement_df, rdatas
+    return measurement_df
