@@ -212,6 +212,7 @@ class Model:
             return [ode_func(X, y[0], M0, self.k)]
 
         # Solve via solve_ivp
+        #print(fA0)
         sol = solve_ivp(
             fun=wrapper, t_span=bounds, y0=[fA0], t_eval=t_eval, **kwargs
         )
@@ -242,11 +243,11 @@ def run_CPE_sim(
     sigma: float = 0.0,
     approach: str = "izu",
     **kwargs,
-) -> np.ndarray:
+) -> Dict[str, np.ndarray]:
     
     fA0 = 0.0
     M0 = 0.0
-
+        
     if "fA0" in conditions and "M0" in conditions:
         fA0 = conditions["fA0"]
         M0 = conditions["M0"]
@@ -256,6 +257,12 @@ def run_CPE_sim(
     else:
         raise Exception("Invalid input for conditions.")
     
-    X_sol, xA, xB = model.solve(fA0, M0, approach, timepoints, **kwargs)
+    # print(fA0)
+    # print(M0)
+    # print(type(fA0))
+    # print(type(M0))
 
-    return X_sol, xA, xB
+    X_sol, xA, xB = model.solve(fA0=float(fA0), M0=float(M0), approach=approach, t_eval=timepoints, **kwargs)
+
+    cpe_outputs = {'X_sol': X_sol, 'xA': xA, 'xB': xB}
+    return cpe_outputs
