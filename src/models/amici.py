@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from typing import Dict, Sequence, Tuple, Optional, List, Callable
+from typing import Dict, Sequence, Tuple, Optional, List, Callable, Any
 
 import numpy as np
 import pandas as pd
@@ -59,10 +59,11 @@ def compile_amici_model(
 def load_amici_model_from_definition(
     model_fun: Callable[[], Tuple[sbml.SBML_Document, sbml.SBML_Model]],
     observables_df: pd.DataFrame,
+    model_dir: str,
     **kwargs,
-) -> amici.Model:
+) -> Tuple[str, amici.Model]:
 
-    sbml_model_filepath = sbml.write_model(model_fun=model_fun)
+    sbml_model_filepath = sbml.write_model(model_fun=model_fun, model_dir=model_dir)
 
     validator = sbml.validateSBML(ucheck=False)
     validator.validate(sbml_model_filepath)
@@ -71,7 +72,7 @@ def load_amici_model_from_definition(
         sbml_model_filepath, observables_df=observables_df, **kwargs
     )
 
-    return model
+    return sbml_model_filepath, model
 
 
 def load_amici_model(
@@ -92,15 +93,13 @@ def load_amici_model(
     return model_module.getModel()
 
 
-def set_model_parameters(
-    model: amici.Model, parameters: Dict[str, float]
-) -> amici.Model:
+def set_model_parameters(model: amici.Model, parameters: Dict[str, Any]) -> amici.Model:
     """
     Sets the parameters of an AMICI model.
 
     Args:
         model (amici.Model): The AMICI model.
-        parameters (Dict[str, float]): The parameters to set.
+        parameters (Dict[str, Any]): The parameters to set.
 
     Returns:
         amici.Model: The AMICI model with parameters set.
@@ -127,7 +126,7 @@ def get_solver(model: amici.Model, **solver_options) -> amici.Solver:
 
 def run_amici_simulation(
     model: amici.Model,
-    timepoints: Sequence[float],
+    t_eval: Sequence[float],
     conditions: Dict[str, float],
     sigma: float = 0.0,
     solver: Optional[amici.Solver] = None,
@@ -151,7 +150,7 @@ def run_amici_simulation(
             model.setParameterById(pname, conditions[pname])
 
     model.setInitialStates(init_states)
-    model.setTimepoints(timepoints)
+    model.setTimepoints(t_eval)
 
     rdata = amici.runAmiciSimulation(model, solver)
     return rdata
@@ -186,8 +185,8 @@ def get_meas_from_amici_sim(
 
 
 def define_measurements_amici(
-    amici_model: amici.Model,
-    timepoints: Sequence[float],
+    model: amici.Model,
+    t_eval: Sequence[float],
     conditions_df: pd.DataFrame,
     observables_df: pd.DataFrame,
     obs_sigma: float = 0.00,
@@ -205,7 +204,7 @@ def define_measurements_amici(
 
         # Run the simulation with these conditions
         rdata = run_amici_simulation(
-            amici_model, timepoints, conditions, sigma=meas_sigma, solver=solver
+            model, t_eval, conditions, sigma=meas_sigma, solver=solver
         )
         rdatas.append(rdata)
 

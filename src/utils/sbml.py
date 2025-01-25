@@ -11,11 +11,13 @@ SBML_Document = libsbml.SBMLDocument
 SBML_Model = libsbml.Model
 
 
-def write_model(model_fun: Callable[[], Tuple[SBML_Document, SBML_Model]]) -> str:
+def write_model(
+    model_fun: Callable[[], Tuple[SBML_Document, SBML_Model]], model_dir: str
+) -> str:
     """Writes an SBML model from the given file path."""
     document, model = model_fun()
 
-    model_filepath = _base_sbml_model_filepath(model_fun.__name__)
+    model_filepath = os.path.join(model_dir, f"{model_fun.__name__}.xml")
 
     _save_sbml(document, model_filepath)
     return model_filepath
@@ -32,14 +34,14 @@ def visualize_model(
 
 
 def _base_sbml_model_filepath(model_name: str) -> str:
-    return f"/PolyPESTO/src/models/{model_name}/sbml_model.xml"
+    return f"/PolyPESTO/src/models/{model_name}/{model_name}.xml"
 
 
 def _model_name_from_filepath(model_filepath: str) -> str:
     return os.path.basename(os.path.dirname(model_filepath))
 
 
-def _save_sbml(document: SBML_Document, model_filepath: str = "sbml_model.xml"):
+def _save_sbml(document: SBML_Document, model_filepath: str):
     """Outputs the given model string to the given filename."""
     model_xml_string = libsbml.writeSBMLToString(document)
 

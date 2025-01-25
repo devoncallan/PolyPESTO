@@ -239,7 +239,7 @@ class Model:
 
 def run_CPE_sim(
     model: Model,
-    timepoints: Sequence[float],
+    t_eval: Sequence[float],
     conditions: Dict[str, float],
     sigma: float = 0.0,
     approach: str = "izu",
@@ -264,7 +264,7 @@ def run_CPE_sim(
     # print(type(M0))
 
     X_sol, xA, xB = model.solve(
-        fA0=float(fA0), M0=float(M0), approach=approach, t_eval=timepoints, **kwargs
+        fA0=float(fA0), M0=float(M0), approach=approach, t_eval=t_eval, **kwargs
     )
 
     cpe_outputs = {"X_sol": X_sol, "xA": xA, "xB": xB}
@@ -312,7 +312,7 @@ def get_meas_from_cpe_sim(
 
 def define_measurements_cpe(
     cpe_model: Model,
-    timepoints: Sequence[float],
+    t_eval: Sequence[float],
     conditions_df: pd.DataFrame,
     observables_df: pd.DataFrame,
     obs_sigma: float = 0.00,
@@ -329,7 +329,7 @@ def define_measurements_cpe(
 
         # Run the simulation with these conditions
         cpe_output = run_CPE_sim(
-            cpe_model, timepoints, conditions, sigma=meas_sigma, **kwargs
+            cpe_model, t_eval, conditions, sigma=meas_sigma, **kwargs
         )
 
         # Generate measurements from the simulation
