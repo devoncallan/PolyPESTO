@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from typing import Dict, Sequence, Tuple, Optional, List, Callable, Any
+from typing import Dict, Sequence, Tuple, Optional, List, Any
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,7 @@ import amici
 import petab.v1.C as C
 
 from src.utils import sbml
+from src.utils.params import Parameter
 
 DEFAULT_SOLVER_OPTIONS = {
     "setAbsoluteTolerance": 1e-10,
@@ -57,7 +58,7 @@ def compile_amici_model(
 
 
 def load_amici_model_from_definition(
-    model_fun: Callable[[], Tuple[sbml.SBML_Document, sbml.SBML_Model]],
+    model_fun: sbml.ModelDefinition,
     observables_df: pd.DataFrame,
     model_dir: str,
     **kwargs,
@@ -93,6 +94,25 @@ def load_amici_model(
     return model_module.getModel()
 
 
+def set_model_parameters(
+    model: amici.Model, parameters: List[Parameter]
+) -> amici.Model:
+    """
+    Sets the parameters of an AMICI model.
+
+    Args:
+        model (amici.Model): The AMICI model.
+        parameters (List[Parameter]): The parameters to set.
+
+    Returns:
+        amici.Model: The AMICI model with parameters set.
+    """
+
+    for param in parameters:
+        model.setParameterByName(param.id, param.value)
+    return model
+
+
 def set_model_parameters(model: amici.Model, parameters: Dict[str, Any]) -> amici.Model:
     """
     Sets the parameters of an AMICI model.
@@ -106,7 +126,7 @@ def set_model_parameters(model: amici.Model, parameters: Dict[str, Any]) -> amic
     """
 
     for param_id, value in parameters.items():
-        model.setParameterByName(param_id, value)
+        model.setParameterById(param_id, value)
     return model
 
 

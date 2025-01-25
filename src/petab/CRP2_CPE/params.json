@@ -1,12 +1,12 @@
 {
-    "REQUIRED_PARAMS": ["rA", "rB", "rX", "KAA", "KAB", "KBA", "KBB"],
+    "REQUIRED_PARAMETERS": ["rA", "rB", "rX", "KAA", "KAB", "KBA", "KBB"],
 
-    "PARAMETER_SETS:": {
+    "PARAMETER_GROUPS": {
         "IRREVERSIBLE": ["p1", "p2"],
         "REVERSIBLE": ["p0"]
     },
 
-    "PARAMETERS": {
+    "PARAMETER_SETS": {
         "p0": {
             "rA": 1.0,
             "rB": 1.0,

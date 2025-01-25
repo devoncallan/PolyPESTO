@@ -1,10 +1,13 @@
 import libsbml
 from src.utils import sbml
-from typing import Tuple, List
+from typing import Tuple, List, Callable
 
 ##########################
 ### Create SBML models ###
 ##########################
+
+
+
 
 
 #######################
@@ -16,7 +19,7 @@ from typing import Tuple, List
 # r3: B + C -k3-> A + C
 
 
-def define_rob_rate_constants(model: libsbml.Model) -> List[libsbml.Parameter]:
+def define_rob_rate_constants(model: sbml.Model) -> List[libsbml.Parameter]:
 
     print("Creating Robertson parameters.")
     k1 = sbml._create_parameter(model, "k1", value=0.04)
@@ -26,7 +29,7 @@ def define_rob_rate_constants(model: libsbml.Model) -> List[libsbml.Parameter]:
     return [k1, k2, k3]
 
 
-def define_rob_species(model: libsbml.Model) -> List[libsbml.Species]:
+def define_rob_species(model: sbml.Model) -> List[libsbml.Species]:
 
     print("Creating Robertson species.")
     A = sbml._create_species(model, "A", initialAmount=1.0)
@@ -36,7 +39,7 @@ def define_rob_species(model: libsbml.Model) -> List[libsbml.Species]:
     return [A, B, C]
 
 
-def robertson_dae() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def robertson_dae() -> Tuple[sbml.Document, sbml.Model]:
 
     print("Creating SBML model (Robertson).")
 
@@ -57,7 +60,7 @@ def robertson_dae() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
     return document, model
 
 
-def robertson_rxn() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def robertson_rxn() -> Tuple[sbml.Document, sbml.Model]:
 
     print("Creating SBML model (Robertson).")
 
@@ -109,7 +112,7 @@ def robertson_rxn() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
 
 def define_CRP_rate_constants(
-    model: libsbml.Model, kpAA_constant=False
+    model: sbml.Model, kpAA_constant=False
 ) -> List[libsbml.Parameter]:
 
     print("Creating CRP parameters.")
@@ -142,7 +145,7 @@ def define_CRP_rate_constants(
     return [kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB]
 
 
-def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def CRP2_CPE() -> Tuple[sbml.Document, sbml.Model]:
 
     print("Creating SBML model (CRP2_CPE).")
 
@@ -220,7 +223,7 @@ def CRP2_CPE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
 
 
 # ODE Model
-def CRP2_ODE() -> Tuple[libsbml.SBMLDocument, libsbml.Model]:
+def CRP2_ODE() -> Tuple[sbml.Document, sbml.Model]:
 
     print(f"Creating SBML model (CRP2_v1).")
 
