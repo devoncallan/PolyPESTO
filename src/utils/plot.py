@@ -132,7 +132,39 @@ def plot_measurements(ax: Axes, measurements_df: pd.DataFrame, **kwargs):
     ... )
     """
 
-    pass
+    customization = kwargs
+
+    x = measurements_df[C.TIME]
+    y = measurements_df[C.MEASUREMENT]
+    ax.plot(x, y, 
+            color=in_kwargs(customization, 'color'),
+            marker=in_kwargs(customization, 'marker'),
+            linestyle=in_kwargs(customization, 'linestyle'),
+            label=in_kwargs(customization, 'label'))
+
+    ax.set_xlabel(in_kwargs(customization, 'set_xlabel'))
+    ax.set_ylabel(in_kwargs(customization, 'set_ylabel'))
+    ax.set_xlim(in_kwargs(customization, 'set_xlim'))
+    ax.set_ylim(in_kwargs(customization, 'set_ylim'))
+    ax.set_title(in_kwargs(customization, 'set_title'))    
+
+def in_kwargs(customization: Dict, value: str):
+    default = {'color': 'red',
+               'marker': None,
+               'linestyle': '',
+               'label': None,
+               'set_xlabel': 'Time',
+               'set_ylabel': 'Measurement',
+               'set_xlim': (0, 1),
+               'set_ylim': (0, 1),
+               'set_title': 'Plot of Measurements over Time'}
+
+    if value in customization:
+        ret = customization[value]
+    else:
+        ret = default[value]
+
+    return ret
 
 
 def get_color_shades(colormap_name: str, n_shades: int) -> List[str]:
