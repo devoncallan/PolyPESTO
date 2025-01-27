@@ -1,0 +1,444 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version2/core" level="3" version="2">
+  <model substanceUnits="mole" timeUnits="second" extentUnits="mole">
+    <listOfUnitDefinitions>
+      <unitDefinition id="per_second">
+        <listOfUnits>
+          <unit id="per_second" kind="second" exponent="-1" scale="0" multiplier="1"/>
+        </listOfUnits>
+      </unitDefinition>
+    </listOfUnitDefinitions>
+    <listOfCompartments>
+      <compartment id="c" spatialDimensions="0" size="1" units="dimensionless" constant="true"/>
+    </listOfCompartments>
+    <listOfSpecies>
+      <species id="xA" compartment="c" initialAmount="0" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pA" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pB" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pAA" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pAB" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pBA" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+      <species id="pBB" compartment="c" initialAmount="0.5" substanceUnits="dimensionless" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/>
+    </listOfSpecies>
+    <listOfParameters>
+      <parameter id="kpAA" value="1" units="dimensionless" constant="true"/>
+      <parameter id="kpAB" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kpBA" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kpBB" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kdAA" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kdAB" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kdBA" value="1" units="dimensionless" constant="false"/>
+      <parameter id="kdBB" value="1" units="dimensionless" constant="false"/>
+      <parameter id="rA" value="1" units="dimensionless" constant="false"/>
+      <parameter id="rB" value="1" units="dimensionless" constant="false"/>
+      <parameter id="rX" value="1" units="dimensionless" constant="false"/>
+      <parameter id="KAA" value="0" units="dimensionless" constant="false"/>
+      <parameter id="KAB" value="0" units="dimensionless" constant="false"/>
+      <parameter id="KBA" value="0" units="dimensionless" constant="false"/>
+      <parameter id="KBB" value="0" units="dimensionless" constant="false"/>
+      <parameter id="A0" value="1" units="mole" constant="true"/>
+      <parameter id="B0" value="1" units="mole" constant="true"/>
+      <parameter id="A" value="0" units="mole" constant="false"/>
+      <parameter id="xB" value="0" units="dimensionless" constant="false"/>
+      <parameter id="B" value="0" units="mole" constant="false"/>
+      <parameter id="dA" value="0" units="dimensionless" constant="false"/>
+      <parameter id="dB" value="0" units="dimensionless" constant="false"/>
+      <parameter id="is_valid_xA" value="1" units="dimensionless" constant="false"/>
+    </listOfParameters>
+    <listOfRules>
+      <assignmentRule variable="kpAB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <divide/>
+            <ci> kpAA </ci>
+            <ci> rA </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kpBB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <divide/>
+            <ci> kpAA </ci>
+            <ci> rX </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kpBA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <divide/>
+            <ci> kpBB </ci>
+            <ci> rB </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kdAA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <ci> kpAA </ci>
+            <ci> KAA </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kdAB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <ci> kpAB </ci>
+            <ci> KAB </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kdBA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <ci> kpBA </ci>
+            <ci> KBA </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="kdBB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <ci> kpBB </ci>
+            <ci> KBB </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="A">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <ci> A0 </ci>
+            <apply>
+              <minus/>
+              <cn type="integer"> 1 </cn>
+              <ci> xA </ci>
+            </apply>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="B">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <times/>
+              <apply>
+                <plus/>
+                <ci> A0 </ci>
+                <ci> B0 </ci>
+              </apply>
+              <apply>
+                <minus/>
+                <cn type="integer"> 1 </cn>
+                <csymbol encoding="text" definitionURL="http://www.sbml.org/sbml/symbols/time"> time </csymbol>
+              </apply>
+            </apply>
+            <ci> A </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="xB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <cn type="integer"> 1 </cn>
+            <apply>
+              <divide/>
+              <ci> B </ci>
+              <ci> B0 </ci>
+            </apply>
+          </apply>
+        </math>
+      </assignmentRule>
+      <algebraicRule>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <plus/>
+              <apply>
+                <times/>
+                <ci> kpAA </ci>
+                <ci> pBA </ci>
+                <ci> pA </ci>
+                <ci> A </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kdAB </ci>
+                <ci> pAA </ci>
+                <ci> pAB </ci>
+                <ci> pB </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> pAA </ci>
+              <ci> pA </ci>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kpAB </ci>
+                  <ci> B </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kdAA </ci>
+                  <ci> pBA </ci>
+                </apply>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </algebraicRule>
+      <algebraicRule>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <plus/>
+              <apply>
+                <times/>
+                <ci> kpBB </ci>
+                <ci> pAB </ci>
+                <ci> pB </ci>
+                <ci> B </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> kdBA </ci>
+                <ci> pBB </ci>
+                <ci> pBA </ci>
+                <ci> pA </ci>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> pBB </ci>
+              <ci> pB </ci>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kpBA </ci>
+                  <ci> A </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kdBB </ci>
+                  <ci> pAB </ci>
+                </apply>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </algebraicRule>
+      <algebraicRule>
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <apply>
+              <plus/>
+              <apply>
+                <times/>
+                <ci> kpAB </ci>
+                <ci> pA </ci>
+                <ci> B </ci>
+              </apply>
+              <apply>
+                <times/>
+                <ci> pAB </ci>
+                <apply>
+                  <plus/>
+                  <apply>
+                    <times/>
+                    <ci> kdBA </ci>
+                    <ci> pBA </ci>
+                    <ci> pA </ci>
+                  </apply>
+                  <apply>
+                    <times/>
+                    <ci> kdBB </ci>
+                    <ci> pBB </ci>
+                    <ci> pB </ci>
+                  </apply>
+                </apply>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> pAB </ci>
+              <ci> pB </ci>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kpBA </ci>
+                  <ci> A </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kpBB </ci>
+                  <ci> B </ci>
+                </apply>
+                <ci> kdAB </ci>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </algebraicRule>
+      <assignmentRule variable="pB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <cn type="integer"> 1 </cn>
+            <ci> pA </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="pBB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <cn type="integer"> 1 </cn>
+            <ci> pAB </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="pBA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <minus/>
+            <cn type="integer"> 1 </cn>
+            <ci> pAA </ci>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="dA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <apply>
+              <times/>
+              <apply>
+                <minus/>
+                <ci> A </ci>
+              </apply>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kpAA </ci>
+                  <ci> pA </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kpBA </ci>
+                  <ci> pB </ci>
+                </apply>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> pA </ci>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kdAA </ci>
+                  <ci> pAA </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kdBA </ci>
+                  <ci> pBA </ci>
+                </apply>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </assignmentRule>
+      <assignmentRule variable="dB">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <plus/>
+            <apply>
+              <times/>
+              <apply>
+                <minus/>
+                <ci> B </ci>
+              </apply>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kpBB </ci>
+                  <ci> pB </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kpAB </ci>
+                  <ci> pA </ci>
+                </apply>
+              </apply>
+            </apply>
+            <apply>
+              <times/>
+              <ci> pB </ci>
+              <apply>
+                <plus/>
+                <apply>
+                  <times/>
+                  <ci> kdBB </ci>
+                  <ci> pBB </ci>
+                </apply>
+                <apply>
+                  <times/>
+                  <ci> kdAB </ci>
+                  <ci> pAB </ci>
+                </apply>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </assignmentRule>
+      <rateRule variable="xA">
+        <math xmlns="http://www.w3.org/1998/Math/MathML">
+          <apply>
+            <times/>
+            <apply>
+              <divide/>
+              <apply>
+                <plus/>
+                <ci> A0 </ci>
+                <ci> B0 </ci>
+              </apply>
+              <ci> A0 </ci>
+            </apply>
+            <apply>
+              <divide/>
+              <apply>
+                <plus/>
+                <ci> dA </ci>
+                <cn type="e-notation"> 1 <sep/> -10 </cn>
+              </apply>
+              <apply>
+                <plus/>
+                <ci> dA </ci>
+                <ci> dB </ci>
+                <cn type="e-notation"> 1 <sep/> -10 </cn>
+              </apply>
+            </apply>
+          </apply>
+        </math>
+      </rateRule>
+    </listOfRules>
+  </model>
+</sbml>

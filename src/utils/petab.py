@@ -2,20 +2,13 @@ import os
 from typing import Dict, Iterable, Tuple, Sequence, List, Optional
 from dataclasses import dataclass
 
-import numpy as np
 import pandas as pd
 import petab
 import petab.v1.C as C
-import amici
-from libsbml import Model
-
-from src.utils import amici as am
-from src.utils import sbml as sbml
-from src.models import cpe_models as CPE
 
 
 @dataclass
-class PetabParameter:
+class FitParameter:
     id: str
     scale: str
     bounds: Tuple[float, float]
@@ -28,8 +21,91 @@ class PetabParameter:
 ############################
 
 
-def define_parameters(parameters: List[PetabParameter]) -> pd.DataFrame:
-    return pd.DataFrame(
+class PetabIO:
+
+    @staticmethod
+    def format_df(
+        df: pd.DataFrame, index_col: str, keep_column: bool = False
+    ) -> pd.DataFrame:
+        # Ensure the column is the index and not duplicated
+        if df.index.name == index_col:
+            # If already indexed correctly, return as is
+            return df
+        elif index_col in df.columns:
+            return df.set_index(index_col, inplace=False, drop=not keep_column)
+        else:
+            raise ValueError(f"Index column '{index_col}' not found in DataFrame.")
+
+    @staticmethod
+    def format_obs_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.OBSERVABLE_ID, keep_column=False)
+
+    @staticmethod
+    def format_cond_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.CONDITION_ID, keep_column=False)
+
+    @staticmethod
+    def format_meas_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.SIMULATION_CONDITION_ID, keep_column=True)
+
+    @staticmethod
+    def format_param_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.PARAMETER_ID, keep_column=False)
+
+    @staticmethod
+    def read_petab_df(filepath: str, format_func) -> pd.DataFrame:
+        df = pd.read_csv(filepath, sep="\t")  # .reset_index(drop=True)
+        return format_func(df)
+
+    @staticmethod
+    def read_obs_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_obs_df)
+
+    @staticmethod
+    def read_cond_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_cond_df)
+
+    @staticmethod
+    def read_meas_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_meas_df)
+
+    @staticmethod
+    def read_param_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_param_df)
+
+    @staticmethod
+    def write_df(df: pd.DataFrame, write_func, dir: str = None, filename: str = None):
+        filepath = os.path.join(dir, filename) if dir else filename
+        write_func(df, filepath)
+        return filepath
+
+    @staticmethod
+    def write_obs_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_observable_df, dir, filename)
+
+    @staticmethod
+    def write_cond_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_condition_df, dir, filename)
+
+    @staticmethod
+    def write_meas_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_measurement_df, dir, filename)
+
+    @staticmethod
+    def write_param_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_parameter_df, dir, filename)
+
+
+def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
+    df = pd.DataFrame(
         [
             {
                 C.PARAMETER_ID: param.id,
@@ -39,9 +115,10 @@ def define_parameters(parameters: List[PetabParameter]) -> pd.DataFrame:
                 C.NOMINAL_VALUE: param.nominal_value,
                 C.ESTIMATE: param.estimate,
             }
-            for param in parameters
+            for param in params_dict.values()
         ]
-    ).set_index(C.PARAMETER_ID)
+    )  # .set_index(C.PARAMETER_ID)
+    return PetabIO.format_param_df(df)
 
 
 def define_observables(
@@ -51,13 +128,14 @@ def define_observables(
     observable_ids = list(observables.keys())
     observable_formulas = list(observables.values())
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         data={
             C.OBSERVABLE_ID: [f"obs_{id}" for id in observable_ids],
             C.OBSERVABLE_FORMULA: observable_formulas,
             C.NOISE_FORMULA: [noise_value] * len(observable_ids),
         }
-    ).set_index(C.OBSERVABLE_ID)
+    )  # .set_index(C.OBSERVABLE_ID)
+    return PetabIO.format_obs_df(df)
 
 
 def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFrame:
@@ -76,206 +154,67 @@ def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFra
     conditions[C.CONDITION_ID] = condition_ids
     conditions[C.CONDITION_NAME] = condition_ids
 
-    # Set 'CONDITION_ID' as the index
-    return conditions.set_index(C.CONDITION_ID)
+    return PetabIO.format_cond_df(conditions)
 
 
-def get_meas_from_amici_sim(
-    rdata: amici.ReturnDataView,
-    observables_df: pd.DataFrame,
-    cond_id: str = "none",
-    obs_sigma: float = 0.00,
-) -> pd.DataFrame:
-
-    meas_dfs = []
-    for obs_id in observables_df.index:
-
-        obs_data = rdata.by_id(obs_id)
-        obs_data = np.array(obs_data) * (1 + obs_sigma * np.random.randn(len(obs_data)))
-        num_pts = len(obs_data)
-
-        obs_meas_df = pd.DataFrame(
-            {
-                C.OBSERVABLE_ID: [obs_id] * num_pts,
-                C.SIMULATION_CONDITION_ID: [cond_id] * num_pts,
-                C.TIME: rdata.ts,
-                C.MEASUREMENT: obs_data,
-            }
-        )
-        meas_dfs.append(obs_meas_df)
-    meas_df = pd.concat(meas_dfs, ignore_index=True)
-
-    return meas_df
-
-
-def define_measurements_amici(
-    amici_model: amici.Model,
-    timepoints: Sequence[float],
-    conditions_df: pd.DataFrame,
-    observables_df: pd.DataFrame,
-    obs_sigma: float = 0.00,
-    meas_sigma: float = 0.005,
-    solver: Optional[amici.Solver] = None,
-    debug_return_rdatas: bool = False,
-) -> pd.DataFrame | Tuple[pd.DataFrame, List[amici.ReturnDataView]]:
-
-    measurement_dfs = []
-    rdatas = []
-
-    for cond_id, row in conditions_df.iterrows():
-        # Extract conditions for this row as a dictionary
-        conditions = row.to_dict()
-
-        # Run the simulation with these conditions
-        rdata = am.run_amici_simulation(
-            amici_model, timepoints, conditions, sigma=meas_sigma, solver=solver
-        )
-        rdatas.append(rdata)
-
-        # Generate measurements from the simulation
-        meas_df = get_meas_from_amici_sim(
-            rdata, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
-        )
-        measurement_dfs.append(meas_df)
-
-    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
-
-    if debug_return_rdatas:
-        return measurement_df, rdatas
-    return measurement_df
-
-
-def get_meas_from_cpe_sim(
-    cpe_output: Dict[str, np.ndarray],
-    observables_df: pd.DataFrame,
-    cond_id: str = "none",
-    obs_sigma: float = 0.00,
-) -> pd.DataFrame:
-    # Transform CPE_output to measurements_df
-
-    # This should throw an error if observables_df has anything other
-    # than 'xA' and 'xB' in the C.FORMULA column
-
-    meas_dfs = []
-    for obs_id, row in observables_df.iterrows():
-        observables = row.to_dict()
-        #print(observables)
-
-        obs_formula = observables[C.OBSERVABLE_FORMULA]
-        if obs_formula not in ['xA', 'xB']:
-            raise Exception('Invalid observable.')
-
-        #print(cpe_output)
-        obs_data = cpe_output[obs_formula]
-        obs_data = np.array(obs_data) * (1 + obs_sigma * np.random.randn(len(obs_data)))
-        num_pts = len(obs_data)
-
-        obs_meas_df = pd.DataFrame(
-            {
-                C.OBSERVABLE_ID: [obs_id] * num_pts,
-                C.SIMULATION_CONDITION_ID: [cond_id] * num_pts,
-                C.TIME: cpe_output['X_sol'],
-                C.MEASUREMENT: obs_data,
-            }
-        )
-        meas_dfs.append(obs_meas_df)
-    meas_df = pd.concat(meas_dfs, ignore_index=True)
-
-    return meas_df
-
-
-def define_measurements_cpe(
-    cpe_model: CPE.Model,
-    timepoints: Sequence[float],
-    conditions_df: pd.DataFrame,
-    observables_df: pd.DataFrame,
-    obs_sigma: float = 0.00,
-    meas_sigma: float = 0.005,
-    approach: str = "izu",
-    **kwargs,
-) -> pd.DataFrame:
-    # Loop over all conditions in conditions_df
-
-    # Call CPE.run_CPE_sim, pass in args and kwargs
-
-    # Use get_meas_from_cpe_sim to transform output to measurements_df
-
-    # return measurements_df
-
-    measurement_dfs = []
-    cpe_outputs = []
-
-    for cond_id, row in conditions_df.iterrows():
-        # Extract conditions for this row as a dictionary
-        conditions = row.to_dict()
-
-        # Run the simulation with these conditions
-        cpe_output = CPE.run_CPE_sim(
-            cpe_model, timepoints, conditions, sigma=meas_sigma, **kwargs
-        )
-        # cpe_outputs.append(cpe_output)
-
-        # Generate measurements from the simulation
-        meas_df = get_meas_from_cpe_sim(
-            cpe_output, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
-        )
-        measurement_dfs.append(meas_df)
-
-    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
-
-    return measurement_df
-
-
-# Maybe add a petab file directory
-def write_petab_files(
-    sbml_model_filepath: str,
-    parameters_df: pd.DataFrame,
-    observables_df: pd.DataFrame,
-    conditions_df: pd.DataFrame,
-    measurements_df: pd.DataFrame,
-    petab_dir_name: Optional[str] = None,
+def write_yaml_file(
+    yaml_dir: str,
+    sbml_filepath: str = None,
+    cond_filepath: str = None,
+    meas_filepath: str = None,
+    obs_filepath: str = None,
+    param_filepath: str = None,
 ) -> str:
 
-    model_dir = os.path.dirname(sbml_model_filepath)
-    model_filename = os.path.basename(sbml_model_filepath)
-
     # Define the PEtab directory
-    petab_dir = os.path.join(model_dir, petab_dir_name) if petab_dir_name else model_dir
-    os.makedirs(petab_dir, exist_ok=True)
+    os.makedirs(yaml_dir, exist_ok=True)
+    yaml_filepath = os.path.join(yaml_dir, "petab.yaml")
 
-    petab.v1.write_condition_df(
-        conditions_df, os.path.join(petab_dir, "conditions.tsv")
-    )
-    petab.v1.write_measurement_df(
-        measurements_df, os.path.join(petab_dir, "measurements.tsv")
-    )
-    petab.v1.write_observable_df(
-        observables_df, os.path.join(petab_dir, "observables.tsv")
-    )
-    petab.v1.write_parameter_df(
-        parameters_df, os.path.join(petab_dir, "parameters.tsv")
-    )
-
-    # Define PEtab configuration
-    rel_model_filepath = os.path.join("..", model_filename) if petab_dir_name else model_filename
     yaml_config = {
         C.FORMAT_VERSION: 1,
-        C.PARAMETER_FILE: "parameters.tsv",
+        C.PARAMETER_FILE: param_filepath,
         C.PROBLEMS: [
             {
-                C.SBML_FILES: [rel_model_filepath],
-                C.CONDITION_FILES: ["conditions.tsv"],
-                C.MEASUREMENT_FILES: ["measurements.tsv"],
-                C.OBSERVABLE_FILES: ["observables.tsv"],
+                C.SBML_FILES: [sbml_filepath],
+                C.CONDITION_FILES: [cond_filepath],
+                C.MEASUREMENT_FILES: [meas_filepath],
+                C.OBSERVABLE_FILES: [obs_filepath],
             }
         ],
     }
-
-    yaml_filepath = os.path.join(petab_dir, f"petab.yaml")
     petab.v1.yaml.write_yaml(yaml_config, yaml_filepath)
 
     # validate written PEtab files
     problem = petab.v1.Problem.from_yaml(yaml_filepath)
     petab.v1.lint.lint_problem(problem)
 
+    return yaml_filepath
+
+
+def write_petab_files(
+    yaml_dir: str,
+    sbml_filepath: str,
+    param_df: pd.DataFrame,
+    obs_df: pd.DataFrame,
+    cond_df: pd.DataFrame,
+    meas_df: pd.DataFrame,
+    param_dir: Optional[str] = None,
+    obs_dir: Optional[str] = None,
+    cond_dir: Optional[str] = None,
+    meas_dir: Optional[str] = None,
+) -> str:
+
+    obs_filepath = PetabIO.write_obs_df(obs_df, dir=obs_dir)
+    cond_filepath = PetabIO.write_cond_df(cond_df, dir=cond_dir)
+    meas_filepath = PetabIO.write_meas_df(meas_df, dir=meas_dir)
+    param_filepath = PetabIO.write_param_df(param_df, dir=param_dir)
+
+    yaml_filepath = write_yaml_file(
+        yaml_dir,
+        sbml_filepath,
+        cond_filepath=cond_filepath,
+        meas_filepath=meas_filepath,
+        obs_filepath=obs_filepath,
+        param_filepath=param_filepath,
+    )
     return yaml_filepath

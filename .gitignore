@@ -172,3 +172,5 @@ cython_debug/
 
 # Any PETAB models that are generated
 src/models/**/
+src/data/datasets/**/
+src/data/fitting/**/
