@@ -25,11 +25,23 @@ class Parameter:
     id: ParameterID
     value: Any
 
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "Parameter":
+        return Parameter(**data)
+
 
 @dataclass
 class ParameterSet:
     id: ParameterSetID
     parameters: Dict[ParameterID, Parameter]
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "ParameterSet":
+        parameters = {
+            param_id: Parameter.from_dict(param_data)
+            for param_id, param_data in data["parameters"].items()
+        }
+        return ParameterSet(id=data["id"], parameters=parameters)
 
     def by_id(self, parameter_id: ParameterID) -> Parameter:
         if parameter_id not in self.parameters:
@@ -50,6 +62,14 @@ class ParameterGroup:
     id: ParameterGroupID
     parameter_sets: Dict[ParameterSetID, ParameterSet]
 
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> "ParameterGroup":
+        parameter_sets = {
+            param_set_id: ParameterSet.from_dict(param_set_data)
+            for param_set_id, param_set_data in data["parameter_sets"].items()
+        }
+        return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
+
     def by_id(self, parameter_set_id: ParameterSetID) -> ParameterSet:
         if parameter_set_id not in self.parameter_sets:
             raise KeyError(
@@ -69,7 +89,7 @@ class ParameterGroup:
     @staticmethod
     def load(filepath: str, **kwargs):
         data = file.read_json(filepath)
-        return ParameterGroup(**data)
+        return ParameterGroup.from_dict(data)
 
 
 class ParameterContainer:
