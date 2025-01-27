@@ -6,13 +6,34 @@ import matplotlib.colors as colors
 from typing import List, Dict, Any, Union, Tuple, Optional
 import petab.v1.C as C
 
+# Grid sizing lookup table
+# Maps the number of panels to (num_rows, num_cols)
+GRID_LUT = {
+    1: (1, 1),
+    2: (1, 2),
+    3: (1, 3),
+    4: (2, 2),
+    5: (2, 3),
+    6: (2, 3),
+    7: (2, 4),
+    8: (2, 4),
+    9: (3, 3),
+    10: (3, 4),
+    11: (3, 4),
+    12: (3, 4),
+    13: (4, 4),
+    14: (4, 4),
+    15: (4, 4),
+    16: (4, 4),
+}
+
 
 # Function for plotting all measurements data
 def plot_all_measurements(
     meas_df: pd.DataFrame,
-    group_by: str = C.CONDITION_ID,
+    group_by: str = C.SIMULATION_CONDITION_ID,
     axes: List[Axes] = None,
-    format_axes_kwargs: Dict[str, Any] = None,
+    format_axes_kwargs: Dict[str, Any] = {},
     plot_style: str = "lines",
     **kwargs,
 ) -> List[Axes]:
@@ -66,7 +87,7 @@ def plot_all_measurements(
     -------
     >>> axes = plot_all_measurements(
     ...     meas_df=df,
-    ...     group_by=C.CONDITION_ID,
+    ...     group_by=C.SIMULATION_CONDITION_ID,
     ...     plot_style="both",
     ...     format_axes_kwargs={
     ...         "set_xlabel": "Time",
@@ -80,51 +101,72 @@ def plot_all_measurements(
     >>> plt.show()
     """
 
-    MAX_NUM_ROWS = 4
-
-    conditions = meas_df[C.CONDITION_ID].unique()
+    # Parse the unique conditions and observables
+    conditions = meas_df[C.SIMULATION_CONDITION_ID].unique()
     observables = meas_df[C.OBSERVABLE_ID].unique()
 
-    if group_by not in ['C.CONDITION_ID','C.OBSERVABLE']:
-        raise ValueError('Invalid group_by value passed in.')
-    
-    if group_by is 'C.CONDITION_ID':
-        num_panels = len(conditions)
-    else:
-        num_panels = len(observables)
+    if group_by not in [C.SIMULATION_CONDITION_ID, C.OBSERVABLE_ID]:
+        raise ValueError("Invalid group_by value passed in.")
 
+    # If axes is not provided, create a figure with subplots
     if axes is None:
-        fig, axes_list = plt.subplots(1, num_panels)
-        axes_list = axes.flatten() 
-    else:
-        axes_list = axes
+        num_panels = (
+            len(conditions)
+            if group_by == C.SIMULATION_CONDITION_ID
+            else len(observables)
+        )
 
-    formatting = get_plot_formatting(conditions, observables, plot_style=plot_style)
+        num_rows, num_cols = GRID_LUT[num_panels]
+
+        fig, axes = plt.subplots(
+            num_rows,
+            num_cols,
+            figsize=(5 * num_cols, 5 * num_rows),
+            squeeze=False,
+            dpi=150,
+        )
+        axes = axes.flatten()
+
+    # Assign plot formatting
+    format_dict = get_plot_formatting(observables, conditions, plot_style=plot_style)
 
     for i, condition in enumerate(conditions):
         for j, observable in enumerate(observables):
-            data = meas_df[(meas_df[C.CONDITION_ID] == condition) & (meas_df[C.OBSERVABLE_ID] == observable)]
+            data = meas_df[
+                (meas_df[C.SIMULATION_CONDITION_ID] == condition)
+                & (meas_df[C.OBSERVABLE_ID] == observable)
+            ]
 
-            if group_by is 'C.CONDITION_ID':
-                ax = axes_list[i]
+            if group_by == C.SIMULATION_CONDITION_ID:
+                ax = axes[i]
+                title = condition
                 label = observable
             else:
-                ax = axes_list[j]
+                ax = axes[j]
+                title = observable
                 label = condition
 
-            color, marker, linestyle = formatting[(observable, condition)]
+            color, marker, linestyle = format_dict[(observable, condition)]
 
-            plot_measurements(ax, data, label=label, color=color, marker=marker, linestyle=linestyle)
+            format_axes_kwargs["set_title"] = title
+            plot_measurements(
+                ax,
+                data,
+                format_axes_kwargs=format_axes_kwargs,
+                label=label,
+                color=color,
+                marker=marker,
+                linestyle=linestyle,
+                **kwargs,
+            )
+            ax.legend()
 
-    format_axes(axes_list, **kwargs)
+    return axes
 
-    return axes_list
-
-    # Parse the unique conditions and observables
     # group_by must be either C.CONDITION_ID or C.OBSERVABLE_ID (raise ValueError otherwise)
     # Determine num_panels (num conditions or observables) based on group_by
-    # If axes is not provided, create a figure with subplots (with MAX_NUM_ROWS)
-    
+    #  (with MAX_NUM_ROWS)
+
     # Assign plot formatting based on observables, conditions, and plot_style (get_plot_formatting)
 
     # Loop through each condition:
@@ -141,7 +183,9 @@ def plot_all_measurements(
 
 
 # Function for plotting a single figure
-def plot_measurements(ax: Axes, meas_df: pd.DataFrame, **kwargs):
+def plot_measurements(
+    ax: Axes, meas_df: pd.DataFrame, format_axes_kwargs: Dict[str, Any], **kwargs
+):
     """
     Plot measurement data on a single Axes object using the specified styles
     and any additional keyword arguments.
@@ -172,30 +216,7 @@ def plot_measurements(ax: Axes, meas_df: pd.DataFrame, **kwargs):
     x = meas_df[C.TIME]
     y = meas_df[C.MEASUREMENT]
     ax.plot(x, y, **kwargs)
-
-    # ax.set_xlabel(in_kwargs(customization, 'set_xlabel'))
-    # ax.set_ylabel(in_kwargs(customization, 'set_ylabel'))
-    # ax.set_xlim(in_kwargs(customization, 'set_xlim'))
-    # ax.set_ylim(in_kwargs(customization, 'set_ylim'))
-    # ax.set_title(in_kwargs(customization, 'set_title'))    
-
-# def in_kwargs(customization: Dict, value: str):
-#     default = {'color': 'red',
-#                'marker': None,
-#                'linestyle': '',
-#                'label': None,
-#                'set_xlabel': 'Time',
-#                'set_ylabel': 'Measurement',
-#                'set_xlim': (0, 1),
-#                'set_ylim': (0, 1),
-#                'set_title': 'Plot of Measurements over Time'}
-
-#     if value in customization:
-#         ret = customization[value]
-#     else:
-#         ret = default[value]
-
-#     return ret
+    format_axes(ax, **format_axes_kwargs)
 
 
 def get_color_shades(colormap_name: str, n_shades: int) -> List[str]:
