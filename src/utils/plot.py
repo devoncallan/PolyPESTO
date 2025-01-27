@@ -9,7 +9,7 @@ import petab.v1.C as C
 
 # Function for plotting all measurements data
 def plot_all_measurements(
-    measurements_df: pd.DataFrame,
+    meas_df: pd.DataFrame,
     group_by: str = C.CONDITION_ID,
     axes: List[Axes] = None,
     format_axes_kwargs: Dict[str, Any] = None,
@@ -21,7 +21,7 @@ def plot_all_measurements(
 
     Parameters
     ----------
-    measurements_df : pd.DataFrame
+    meas_df : pd.DataFrame
         A pandas DataFrame containing measurement data. The DataFrame is expected to have columns:
         - C.CONDITION_ID, C.OBSERVABLE_ID, C.TIME, C.MEASUREMENT
     group_by : str, default=C.CONDITION_ID
@@ -65,7 +65,7 @@ def plot_all_measurements(
     Example
     -------
     >>> axes = plot_all_measurements(
-    ...     measurements_df=df,
+    ...     meas_df=df,
     ...     group_by=C.CONDITION_ID,
     ...     plot_style="both",
     ...     format_axes_kwargs={
@@ -81,7 +81,45 @@ def plot_all_measurements(
     """
 
     MAX_NUM_ROWS = 4
+
+    conditions = meas_df[C.CONDITION_ID].unique()
+    observables = meas_df[C.OBSERVABLE_ID].unique()
+
+    if group_by not in ['C.CONDITION_ID','C.OBSERVABLE']:
+        raise ValueError('Invalid group_by value passed in.')
     
+    if group_by is 'C.CONDITION_ID':
+        num_panels = len(conditions)
+    else:
+        num_panels = len(observables)
+
+    if axes is None:
+        fig, axes_list = plt.subplots(1, num_panels)
+        axes_list = axes.flatten() 
+    else:
+        axes_list = axes
+
+    formatting = get_plot_formatting(conditions, observables, plot_style=plot_style)
+
+    for i, condition in enumerate(conditions):
+        for j, observable in enumerate(observables):
+            data = meas_df[(meas_df[C.CONDITION_ID] == condition) & (meas_df[C.OBSERVABLE_ID] == observable)]
+
+            if group_by is 'C.CONDITION_ID':
+                ax = axes_list[i]
+                label = observable
+            else:
+                ax = axes_list[j]
+                label = condition
+
+            color, marker, linestyle = formatting[(observable, condition)]
+
+            plot_measurements(ax, data, label=label, color=color, marker=marker, linestyle=linestyle)
+
+    format_axes(axes_list, **kwargs)
+
+    return axes_list
+
     # Parse the unique conditions and observables
     # group_by must be either C.CONDITION_ID or C.OBSERVABLE_ID (raise ValueError otherwise)
     # Determine num_panels (num conditions or observables) based on group_by
@@ -100,11 +138,10 @@ def plot_all_measurements(
     # Format the axes based on the provided format_axes_kwargs if format_axes_kwargs is not None
 
     # return axes
-    pass
 
 
 # Function for plotting a single figure
-def plot_measurements(ax: Axes, measurements_df: pd.DataFrame, **kwargs):
+def plot_measurements(ax: Axes, meas_df: pd.DataFrame, **kwargs):
     """
     Plot measurement data on a single Axes object using the specified styles
     and any additional keyword arguments.
@@ -113,7 +150,7 @@ def plot_measurements(ax: Axes, measurements_df: pd.DataFrame, **kwargs):
     ----------
     ax : Axes
         A matplotlib Axes object where the data will be plotted.
-    measurements_df : pd.DataFrame
+    meas_df : pd.DataFrame
         A pandas DataFrame containing the data to plot. Must have columns:
         - C.TIME: Time values for the measurements.
         - C.MEASUREMENT: Measurement values to plot.
@@ -128,43 +165,37 @@ def plot_measurements(ax: Axes, measurements_df: pd.DataFrame, **kwargs):
     Example
     -------
     >>> plot_measurements(
-    ...     ax, measurements_df=df, color="blue", marker="o", linestyle="-", label="Sample Data"
+    ...     ax, meas_df=df, color="blue", marker="o", linestyle="-", label="Sample Data"
     ... )
     """
 
-    customization = kwargs
+    x = meas_df[C.TIME]
+    y = meas_df[C.MEASUREMENT]
+    ax.plot(x, y, **kwargs)
 
-    x = measurements_df[C.TIME]
-    y = measurements_df[C.MEASUREMENT]
-    ax.plot(x, y, 
-            color=in_kwargs(customization, 'color'),
-            marker=in_kwargs(customization, 'marker'),
-            linestyle=in_kwargs(customization, 'linestyle'),
-            label=in_kwargs(customization, 'label'))
+    # ax.set_xlabel(in_kwargs(customization, 'set_xlabel'))
+    # ax.set_ylabel(in_kwargs(customization, 'set_ylabel'))
+    # ax.set_xlim(in_kwargs(customization, 'set_xlim'))
+    # ax.set_ylim(in_kwargs(customization, 'set_ylim'))
+    # ax.set_title(in_kwargs(customization, 'set_title'))    
 
-    ax.set_xlabel(in_kwargs(customization, 'set_xlabel'))
-    ax.set_ylabel(in_kwargs(customization, 'set_ylabel'))
-    ax.set_xlim(in_kwargs(customization, 'set_xlim'))
-    ax.set_ylim(in_kwargs(customization, 'set_ylim'))
-    ax.set_title(in_kwargs(customization, 'set_title'))    
+# def in_kwargs(customization: Dict, value: str):
+#     default = {'color': 'red',
+#                'marker': None,
+#                'linestyle': '',
+#                'label': None,
+#                'set_xlabel': 'Time',
+#                'set_ylabel': 'Measurement',
+#                'set_xlim': (0, 1),
+#                'set_ylim': (0, 1),
+#                'set_title': 'Plot of Measurements over Time'}
 
-def in_kwargs(customization: Dict, value: str):
-    default = {'color': 'red',
-               'marker': None,
-               'linestyle': '',
-               'label': None,
-               'set_xlabel': 'Time',
-               'set_ylabel': 'Measurement',
-               'set_xlim': (0, 1),
-               'set_ylim': (0, 1),
-               'set_title': 'Plot of Measurements over Time'}
+#     if value in customization:
+#         ret = customization[value]
+#     else:
+#         ret = default[value]
 
-    if value in customization:
-        ret = customization[value]
-    else:
-        ret = default[value]
-
-    return ret
+#     return ret
 
 
 def get_color_shades(colormap_name: str, n_shades: int) -> List[str]:
