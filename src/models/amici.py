@@ -10,6 +10,8 @@ import petab.v1.C as C
 
 from src.utils import sbml
 from src.utils.params import Parameter
+import src.utils.file as file
+import src.utils.petab as pet
 
 DEFAULT_SOLVER_OPTIONS = {
     "setAbsoluteTolerance": 1e-10,
@@ -113,23 +115,6 @@ def set_model_parameters(
     return model
 
 
-def set_model_parameters(model: amici.Model, parameters: Dict[str, Any]) -> amici.Model:
-    """
-    Sets the parameters of an AMICI model.
-
-    Args:
-        model (amici.Model): The AMICI model.
-        parameters (Dict[str, Any]): The parameters to set.
-
-    Returns:
-        amici.Model: The AMICI model with parameters set.
-    """
-
-    for param_id, value in parameters.items():
-        model.setParameterById(param_id, value)
-    return model
-
-
 def get_solver(model: amici.Model, **solver_options) -> amici.Solver:
 
     # Check if kwarg are valid solver functions and then call the function to set the value
@@ -199,8 +184,9 @@ def get_meas_from_amici_sim(
             }
         )
         meas_dfs.append(obs_meas_df)
-    meas_df = pd.concat(meas_dfs, ignore_index=True)
+    meas_df = pd.concat(meas_dfs)
 
+    meas_df = pet.PetabIO.format_meas_df(meas_df)
     return meas_df
 
 
@@ -239,3 +225,57 @@ def define_measurements_amici(
     if debug_return_rdatas:
         return measurement_df, rdatas
     return measurement_df
+
+
+from src.models.model import Model
+
+
+class AmiciModel(Model):
+
+    def __init__(
+        self,
+        name: str,
+        model: amici.Model,
+        obs_df: pd.DataFrame,
+        model_filepath: file.Filepath,
+        **kwargs,
+    ):
+        super().__init__(
+            name=name, model=model, obs_df=obs_df, model_filepath=model_filepath
+        )
+
+    def simulate(
+        self,
+        t_eval: Sequence[float],
+        conditions: Dict[str, float],
+        cond_id: str = None,
+        **kwargs,
+    ) -> pd.DataFrame:
+
+        # cond_dict = cond_df.loc[conditions].to_dict(orient="records")[0]
+        rdata = run_amici_simulation(self.model, t_eval, conditions, **kwargs)
+        return get_meas_from_amici_sim(rdata, self.obs_df, cond_id=cond_id)
+
+    def set_params(self, parameters: List[Parameter]):
+        self.model = set_model_parameters(self.model, parameters)
+
+
+def create_amici_model(
+    sbml_model_func: sbml.ModelDefinition,
+    obs_df: pd.DataFrame,
+    model_dir: Optional[file.Directory] = None,
+    **kwargs,
+) -> AmiciModel:
+
+    name = sbml_model_func.__name__
+
+    model_filepath, model = load_amici_model_from_definition(
+        model_fun=sbml_model_func,
+        observables_df=obs_df,
+        model_dir=model_dir,
+        **kwargs,
+    )
+
+    return AmiciModel(
+        name=name, model=model, obs_df=obs_df, model_filepath=model_filepath
+    )

@@ -21,8 +21,91 @@ class FitParameter:
 ############################
 
 
+class PetabIO:
+
+    @staticmethod
+    def format_df(
+        df: pd.DataFrame, index_col: str, keep_column: bool = False
+    ) -> pd.DataFrame:
+        # Ensure the column is the index and not duplicated
+        if df.index.name == index_col:
+            # If already indexed correctly, return as is
+            return df
+        elif index_col in df.columns:
+            return df.set_index(index_col, inplace=False, drop=not keep_column)
+        else:
+            raise ValueError(f"Index column '{index_col}' not found in DataFrame.")
+
+    @staticmethod
+    def format_obs_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.OBSERVABLE_ID, keep_column=False)
+
+    @staticmethod
+    def format_cond_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.CONDITION_ID, keep_column=False)
+
+    @staticmethod
+    def format_meas_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.SIMULATION_CONDITION_ID, keep_column=True)
+
+    @staticmethod
+    def format_param_df(df: pd.DataFrame) -> pd.DataFrame:
+        return PetabIO.format_df(df, C.PARAMETER_ID, keep_column=False)
+
+    @staticmethod
+    def read_petab_df(filepath: str, format_func) -> pd.DataFrame:
+        df = pd.read_csv(filepath, sep="\t")  # .reset_index(drop=True)
+        return format_func(df)
+
+    @staticmethod
+    def read_obs_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_obs_df)
+
+    @staticmethod
+    def read_cond_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_cond_df)
+
+    @staticmethod
+    def read_meas_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_meas_df)
+
+    @staticmethod
+    def read_param_df(filepath: str) -> pd.DataFrame:
+        return PetabIO.read_petab_df(filepath, PetabIO.format_param_df)
+
+    @staticmethod
+    def write_df(df: pd.DataFrame, write_func, dir: str = None, filename: str = None):
+        filepath = os.path.join(dir, filename) if dir else filename
+        write_func(df, filepath)
+        return filepath
+
+    @staticmethod
+    def write_obs_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_observable_df, dir, filename)
+
+    @staticmethod
+    def write_cond_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_condition_df, dir, filename)
+
+    @staticmethod
+    def write_meas_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_measurement_df, dir, filename)
+
+    @staticmethod
+    def write_param_df(
+        df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
+    ):
+        return PetabIO.write_df(df, petab.v1.write_parameter_df, dir, filename)
+
+
 def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
-    return pd.DataFrame(
+    df = pd.DataFrame(
         [
             {
                 C.PARAMETER_ID: param.id,
@@ -34,7 +117,8 @@ def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
             }
             for param in params_dict.values()
         ]
-    ).set_index(C.PARAMETER_ID)
+    )  # .set_index(C.PARAMETER_ID)
+    return PetabIO.format_param_df(df)
 
 
 def define_observables(
@@ -44,13 +128,14 @@ def define_observables(
     observable_ids = list(observables.keys())
     observable_formulas = list(observables.values())
 
-    return pd.DataFrame(
+    df = pd.DataFrame(
         data={
             C.OBSERVABLE_ID: [f"obs_{id}" for id in observable_ids],
             C.OBSERVABLE_FORMULA: observable_formulas,
             C.NOISE_FORMULA: [noise_value] * len(observable_ids),
         }
-    ).set_index(C.OBSERVABLE_ID)
+    )  # .set_index(C.OBSERVABLE_ID)
+    return PetabIO.format_obs_df(df)
 
 
 def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFrame:
@@ -69,44 +154,7 @@ def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFra
     conditions[C.CONDITION_ID] = condition_ids
     conditions[C.CONDITION_NAME] = condition_ids
 
-    # Set 'CONDITION_ID' as the index
-    return conditions.set_index(C.CONDITION_ID)
-
-
-def write_cond_df(
-    cond_df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
-):
-
-    cond_filepath = os.path.join(dir, filename) if dir else filename
-    petab.v1.write_condition_df(cond_df, cond_filepath)
-    return cond_filepath
-
-
-def write_meas_df(
-    meas_df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
-):
-
-    meas_filepath = os.path.join(dir, filename) if dir else filename
-    petab.v1.write_measurement_df(meas_df, meas_filepath)
-    return meas_filepath
-
-
-def write_obs_df(
-    obs_df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
-):
-
-    obs_filepath = os.path.join(dir, filename) if dir else filename
-    petab.v1.write_observable_df(obs_df, obs_filepath)
-    return obs_filepath
-
-
-def write_param_df(
-    param_df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
-):
-
-    param_filepath = os.path.join(dir, filename) if dir else filename
-    petab.v1.write_parameter_df(param_df, param_filepath)
-    return param_filepath
+    return PetabIO.format_cond_df(conditions)
 
 
 def write_yaml_file(
@@ -156,10 +204,10 @@ def write_petab_files(
     meas_dir: Optional[str] = None,
 ) -> str:
 
-    obs_filepath = write_obs_df(obs_df, obs_dir)
-    cond_filepath = write_cond_df(cond_df, cond_dir)
-    meas_filepath = write_meas_df(meas_df, meas_dir)
-    param_filepath = write_param_df(param_df, param_dir)
+    obs_filepath = PetabIO.write_obs_df(obs_df, dir=obs_dir)
+    cond_filepath = PetabIO.write_cond_df(cond_df, dir=cond_dir)
+    meas_filepath = PetabIO.write_meas_df(meas_df, dir=meas_dir)
+    param_filepath = PetabIO.write_param_df(param_df, dir=param_dir)
 
     yaml_filepath = write_yaml_file(
         yaml_dir,
