@@ -1,6 +1,6 @@
-import json
 from typing import Any, Dict, List, Optional, TypeAlias
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+import src.utils.file as file
 
 # -------------------------- #
 #          CONSTANTS         #
@@ -63,6 +63,14 @@ class ParameterGroup:
     def get_parameter_sets(self) -> List[ParameterSet]:
         return list(self.parameter_sets.values())
 
+    def write(self, filepath: str, **kwargs):
+        file.write_json(filepath, asdict(self))
+
+    @staticmethod
+    def load(filepath: str, **kwargs):
+        data = file.read_json(filepath)
+        return ParameterGroup(**data)
+
 
 class ParameterContainer:
 
@@ -80,8 +88,7 @@ class ParameterContainer:
 
     @staticmethod
     def from_json(filepath: str) -> "ParameterContainer":
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        data = file.read_json(filepath, encoding="utf-8")
         return ParameterContainerParser._parse_data(data, filepath)
 
     def get_filepath(self) -> Optional[str]:
