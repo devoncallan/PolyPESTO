@@ -9,7 +9,7 @@ import amici
 import petab.v1.C as C
 
 from src.utils import sbml
-from src.utils.params import Parameter
+from src.utils.params import ParameterSet
 import src.utils.file as file
 import src.utils.petab as pet
 
@@ -97,20 +97,20 @@ def load_amici_model(
 
 
 def set_model_parameters(
-    model: amici.Model, parameters: List[Parameter]
+    model: amici.Model, parameters: ParameterSet
 ) -> amici.Model:
     """
     Sets the parameters of an AMICI model.
 
     Args:
         model (amici.Model): The AMICI model.
-        parameters (List[Parameter]): The parameters to set.
+        parameters (Dict[ParameterID, Parameter]): The parameters to set.
 
     Returns:
         amici.Model: The AMICI model with parameters set.
     """
 
-    for param in parameters:
+    for param in parameters.parameters.values():
         model.setParameterByName(param.id, param.value)
     return model
 
@@ -256,11 +256,11 @@ class AmiciModel(Model):
         rdata = run_amici_simulation(self.model, t_eval, conditions, **kwargs)
         return get_meas_from_amici_sim(rdata, self.obs_df, cond_id=cond_id)
 
-    def set_params(self, parameters: List[Parameter]):
+    def set_params(self, parameters: ParameterSet):
         self.model = set_model_parameters(self.model, parameters)
 
 
-def create_amici_model(
+def create_model(
     sbml_model_func: sbml.ModelDefinition,
     obs_df: pd.DataFrame,
     model_dir: Optional[file.Directory] = None,

@@ -22,6 +22,17 @@ ParameterGroupID: TypeAlias = str
 
 @dataclass
 class Parameter:
+    """
+    A single simulation parameter with an ID and a value.
+    
+    Example:
+    ```
+    p = Parameter.from_dict({
+        "id": "k1",
+        "value": 0.1
+    })
+    ```
+    """
     id: ParameterID
     value: Any
 
@@ -32,6 +43,21 @@ class Parameter:
 
 @dataclass
 class ParameterSet:
+    """
+    A collection of parameters that define a single simulation condition.
+    
+    Example:
+    ```
+    ps = ParameterSet.from_dict({
+        "id": "slow_kinetics",
+        "parameters": {
+            "k1": {"id": "k1", "value": 0.1},
+            "k2": {"id": "k2", "value": 0.2},
+        }
+    })
+    ```
+    """
+    
     id: ParameterSetID
     parameters: Dict[ParameterID, Parameter]
 
@@ -59,6 +85,33 @@ class ParameterSet:
 
 @dataclass
 class ParameterGroup:
+    """
+    A collection of parameter sets that define a set of simulation conditions.
+
+    Example:
+    ```
+    pg = ParameterGroup.from_dict({
+        "id": "irreversible kinetics",
+        "parameter_sets": {
+            "slow_kinetics": {
+                "id": "slow_kinetics",
+                "parameters": {
+                    "k1": {"id": "k1", "value": 0.1},
+                    "k2": {"id": "k2", "value": 0.2},
+                }
+            },
+            "fast_kinetics: {
+                "id": "fast_kinetics",
+                "parameters": {
+                    "k1": {"id": "k1", "value": 1.1},
+                    "k2": {"id": "k2", "value": 1.6},
+                }
+            }
+        }
+    })
+    ```
+    """
+
     id: ParameterGroupID
     parameter_sets: Dict[ParameterSetID, ParameterSet]
 

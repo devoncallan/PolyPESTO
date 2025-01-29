@@ -58,7 +58,7 @@ class Model(ABC):
 
         for param_set in param_group.get_parameter_sets():
 
-            self.set_params(param_set.get_parameters())
+            self.set_params(param_set)
 
             meas_dfs_temp = []
             for cond_id, conditions in cond_df.iterrows():
