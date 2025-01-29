@@ -1,10 +1,12 @@
 from src.utils import petab as pet
 from src.models.sbml import CRP2_CPE
 import src.models.amici as am
+import src.models.cpe as cpe
 import pandas as pd
 
 from src.utils.params import ParameterContainer
 from src.petab.dataset import PetabDataset
+from src.utils.plot import plot_all_measurements
 
 import petab.v1.C as C
 
@@ -16,9 +18,10 @@ import os
 ### DEFINING THE FITTING DATASETS ###
 #####################################
 
+
 def create_CRP2_CPE_Model(model_dir: str, force_compile=False) -> am.AmiciModel:
 
-    model = am.create_amici_model(
+    model = am.create_model(
         sbml_model_func=CRP2_CPE,
         obs_df=pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02),
         model_dir=model_dir,
@@ -34,6 +37,11 @@ def create_CRP2_CPE_conditions(fA0s, cM0s) -> pd.DataFrame:
             "B0": (1 - fA0s) * cM0s,
         }
     )
+
+
+def create_CPE_Model() -> cpe.CPEModel:
+    # Call cpe.create_model() with the appropriate arguments
+    return
 
 
 def gen_dataset() -> PetabDataset:
@@ -59,12 +67,17 @@ def gen_dataset() -> PetabDataset:
 
     ds = model.generate_dataset(
         param_group=pg, t_eval=t_eval, cond_df=cond_df, name=ds_name
-    ).write(ds_dir)
+    )  # .write(ds_dir)
 
+    meas_dfs = ds.get_meas_dfs()
+    for id, df in meas_dfs.items():
+        print(f"Parameter set {id}")
+        # print(df)
+        plot_all_measurements(df)
     # Load the dataset
-    ds1 = PetabDataset.load(ds_dir)
+    # ds1 = PetabDataset.load(ds_dir)
 
-    return ds, ds1
+    return ds
 
 
 # def exp_0() -> None:

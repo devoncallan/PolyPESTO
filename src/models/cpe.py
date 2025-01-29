@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.optimize import least_squares
 from scipy.integrate import solve_ivp
 import petab.v1.C as C
+from src.utils.params import ParameterSet
+from src.utils.petab import PetabIO
 
 
 # ------------------------------------------------------------------------
@@ -148,7 +150,7 @@ def dfa_dX_kruger(X, fA, M0, k):
 # ------------------------------------------------------------------------
 # Copolymer Equation Model
 # ------------------------------------------------------------------------
-class Model:
+class CPE:
     """
     Reaction rate constants are passed like so:
         inputs = [kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB]
@@ -170,7 +172,32 @@ class Model:
         }
 
     @staticmethod
-    def from_ratios(inputs: List[float]) -> "Model":
+    def from_param_set(k: ParameterSet):
+        """
+        inputs = [rA, rB, rX, KAA, KAB, KBA, KBB]
+        """
+        rA = k.by_id("rA").value
+        rB = k.by_id("rB").value
+        rX = k.by_id("rX").value
+        KAA = k.by_id("KAA").value
+        KAB = k.by_id("KAB").value
+        KBA = k.by_id("KBA").value
+        KBB = k.by_id("KBB").value
+
+        kpAA = 1.0
+        kpAB = kpAA / rA
+        kpBB = kpAA / rX
+        kpBA = kpBB / rB
+
+        kdAA = KAA * kpAA
+        kdAB = KAB * kpAB
+        kdBA = KBA * kpBA
+        kdBB = KBB * kpBB
+
+        return CPE([kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB])
+
+    @staticmethod
+    def from_ratios(inputs: List[float]) -> "CPE":
         """
         inputs = [rA, rB, rX, KAA, KAB, KBA, KBB]
         """
@@ -186,7 +213,7 @@ class Model:
         kdBA = KBA * kpBA
         kdBB = KBB * kpBB
 
-        return Model([kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB])
+        return CPE([kpAA, kdAA, kpAB, kdAB, kpBA, kdBA, kpBB, kdBB])
 
     def solve(
         self,
@@ -238,7 +265,7 @@ class Model:
 
 
 def run_CPE_sim(
-    model: Model,
+    model: CPE,
     t_eval: Sequence[float],
     conditions: Dict[str, float],
     sigma: float = 0.0,
@@ -307,11 +334,13 @@ def get_meas_from_cpe_sim(
         meas_dfs.append(obs_meas_df)
     meas_df = pd.concat(meas_dfs, ignore_index=True)
 
+    meas_df = PetabIO.format_meas_df(meas_df)
+
     return meas_df
 
 
 def define_measurements_cpe(
-    cpe_model: Model,
+    cpe_model: CPE,
     t_eval: Sequence[float],
     conditions_df: pd.DataFrame,
     observables_df: pd.DataFrame,
@@ -341,3 +370,37 @@ def define_measurements_cpe(
     measurement_df = pd.concat(measurement_dfs, ignore_index=True)
 
     return measurement_df
+
+
+from src.models.model import Model
+
+
+class CPEModel(Model):
+
+    def __init__(
+        self,
+        name: str,
+        model: CPE,
+        obs_df: pd.DataFrame,
+    ):
+        super().__init__(name, model, obs_df)
+
+    def simulate(
+        self,
+        t_eval: List[float],
+        conditions: Dict[str, float],
+        cond_id: str = None,
+        approach: str = "izu",
+        **kwargs,
+    ) -> pd.DataFrame:
+        pass
+
+    def set_params(self, param_set: ParameterSet):
+        pass
+
+
+def create_model(
+    name: str,
+    obs_df: pd.DataFrame,
+) -> CPEModel:
+    return CPEModel(name, None, obs_df)
