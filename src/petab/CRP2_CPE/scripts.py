@@ -41,7 +41,11 @@ def create_CRP2_CPE_conditions(fA0s, cM0s) -> pd.DataFrame:
 
 def create_CPE_Model() -> cpe.CPEModel:
     # Call cpe.create_model() with the appropriate arguments
-    return
+    name = "ODE_CPE"
+    obs_df=pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
+    model = cpe.create_model(name, obs_df)
+
+    return model
 
 
 def gen_dataset() -> PetabDataset:
