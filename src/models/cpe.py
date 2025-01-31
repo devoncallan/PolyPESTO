@@ -393,14 +393,17 @@ class CPEModel(Model):
         approach: str = "izu",
         **kwargs,
     ) -> pd.DataFrame:
-        pass
+       
+       cpe_data = run_CPE_sim(self.model, t_eval, conditions, approach=approach, **kwargs)
+       return get_meas_from_cpe_sim(cpe_data, self.obs_df, cond_id=cond_id)
 
     def set_params(self, param_set: ParameterSet):
-        pass
+        self.model = CPE.from_param_set(param_set)
 
 
 def create_model(
     name: str,
     obs_df: pd.DataFrame,
 ) -> CPEModel:
+    
     return CPEModel(name, None, obs_df)
