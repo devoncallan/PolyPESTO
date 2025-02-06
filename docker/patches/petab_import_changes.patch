@@ -1,0 +1,42 @@
+--- /usr/local/lib/python3.10/dist-packages/petab/v1/problem.py.orig	2025-02-06 22:55:42.643021000 +0000
++++ /usr/local/lib/python3.10/dist-packages/petab/v1/problem.py	2025-02-06 22:55:56.451021007 +0000
+@@ -251,21 +251,28 @@
+         )
+ 
+     @staticmethod
+-    def from_yaml(yaml_config: dict | Path | str) -> Problem:
++    def from_yaml(
++        yaml_config: dict | Path | str, base_path: str | Path = None
++    ) -> Problem:
+         """
+         Factory method to load model and tables as specified by YAML file.
+ 
+         Arguments:
+             yaml_config: PEtab configuration as dictionary or YAML file name
++            base_path: Base directory or URL to resolve relative paths
+         """
+         if isinstance(yaml_config, Path):
+             yaml_config = str(yaml_config)
+ 
+-        get_path = lambda filename: filename  # noqa: E731
+         if isinstance(yaml_config, str):
+-            path_prefix = get_path_prefix(yaml_config)
++            if base_path is None:
++                base_path = get_path_prefix(yaml_config)
+             yaml_config = yaml.load_yaml(yaml_config)
+-            get_path = lambda filename: f"{path_prefix}/{filename}"  # noqa: E731
++
++        def get_path(filename):
++            if base_path is None:
++                return filename
++            return f"{base_path}/{filename}"
+ 
+         if yaml.is_composite_problem(yaml_config):
+             raise ValueError(
+@@ -997,4 +1004,4 @@
+         if OBJECTIVE_PRIOR_PARAMETERS not in self.parameter_df:
+             return 0
+ 
+-        return self.parameter_df[OBJECTIVE_PRIOR_PARAMETERS].notna().sum()
++        return self.parameter_df[OBJECTIVE_PRIOR_PARAMETERS].notna().sum()
+\ No newline at end of file
