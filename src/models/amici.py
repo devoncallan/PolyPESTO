@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from typing import Dict, Sequence, Tuple, Optional, List, Any
+from typing import Dict, Sequence, Optional
 
 import numpy as np
 import pandas as pd
@@ -12,33 +12,28 @@ from src.utils import sbml
 from src.utils.params import ParameterSet
 import src.utils.file as file
 import src.utils.petab as pet
+from src.models.model import Model
 
 DEFAULT_SOLVER_OPTIONS = {
     "setAbsoluteTolerance": 1e-10,
 }
 
-
-def get_amici_model_name_and_output_dir(sbml_model_filepath: str) -> Tuple[str, str]:
-
-    model_name = sbml._model_name_from_filepath(sbml_model_filepath)
-    model_output_dir = os.path.join("/PolyPESTO/amici_models/", model_name)
-
-    return model_name, model_output_dir
+AMICI_MODELS_DIR = "/PolyPESTO/.amici_models/"
 
 
 def compile_amici_model(
-    sbml_model_filepath: str, observables_df: pd.DataFrame, verbose=False
+    name: str,
+    output_dir: str,
+    sbml_filepath: str,
+    observables_df: pd.DataFrame,
+    verbose=False,
 ):
 
-    # Define the amici output directory
-    model_name, model_output_dir = get_amici_model_name_and_output_dir(
-        sbml_model_filepath
-    )
-
     # Clear the output directory if it exists
-    if os.path.exists(model_output_dir):
-        print(f"Cleaning existing directory: {model_output_dir}")
-        shutil.rmtree(model_output_dir)
+    # Replace with file module function
+    if os.path.exists(output_dir):
+        print(f"Cleaning existing directory: {output_dir}")
+        shutil.rmtree(output_dir)
 
     observables = {
         str(observable_id): {"formula": str(formula)}
@@ -50,69 +45,13 @@ def compile_amici_model(
     if verbose:
         verbose = logging.DEBUG
 
-    sbml_importer = amici.SbmlImporter(sbml_model_filepath)
+    sbml_importer = amici.SbmlImporter(sbml_filepath)
     sbml_importer.sbml2amici(
-        model_name,
-        model_output_dir,
+        name,
+        output_dir,
         verbose=verbose,
         observables=observables,
     )
-
-
-def load_amici_model_from_definition(
-    model_fun: sbml.ModelDefinition,
-    observables_df: pd.DataFrame,
-    model_dir: str,
-    **kwargs,
-) -> Tuple[str, amici.Model]:
-
-    sbml_model_filepath = sbml.write_model(model_fun=model_fun, model_dir=model_dir)
-
-    validator = sbml.validateSBML(ucheck=False)
-    validator.validate(sbml_model_filepath)
-
-    model = load_amici_model(
-        sbml_model_filepath, observables_df=observables_df, **kwargs
-    )
-
-    return sbml_model_filepath, model
-
-
-def load_amici_model(
-    sbml_model_filepath: str,
-    observables_df: pd.DataFrame,
-    force_compile=False,
-    verbose=False,
-) -> amici.Model:
-
-    if force_compile:
-        compile_amici_model(sbml_model_filepath, observables_df, verbose=verbose)
-
-    model_name, model_output_dir = get_amici_model_name_and_output_dir(
-        sbml_model_filepath
-    )
-
-    model_module = amici.import_model_module(model_name, model_output_dir)
-    return model_module.getModel()
-
-
-def set_model_parameters(
-    model: amici.Model, parameters: ParameterSet
-) -> amici.Model:
-    """
-    Sets the parameters of an AMICI model.
-
-    Args:
-        model (amici.Model): The AMICI model.
-        parameters (Dict[ParameterID, Parameter]): The parameters to set.
-
-    Returns:
-        amici.Model: The AMICI model with parameters set.
-    """
-
-    for param in parameters.parameters.values():
-        model.setParameterByName(param.id, param.value)
-    return model
 
 
 def get_solver(model: amici.Model, **solver_options) -> amici.Solver:
@@ -190,46 +129,6 @@ def get_meas_from_amici_sim(
     return meas_df
 
 
-def define_measurements_amici(
-    model: amici.Model,
-    t_eval: Sequence[float],
-    conditions_df: pd.DataFrame,
-    observables_df: pd.DataFrame,
-    obs_sigma: float = 0.00,
-    meas_sigma: float = 0.005,
-    solver: Optional[amici.Solver] = None,
-    debug_return_rdatas: bool = False,
-) -> pd.DataFrame | Tuple[pd.DataFrame, List[amici.ReturnDataView]]:
-
-    measurement_dfs = []
-    rdatas = []
-
-    for cond_id, row in conditions_df.iterrows():
-        # Extract conditions for this row as a dictionary
-        conditions = row.to_dict()
-
-        # Run the simulation with these conditions
-        rdata = run_amici_simulation(
-            model, t_eval, conditions, sigma=meas_sigma, solver=solver
-        )
-        rdatas.append(rdata)
-
-        # Generate measurements from the simulation
-        meas_df = get_meas_from_amici_sim(
-            rdata, observables_df, cond_id=str(cond_id), obs_sigma=obs_sigma
-        )
-        measurement_dfs.append(meas_df)
-
-    measurement_df = pd.concat(measurement_dfs, ignore_index=True)
-
-    if debug_return_rdatas:
-        return measurement_df, rdatas
-    return measurement_df
-
-
-from src.models.model import Model
-
-
 class AmiciModel(Model):
 
     def __init__(
@@ -252,30 +151,36 @@ class AmiciModel(Model):
         **kwargs,
     ) -> pd.DataFrame:
 
-        # cond_dict = cond_df.loc[conditions].to_dict(orient="records")[0]
         rdata = run_amici_simulation(self.model, t_eval, conditions, **kwargs)
         return get_meas_from_amici_sim(rdata, self.obs_df, cond_id=cond_id)
 
     def set_params(self, parameters: ParameterSet):
-        self.model = set_model_parameters(self.model, parameters)
+        for param in parameters.parameters.values():
+            self.model.setParameterByName(param.id, param.value)
 
 
 def create_model(
-    sbml_model_func: sbml.ModelDefinition,
+    model_def: sbml.ModelDefinition,
     obs_df: pd.DataFrame,
     model_dir: Optional[file.Directory] = None,
-    **kwargs,
+    force_compile: bool = False,
+    verbose: bool = False,
 ) -> AmiciModel:
+    """
+    Model dir is the name of the SBML model output directory"""
 
-    name = sbml_model_func.__name__
+    name = model_def.__name__
 
-    model_filepath, model = load_amici_model_from_definition(
-        model_fun=sbml_model_func,
-        observables_df=obs_df,
-        model_dir=model_dir,
-        **kwargs,
-    )
+    sbml_filepath = sbml.write_model(name, model_def, model_dir)
+
+    amici_dir = os.path.join(AMICI_MODELS_DIR, name)
+
+    if force_compile:
+        compile_amici_model(name, amici_dir, sbml_filepath, obs_df, verbose=verbose)
+
+    model_module = amici.import_model_module(name, amici_dir)
+    model = model_module.getModel()
 
     return AmiciModel(
-        name=name, model=model, obs_df=obs_df, model_filepath=model_filepath
+        name=name, model=model, obs_df=obs_df, model_filepath=sbml_filepath
     )

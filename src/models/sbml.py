@@ -1,14 +1,6 @@
 import libsbml
 from src.utils import sbml
-from typing import Tuple, List, Callable
-
-##########################
-### Create SBML models ###
-##########################
-
-
-
-
+from typing import Tuple, List
 
 #######################
 ### Robertson Model ###

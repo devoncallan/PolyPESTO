@@ -9,23 +9,18 @@ import src.models.amici as am
 import src.models.cpe as cpe
 
 
-def create_Amici_model(model_dir: str, force_compile=False) -> am.AmiciModel:
+def create_amici_model(model_dir: str, **kwargs) -> am.AmiciModel:
 
-    model = am.create_model(
-        sbml_model_func=CRP2_CPE,
-        obs_df=pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02),
+    return am.create_model(
+        model_def=CRP2_CPE,
+        obs_df=default_observables(),
         model_dir=model_dir,
-        force_compile=force_compile,
+        **kwargs,
     )
-    return model
 
 
 def create_ODE_model() -> cpe.CPEModel:
-    name = "ODE_CPE"
-    obs_df = pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
-    model = cpe.create_model(name, obs_df)
-
-    return model
+    return cpe.create_model("ODE_CPE", default_observables())
 
 
 def create_conditions_df(fA0s, cM0s) -> pd.DataFrame:
@@ -90,6 +85,10 @@ def default_params() -> Dict[str, pet.FitParameter]:
             estimate=False,
         ),
     }
+
+
+def default_observables() -> pd.DataFrame:
+    return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
 
 
 ### DEFINE THE MODEL TO FIT ###

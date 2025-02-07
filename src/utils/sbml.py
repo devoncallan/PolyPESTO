@@ -12,30 +12,18 @@ Model: TypeAlias = libsbml.Model
 ModelDefinition: TypeAlias = Callable[[], Tuple[Document, Model]]
 
 
-def write_model(model_fun: ModelDefinition, model_dir: str) -> str:
+def write_model(name: str, model_def: ModelDefinition, model_dir: str) -> str:
     """Writes an SBML model from the given file path."""
-    document, model = model_fun()
+    document, model = model_def()
 
-    model_filepath = os.path.join(model_dir, f"{model_fun.__name__}.xml")
+    model_filepath = os.path.join(model_dir, f"{name}.xml")
 
     _save_sbml(document, model_filepath)
+
+    validator = validateSBML(ucheck=False)
+    validator.validate(model_filepath)
+
     return model_filepath
-
-
-def visualize_model(model_filename: str, output_filename: str = "Model.jpg") -> None:
-
-    df = SBMLDiagrams.load(model_filename)
-
-    # df.autolayout()
-    df.draw(output_fileName=output_filename)
-
-
-def _base_Model_filepath(model_name: str) -> str:
-    return f"/PolyPESTO/src/models/{model_name}/{model_name}.xml"
-
-
-def _model_name_from_filepath(model_filepath: str) -> str:
-    return os.path.basename(os.path.dirname(model_filepath))
 
 
 def _save_sbml(document: Document, model_filepath: str):
@@ -48,6 +36,14 @@ def _save_sbml(document: Document, model_filepath: str):
 
     with open(model_filepath, "w") as f:
         f.write(model_xml_string)
+
+
+def visualize_model(model_filename: str, output_filename: str = "Model.jpg") -> None:
+
+    df = SBMLDiagrams.load(model_filename)
+
+    # df.autolayout()
+    df.draw(output_fileName=output_filename)
 
 
 #####################################
@@ -309,6 +305,11 @@ def _add_termination_event(model: Model, formula: str = "") -> libsbml.Event:
     )  # Stop immediately when the condition is met
 
     return termination_event
+
+
+###############################################
+### SBML logical operators helper functions ###
+###############################################
 
 
 def _and(a: str, b: str) -> str:
