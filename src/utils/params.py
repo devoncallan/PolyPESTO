@@ -24,7 +24,7 @@ ParameterGroupID: TypeAlias = str
 class Parameter:
     """
     A single simulation parameter with an ID and a value.
-    
+
     Example:
     ```
     p = Parameter.from_dict({
@@ -33,6 +33,7 @@ class Parameter:
     })
     ```
     """
+
     id: ParameterID
     value: Any
 
@@ -45,7 +46,7 @@ class Parameter:
 class ParameterSet:
     """
     A collection of parameters that define a single simulation condition.
-    
+
     Example:
     ```
     ps = ParameterSet.from_dict({
@@ -57,7 +58,7 @@ class ParameterSet:
     })
     ```
     """
-    
+
     id: ParameterSetID
     parameters: Dict[ParameterID, Parameter]
 
@@ -123,6 +124,13 @@ class ParameterGroup:
         }
         return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
 
+    def add(self, parameter_set: ParameterSet):
+        if parameter_set.id in self.parameter_sets:
+            raise KeyError(
+                f"ParameterSet ID '{parameter_set.id}' already exists in ParameterGroup '{self.id}'."
+            )
+        self.parameter_sets[parameter_set.id] = parameter_set
+
     def by_id(self, parameter_set_id: ParameterSetID) -> ParameterSet:
         if parameter_set_id not in self.parameter_sets:
             raise KeyError(
@@ -145,39 +153,39 @@ class ParameterGroup:
         return ParameterGroup.from_dict(data)
 
 
+@dataclass
 class ParameterContainer:
 
-    def __init__(
-        self,
-        required_param_ids: List[ParameterID],
-        all_parameter_sets: ParameterGroup,
-        named_groups: Dict[ParameterGroupID, List[ParameterSetID]],
-        filepath: Optional[str] = None,
-    ):
-        self.required_param_ids = required_param_ids
-        self.all_parameter_sets = all_parameter_sets
-        self.named_groups = named_groups
-        self.filepath = filepath
+    required_param_ids: List[ParameterID]
+    all_parameter_sets: ParameterGroup
+    named_groups: Dict[ParameterGroupID, List[ParameterSetID]]
+    filepath: Optional[str] = None
 
     @staticmethod
     def from_json(filepath: str) -> "ParameterContainer":
         data = file.read_json(filepath, encoding="utf-8")
         return ParameterContainerParser._parse_data(data, filepath)
 
-    def get_filepath(self) -> Optional[str]:
-        return self.filepath
+    def add_set(self, parameter_set: ParameterSet):
+        self.all_parameter_sets.add(parameter_set)
 
-    def get_required_parameter_ids(self) -> List[ParameterID]:
-        return self.required_param_ids
+    def add_named_group(self, group_id: ParameterGroupID, group: ParameterGroup):
+        if group_id in self.named_groups:
+            raise KeyError(f"ParameterGroup ID '{group_id}' already exists.")
 
-    def get_parameter_set_ids(self) -> List[ParameterSetID]:
-        return self.all_parameter_sets.get_ids()
+        # Get all parameters set ids in group that aren't in the all_parameter_sets
+        diff = [
+            set_id
+            for set_id in group.get_ids()
+            if set_id not in self.all_parameter_sets.get_ids()
+        ]
 
-    def get_parameter_set(self, set_id: ParameterSetID) -> ParameterSet:
-        return self.all_parameter_sets.by_id(set_id)
+        if len(diff) > 0:
+            raise KeyError(
+                f"ParameterGroup '{group_id}' references an undefined ParameterSetIDs ({diff})."
+            )
 
-    def get_named_groups(self) -> List[ParameterGroupID]:
-        return list(self.named_groups.keys())
+        self.named_groups[group_id] = group.get_ids()
 
     def get_parameter_group(self, group_id: ParameterGroupID) -> ParameterGroup:
         parameter_set_ids = self.named_groups.get(group_id, [])
@@ -188,6 +196,35 @@ class ParameterContainer:
                 for set_id in parameter_set_ids
             },
         )
+
+    def combine_groups(
+        self, group_ids: List[ParameterGroupID], group_id=None
+    ) -> ParameterGroup:
+        parameter_sets = {}
+        for id in group_ids:
+            pg = self.get_parameter_group(id)
+            parameter_sets.update(pg.parameter_sets)
+
+        if group_id is None:
+            group_id = "_".join(group_ids)
+
+        pg = ParameterGroup(id=group_id, parameter_sets=parameter_sets)
+        self.add_named_group(group_id, pg)
+
+        return pg
+
+    def write(self, filepath: str):
+        out = {
+            KEY_REQUIRED_PARAMS: self.required_param_ids,
+            KEY_PARAMETER_GROUPS: self.named_groups,
+            KEY_PARAMETER_SETS: {
+                param_set.id: {
+                    param.id: param.value for param in param_set.get_parameters()
+                }
+                for param_set in self.all_parameter_sets.get_parameter_sets()
+            },
+        }
+        file.write_json(filepath, out)
 
 
 # -------------------------- #
