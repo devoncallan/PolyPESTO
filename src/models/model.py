@@ -67,7 +67,7 @@ class Model(ABC):
                 meas_df = self.simulate(t_eval, conditions, cond_id=cond_id, **kwargs)
                 meas_dfs_temp.append(meas_df)
 
-            meas_df = pd.concat(meas_dfs_temp)#, #ignore_index=True)
+            meas_df = pd.concat(meas_dfs_temp)
             meas_dfs[param_set.id] = meas_df
 
         return PetabDataset(
@@ -76,4 +76,5 @@ class Model(ABC):
             cond_df=cond_df,
             param_group=param_group,
             meas_dfs=meas_dfs,
+            model_filepath=self.model_filepath,
         )
