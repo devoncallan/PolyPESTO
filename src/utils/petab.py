@@ -1,13 +1,46 @@
 import os
-from typing import Dict, Iterable, Tuple, Sequence, List, Optional
+from typing import Dict, Tuple, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 import petab
 import petab.v1.C as C
 
+from src.utils.paths import PetabPaths
+from src.utils import sbml
+from src.utils.params import ParameterGroup, ParameterSetID
+
+
+@dataclass
+class PetabData:
+    """
+    Simple data container for grouping PEtab dataframes together.
+    """
+
+    obs_df: pd.DataFrame
+    cond_df: pd.DataFrame
+    param_df: pd.DataFrame
+    meas_df: pd.DataFrame
+
+
+@dataclass
+class FitParameter:
+    """
+    Simple data container for defining a PEtab fit parameter.
+    """
+
+    id: str
+    scale: str
+    bounds: Tuple[float, float]
+    nominal_value: float
+    estimate: bool
+
 
 class PetabIO:
+    """
+    Namespace for reading and writing PEtab files.
+    """
 
     ##########################
     ### Format PETab files ###
@@ -120,7 +153,7 @@ class PetabIO:
             yaml_file=yaml_filepath,
             relative_paths=False,
         )
-        problem = petab.v1.Problem.from_yaml(yaml_filepath)
+        problem = petab.v1.Problem.from_yaml(yaml_filepath, base_path="")
         petab.v1.lint.lint_problem(problem)
 
         return yaml_filepath
@@ -129,15 +162,6 @@ class PetabIO:
 ############################
 ### Define petab problem ###
 ############################
-
-
-@dataclass
-class FitParameter:
-    id: str
-    scale: str
-    bounds: Tuple[float, float]
-    nominal_value: float
-    estimate: bool
 
 
 def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
@@ -153,7 +177,7 @@ def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
             }
             for param in params_dict.values()
         ]
-    )  # .set_index(C.PARAMETER_ID)
+    )
     return PetabIO.format_param_df(df)
 
 
@@ -170,7 +194,7 @@ def define_observables(
             C.OBSERVABLE_FORMULA: observable_formulas,
             C.NOISE_FORMULA: [noise_value] * len(observable_ids),
         }
-    )  # .set_index(C.OBSERVABLE_ID)
+    )
     return PetabIO.format_obs_df(df)
 
 
@@ -191,3 +215,86 @@ def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFra
     conditions[C.CONDITION_NAME] = condition_ids
 
     return PetabIO.format_cond_df(conditions)
+
+
+def define_empty_measurements(
+    observables_df: pd.DataFrame,
+    conditions_df: pd.DataFrame,
+    timepoints: Sequence[float] | Sequence[Sequence[float]] = None,
+) -> pd.DataFrame:
+    """Create empty measurements DataFrame with specified timepoints.
+
+    Args:
+        observables_df: DataFrame with observable definitions
+        conditions_df: DataFrame with condition definitions
+        timepoints: Either:
+            - Sequence[float]: Same timepoints used for all conditions
+            - Sequence[Sequence[float]]: Different timepoints per condition
+            - None: Defaults to [0] for all conditions
+    """
+    if timepoints is None:
+        timepoints = [0]
+
+    # If single sequence provided, use for all conditions
+    if not isinstance(timepoints[0], (list, tuple)):
+        timepoints = [timepoints] * len(conditions_df)
+
+    meas_dfs = []
+    for (cond_id, _), cond_times in zip(conditions_df.iterrows(), timepoints):
+        cond_meas_dfs = []
+        for obs_id, _ in observables_df.iterrows():
+            cond_meas_dfs.append(
+                pd.DataFrame(
+                    {
+                        C.OBSERVABLE_ID: [obs_id] * len(cond_times),
+                        C.SIMULATION_CONDITION_ID: [cond_id] * len(cond_times),
+                        C.TIME: cond_times,
+                        C.MEASUREMENT: [0] * len(cond_times),
+                    }
+                )
+            )
+        meas_df = pd.concat(cond_meas_dfs)
+        meas_dfs.append(meas_df)
+
+    meas_df = pd.concat(meas_dfs)
+    return PetabIO.format_meas_df(meas_df)
+    # return PetabIO.format_meas_df(meas_df)
+
+
+def write_initial_petab(
+    base_dir: str | Path,
+    model_def: sbml.ModelDefinition,
+    pg: ParameterGroup,
+    data: PetabData,
+) -> PetabPaths:
+
+    model_name = str(model_def.__name__)
+    paths = PetabPaths(base_dir)
+
+    os.makedirs(paths.common_dir, exist_ok=True)
+
+    sbml_filepath = sbml.write_model(
+        model_def=model_def, model_filepath=paths.model(model_name)
+    )
+
+    PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
+    PetabIO.write_cond_df(data.cond_df, filename=paths.conditions)
+    PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
+
+    for p_id in pg.get_ids():
+        os.makedirs(paths.exp_dir(p_id), exist_ok=True)
+
+        # Write the true parameters to file
+        pg.by_id(p_id).write(paths.params(p_id))
+
+        PetabIO.write_meas_df(data.meas_df, filename=paths.measurements(p_id))
+        PetabIO.write_yaml(
+            yaml_filepath=str(paths.petab_yaml(p_id)),
+            sbml_filepath=sbml_filepath,
+            cond_filepath=paths.conditions,
+            meas_filepath=paths.measurements(p_id),
+            obs_filepath=paths.observables,
+            param_filepath=paths.fit_parameters,
+        )
+
+    return paths
