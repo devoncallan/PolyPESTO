@@ -2,13 +2,88 @@ import libsbml
 from src.utils import sbml
 from typing import Tuple, List
 
+#############################
+### Binary Reaction Model ###
+#############################
+
+# A -k1-> B
+# B -k2-> A
+
+
+def equilibrium() -> sbml.ModelDefinition:
+    print("Creating SBML model (Simple Chemical Equilibrium).")
+    document, model = sbml._create_model()
+
+    # Create compartment (0D since we're dealing with concentrations)
+    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+
+    # Define rate constants (k1 for A->B, k2 for B->A)
+    k1 = sbml._create_parameter(model, "k1", value=0.5)
+    k2 = sbml._create_parameter(model, "k2", value=0.5)
+
+    A = sbml._create_species(model, "A", initialAmount=1.0)
+    B = sbml._create_species(model, "B", initialAmount=0.0)
+
+    # dx/dt = k2*y - k1*x
+    sbml._create_rate_rule(
+        model, A, formula="k2*B - k1*A"
+    )
+
+    # dy/dt = k1*x - k2*y
+    sbml._create_rate_rule(
+        model, B, formula="k1*A - k2*B"
+    )
+
+    return document, model
+
+def equilibrium_rxn() -> sbml.ModelDefinition:
+    print("Creating SBML model (Simple Chemical Equilibrium).")
+    document, model = sbml._create_model()
+    
+    # Create compartment (0D since we're dealing with concentrations)
+    c = sbml._create_compartment(model, "c", spatialDimensions=3)
+    
+    # Define rate constants (k1 for A->B, k2 for B->A)
+    k1 = sbml._create_parameter(model, "k1", value=0.5)
+    k2 = sbml._create_parameter(model, "k2", value=0.5)
+    
+    A = sbml._create_species(model, "A", initialAmount=1.0)
+    B = sbml._create_species(model, "B", initialAmount=0.0)
+    
+    # Define reactions
+    # Syntax: (reaction_id, {reactants: stoich}, {products: stoich}, kinetic_law)
+    reactions = [
+        # First propagation
+        (
+            "forward_rxn",
+            {"A": 1},
+            {"B": 1},
+            "k1*A",
+        ),
+        (
+            "backward_rxn",
+            {"B": 1},
+            {"A": 1},
+            "k2*B",
+        ),
+    ]
+    
+    print("Creating reactions.")
+    generated_reactions = []
+    for r in reactions:  # (reaction_id, reactants_dict, products_dict, kinetic_law)
+        reaction = sbml._create_reaction(model, r[0], r[1], r[2], r[3])
+        generated_reactions.append(reaction)
+        
+    return document, model
+
+
 #######################
 ### Robertson Model ###
 #######################
 
-# r1: A -k1-> B
-# r2: 2B -k2-> B + C
-# r3: B + C -k3-> A + C
+# A -k1-> B
+# B + B -k2-> B + C
+# B + C -k3-> A + C
 
 
 def define_rob_rate_constants(model: sbml.Model) -> List[libsbml.Parameter]:
@@ -31,7 +106,7 @@ def define_rob_species(model: sbml.Model) -> List[libsbml.Species]:
     return [A, B, C]
 
 
-def robertson_dae() -> Tuple[sbml.Document, sbml.Model]:
+def robertson_dae() -> sbml.ModelDefinition:
 
     print("Creating SBML model (Robertson).")
 
@@ -52,7 +127,7 @@ def robertson_dae() -> Tuple[sbml.Document, sbml.Model]:
     return document, model
 
 
-def robertson_rxn() -> Tuple[sbml.Document, sbml.Model]:
+def robertson_rxn() -> sbml.ModelDefinition:
 
     print("Creating SBML model (Robertson).")
 
@@ -137,7 +212,7 @@ def define_CRP_rate_constants(
     return [kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB]
 
 
-def CRP2_CPE() -> Tuple[sbml.Document, sbml.Model]:
+def CRP2_CPE() -> sbml.ModelDefinition:
 
     print("Creating SBML model (CRP2_CPE).")
 
@@ -215,7 +290,7 @@ def CRP2_CPE() -> Tuple[sbml.Document, sbml.Model]:
 
 
 # ODE Model
-def CRP2_ODE() -> Tuple[sbml.Document, sbml.Model]:
+def CRP2_CPE_rxn() -> sbml.ModelDefinition:
 
     print(f"Creating SBML model (CRP2_v1).")
 
@@ -420,5 +495,44 @@ def CRP2_ODE() -> Tuple[sbml.Document, sbml.Model]:
     for r in reactions:  # (reaction_id, reactants_dict, products_dict, kinetic_law)
         reaction = sbml._create_reaction(model, r[0], r[1], r[2], r[3])
         generated_reactions.append(reaction)
+
+    return document, model
+
+
+############################
+### Lotka-Volterra Model ###
+############################
+
+
+def LotkaVolterra() -> sbml.ModelDefinition:
+    print("Creating SBML model (Lotka-Volterra).")
+    document, model = sbml._create_model()
+
+    c = sbml._create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+
+    # alpha (prey growth), beta (predation rate)
+    # delta (predator reproduction), gamma (predator death)
+    alpha = sbml._create_parameter(model, "alpha", value=1.0)
+    beta = sbml._create_parameter(model, "beta", value=0.5)
+    delta = sbml._create_parameter(model, "delta", value=0.5)
+    gamma = sbml._create_parameter(model, "gamma", value=0.5)
+
+    # Define species (prey x and predator y)
+    x = sbml._create_species(model, "x", initialAmount=10.0)
+    y = sbml._create_species(model, "y", initialAmount=5.0)
+
+    # dx/dt = αx - βxy
+    sbml._create_rate_rule(
+        model,
+        x,
+        formula="alpha*x - beta*x*y",
+    )
+
+    # dy/dt = δxy - γy
+    sbml._create_rate_rule(
+        model,
+        y,
+        formula="delta*x*y - gamma*y",
+    )
 
     return document, model

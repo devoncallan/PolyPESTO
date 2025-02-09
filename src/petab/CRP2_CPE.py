@@ -1,22 +1,36 @@
 from typing import Dict
 
+import numpy as np
 import pandas as pd
-import petab.v1.C as C
 
-from src.utils import petab as pet
-from src.models.sbml import CRP2_CPE
-import src.models.amici as am
+import src.utils.petab as pet
 import src.models.cpe as cpe
 
+##########################
+### DEFINED PETAB DATA ###
+##########################
+### All functions should take no arguments and return a pet.PetabData object
 
-def create_amici_model(model_dir: str, **kwargs) -> am.AmiciModel:
 
-    return am.create_model(
-        model_def=CRP2_CPE,
-        obs_df=default_observables(),
-        model_dir=model_dir,
-        **kwargs,
+def exp_0() -> pet.PetabData:
+
+    t_eval = list(np.arange(0, 1, 0.1, dtype=float))
+    fA0s = np.array([0.25, 0.5, 0.75, 0.1], dtype=float)
+    cM0s = np.array([1.0, 1.0, 1.0, 1.0], dtype=float)
+
+    cond_df = create_conditions_df(fA0s, cM0s)
+    obs_df = default_observables()
+    param_df = default_parameters()
+    empty_meas_df = pet.define_empty_measurements(obs_df, cond_df, t_eval)
+
+    return pet.PetabData(
+        obs_df=obs_df, cond_df=cond_df, param_df=param_df, meas_df=empty_meas_df
     )
+
+
+##############################
+### PETAB HELPER FUNCTIONS ###
+##############################
 
 
 def create_ODE_model() -> cpe.CPEModel:
@@ -32,7 +46,16 @@ def create_conditions_df(fA0s, cM0s) -> pd.DataFrame:
     )
 
 
-def default_params() -> Dict[str, pet.FitParameter]:
+############################
+### PETAB DEFAULT INPUTS ###
+############################
+
+
+def default_conditions() -> pd.DataFrame:
+    return create_conditions_df([1.0], [1.0])
+
+
+def default_fit_params() -> Dict[str, pet.FitParameter]:
 
     return {
         "rA": pet.FitParameter(
@@ -87,23 +110,9 @@ def default_params() -> Dict[str, pet.FitParameter]:
     }
 
 
+def default_parameters() -> pd.DataFrame:
+    return pet.define_parameters(default_fit_params())
+
+
 def default_observables() -> pd.DataFrame:
     return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
-
-
-### DEFINE THE MODEL TO FIT ###
-# - Define the model (CRP2_CPE)
-# - Define the fitting paramters (model) range of values, estimate or not, etc.
-
-### DEFINE THE FITTING ROUTINES ###
-# - Define a set of pypesto fitting routines to run
-
-### RUN AND SAVE THE FITTING ROUTINES ###
-# - Run pypesto fitting routines
-# - Save figures and results
-
-
-### Tool to compare the results ###
-# - Import the results
-# - See results from a specific parameter set
-# -
