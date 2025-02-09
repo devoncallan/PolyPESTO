@@ -12,11 +12,9 @@ Model: TypeAlias = libsbml.Model
 ModelDefinition: TypeAlias = Callable[[], Tuple[Document, Model]]
 
 
-def write_model(name: str, model_def: ModelDefinition, model_dir: str) -> str:
+def write_model(model_def: ModelDefinition, model_filepath: str) -> str:
     """Writes an SBML model from the given file path."""
     document, model = model_def()
-
-    model_filepath = os.path.join(model_dir, f"{name}.xml")
 
     _save_sbml(document, model_filepath)
 

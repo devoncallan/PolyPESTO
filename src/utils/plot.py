@@ -35,6 +35,7 @@ def plot_all_measurements(
     axes: List[Axes] = None,
     format_axes_kwargs: Dict[str, Any] = {},
     plot_style: str = "lines",
+    dpi=150,
     **kwargs,
 ) -> List[Axes]:
     """
@@ -123,7 +124,7 @@ def plot_all_measurements(
             num_cols,
             figsize=(5 * num_cols, 5 * num_rows),
             squeeze=False,
-            dpi=150,
+            dpi=dpi,
         )
         axes = axes.flatten()
 
@@ -162,24 +163,6 @@ def plot_all_measurements(
             ax.legend()
 
     return axes
-
-    # group_by must be either C.CONDITION_ID or C.OBSERVABLE_ID (raise ValueError otherwise)
-    # Determine num_panels (num conditions or observables) based on group_by
-    #  (with MAX_NUM_ROWS)
-
-    # Assign plot formatting based on observables, conditions, and plot_style (get_plot_formatting)
-
-    # Loop through each condition:
-    #    Loop through each observable:
-    #       Get subset of dataframe for given condition/observable
-    #       Get the relevant axes (based on group_by) to plot the data
-    #       Get the label (condition or observable, based on group_by)
-    #       Get color, marker, and linestyle from above
-    #       Plot data. Pass in color, marker, linestyle, AND **kwargs
-
-    # Format the axes based on the provided format_axes_kwargs if format_axes_kwargs is not None
-
-    # return axes
 
 
 # Function for plotting a single figure

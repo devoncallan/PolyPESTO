@@ -70,6 +70,17 @@ class ParameterSet:
         }
         return ParameterSet(id=data["id"], parameters=parameters)
 
+    @staticmethod
+    def load(filepath: str, **kwargs):
+        data = file.read_json(filepath)
+        return ParameterSet.from_dict(data)
+
+    def write(self, filepath: str, **kwargs):
+        file.write_json(filepath, asdict(self))
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {param.id: param.value for param in self.parameters.values()}
+
     def by_id(self, parameter_id: ParameterID) -> Parameter:
         if parameter_id not in self.parameters:
             raise KeyError(
