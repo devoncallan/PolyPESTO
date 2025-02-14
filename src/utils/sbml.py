@@ -35,7 +35,7 @@ def _base_Model_filepath(model_name: str) -> str:
 
 
 def _model_name_from_filepath(model_filepath: str) -> str:
-    return os.path.basename(os.path.dirname(model_filepath))
+    return os.path.splitext(os.path.basename(model_filepath))[0]
 
 
 def _save_sbml(document: Document, model_filepath: str):

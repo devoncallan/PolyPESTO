@@ -19,7 +19,7 @@ import os
 #####################################
 
 
-def create_CRP2_CPE_Model(model_dir: str, force_compile=False) -> am.AmiciModel:
+def create_CRP2_CPE_Amici(model_dir: str, force_compile=False) -> am.AmiciModel:
 
     model = am.create_model(
         sbml_model_func=CRP2_CPE,
@@ -39,7 +39,7 @@ def create_CRP2_CPE_conditions(fA0s, cM0s) -> pd.DataFrame:
     )
 
 
-def create_CPE_Model() -> cpe.CPEModel:
+def create_CRP2_CPE_ODE() -> cpe.CPEModel:
     # Call cpe.create_model() with the appropriate arguments
     name = "ODE_CPE"
     obs_df=pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
