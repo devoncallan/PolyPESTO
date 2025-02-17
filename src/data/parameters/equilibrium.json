@@ -1,0 +1,25 @@
+{
+  "REQUIRED_PARAMETERS": ["k1", "k2"],
+  "PARAMETER_GROUPS": {
+    "Fast": ["fast_eq", "fast_nonequal"],
+    "Slow": ["slow_eq", "slow_nonequal"]
+  },
+  "PARAMETER_SETS": {
+    "fast_eq": {
+      "k1": 1.0,
+      "k2": 1.0
+    },
+    "fast_nonequal": {
+      "k1": 2.0,
+      "k2": 0.5
+    },
+    "slow_eq": {
+      "k1": 0.1,
+      "k2": 0.1
+    },
+    "slow_nonequal": {
+      "k1": 0.2,
+      "k2": 0.05
+    }
+  }
+}

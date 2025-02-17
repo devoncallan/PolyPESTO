@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from src.utils.params import ParameterSet, ParameterGroup, ParameterSetID
-from src.petab.dataset import PetabDataset
+from src._petab.dataset import PetabDataset
 from typing import Any, Dict, List, Optional
 import pandas as pd
 

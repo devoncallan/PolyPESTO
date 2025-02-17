@@ -7,6 +7,7 @@ from scipy.integrate import solve_ivp
 import petab.v1.C as C
 from src.utils.params import ParameterSet
 from src.utils.petab import PetabIO
+from src.models.model import Model
 
 
 # ------------------------------------------------------------------------
@@ -370,9 +371,6 @@ def define_measurements_cpe(
     measurement_df = pd.concat(measurement_dfs, ignore_index=True)
 
     return measurement_df
-
-
-from src.models.model import Model
 
 
 class CPEModel(Model):

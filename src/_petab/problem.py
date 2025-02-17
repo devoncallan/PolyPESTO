@@ -9,7 +9,7 @@ import os
 from typing import Dict, Any, List, Sequence, Optional
 import src.utils.petab as pet
 from src.utils.file import Filename, Filepath, Directory
-from src.petab.dataset import PetabDataset
+from petab.dataset import PetabDataset
 
 PETAB_DIRNAME = "petab"
 PYPESTO_DIRNAME = "pypesto"
