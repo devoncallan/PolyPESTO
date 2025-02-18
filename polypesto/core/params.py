@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, TypeAlias
 from dataclasses import dataclass, asdict
-import src.utils.file as file
+
+import polypesto.utils.file as file
 
 # -------------------------- #
 #          CONSTANTS         #

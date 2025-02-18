@@ -5,9 +5,9 @@ import pandas as pd
 from scipy.optimize import least_squares
 from scipy.integrate import solve_ivp
 import petab.v1.C as C
-from src.utils.params import ParameterSet
-from src.utils.petab import PetabIO
-from src.models.model import Model
+from polypesto.core.params import ParameterSet
+from polypesto.core.petab import PetabIO
+from polypesto.models.model import Model
 
 
 # ------------------------------------------------------------------------

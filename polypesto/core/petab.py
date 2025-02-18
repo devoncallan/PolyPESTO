@@ -7,9 +7,9 @@ import pandas as pd
 import petab
 import petab.v1.C as C
 
-from src.utils.paths import PetabPaths
-from src.utils import sbml
-from src.utils.params import ParameterGroup, ParameterSetID
+from polypesto.utils.paths import PetabPaths
+from polypesto.utils import sbml
+from polypesto.core.params import ParameterGroup, ParameterSetID
 
 
 @dataclass
@@ -259,6 +259,11 @@ def define_empty_measurements(
     meas_df = pd.concat(meas_dfs)
     return PetabIO.format_meas_df(meas_df)
     # return PetabIO.format_meas_df(meas_df)
+
+
+#########################
+### Write PETab files ###
+#########################
 
 
 def write_initial_petab(

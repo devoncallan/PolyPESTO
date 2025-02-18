@@ -1,16 +1,9 @@
 from typing import Dict
 
+import numpy as np
 import pandas as pd
 
-from src.utils import petab as pet
-
-##########################
-### DEFINED PETAB DATA ###
-##########################
-### All functions should take no arguments and return a pet.PetabData object
-
-def exp_0() -> pet.PetabData:
-    pass
+import polypesto.core.petab as pet
 
 ##############################
 ### PETAB HELPER FUNCTIONS ###

@@ -1,9 +1,10 @@
-import pandas as pd
+from typing import List, Dict, Any, Union, Tuple, Optional
+
 from matplotlib import pyplot as plt
 from matplotlib.axes import Axes
 import matplotlib.cm as cm
 import matplotlib.colors as colors
-from typing import List, Dict, Any, Union, Tuple, Optional
+import pandas as pd
 import petab.v1.C as C
 
 # Grid sizing lookup table

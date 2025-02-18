@@ -1,5 +1,5 @@
 import libsbml
-from src.utils import sbml
+from polypesto.utils import sbml
 from typing import Tuple, List
 
 #############################

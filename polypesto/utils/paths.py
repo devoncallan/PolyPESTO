@@ -32,10 +32,9 @@ model:
 - exp_1:
     - ...
 """
-
-
-
 class PetabPaths:
+    """Manages pathing for PEtab data"""
+    
     def __init__(self, base_dir: str | Path):
         self.base = str(Path(base_dir))
 
@@ -93,6 +92,7 @@ class PetabPaths:
 
 
 class PyPestoPaths:
+    """Manages pathing for PyPESTO data"""
 
     def __init__(self, name: str, base_path: str | Path):
         self.name = name

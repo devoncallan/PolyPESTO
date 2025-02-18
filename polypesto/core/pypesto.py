@@ -1,23 +1,20 @@
 from typing import Dict
 import os
 
+import pandas as pd
+import numpy as np
 import pypesto
 from pypesto.petab import PetabImporter
-import src.utils.petab as pet
+import polypesto.core.petab as pet
 
 from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
-from src.utils.params import ParameterGroup, ParameterSet
-from src.utils.paths import PetabPaths
-
-
-import src.utils.sbml as sbml
-import pandas as pd
-
-
-import numpy as np
+from polypesto.core.params import ParameterGroup, ParameterSet
+from polypesto.utils.paths import PetabPaths
+import polypesto.utils.sbml as sbml
 
 AMICI_MODELS_DIR = "/PolyPESTO/amici_models/"
 FITTING_DIR = "/PolyPESTO/src/data/fitting/"
+
 
 def load_pypesto_problem(yaml_path: str, model_name: str, **kwargs):
 
@@ -42,10 +39,10 @@ def create_problem_set(
     pg: ParameterGroup,
     data: pet.PetabData,
     force_compile=False,
-    data_dir: str = FITTING_DIR
+    data_dir: str = FITTING_DIR,
 ) -> Dict[str, str]:
     """Create Petab problem set by simulating data.
-    
+
     :param model_def:
         SBML Model definition.
     :param pg:
@@ -56,11 +53,11 @@ def create_problem_set(
         Force recompilation of model.
     :param data_dir:
         Directory to save data.
-        
+
     :return:
         Dictionary of YAML paths for each parameter set in ``pg``.
     """
-    
+
     data_dir = os.path.join(data_dir, model_def.__name__)
 
     # Write without simulated data first
