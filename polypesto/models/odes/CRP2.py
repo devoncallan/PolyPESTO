@@ -373,35 +373,35 @@ def define_measurements_cpe(
     return measurement_df
 
 
-class CPEModel(Model):
+# class CPEModel(Model):
 
-    def __init__(
-        self,
-        name: str,
-        model: CPE,
-        obs_df: pd.DataFrame,
-    ):
-        super().__init__(name, model, obs_df)
+#     def __init__(
+#         self,
+#         name: str,
+#         model: CPE,
+#         obs_df: pd.DataFrame,
+#     ):
+#         super().__init__(name, model, obs_df)
 
-    def simulate(
-        self,
-        t_eval: List[float],
-        conditions: Dict[str, float],
-        cond_id: str = None,
-        approach: str = "izu",
-        **kwargs,
-    ) -> pd.DataFrame:
+#     def simulate(
+#         self,
+#         t_eval: List[float],
+#         conditions: Dict[str, float],
+#         cond_id: str = None,
+#         approach: str = "izu",
+#         **kwargs,
+#     ) -> pd.DataFrame:
        
-       cpe_data = run_CPE_sim(self.model, t_eval, conditions, approach=approach, **kwargs)
-       return get_meas_from_cpe_sim(cpe_data, self.obs_df, cond_id=cond_id)
+#        cpe_data = run_CPE_sim(self.model, t_eval, conditions, approach=approach, **kwargs)
+#        return get_meas_from_cpe_sim(cpe_data, self.obs_df, cond_id=cond_id)
 
-    def set_params(self, param_set: ParameterSet):
-        self.model = CPE.from_param_set(param_set)
+#     def set_params(self, param_set: ParameterSet):
+#         self.model = CPE.from_param_set(param_set)
 
 
-def create_model(
-    name: str,
-    obs_df: pd.DataFrame,
-) -> CPEModel:
+# def create_model(
+#     name: str,
+#     obs_df: pd.DataFrame,
+# ) -> CPEModel:
     
-    return CPEModel(name, None, obs_df)
+#     return CPEModel(name, None, obs_df)
