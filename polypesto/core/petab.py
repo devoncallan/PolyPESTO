@@ -1,5 +1,6 @@
 import os
-from typing import Dict, Tuple, Sequence
+from typing import Dict, Tuple, Sequence, Callable
+from functools import wraps
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -8,8 +9,10 @@ import petab
 import petab.v1.C as C
 
 from polypesto.utils.paths import PetabPaths
-from polypesto.utils import sbml
+from polypesto.models import sbml
 from polypesto.core.params import ParameterGroup, ParameterSetID
+
+
 
 
 @dataclass
@@ -22,6 +25,7 @@ class PetabData:
     cond_df: pd.DataFrame
     param_df: pd.DataFrame
     meas_df: pd.DataFrame
+    name: str = None
 
 
 @dataclass
@@ -159,6 +163,16 @@ class PetabIO:
         return yaml_filepath
 
 
+def store_function_name(func: Callable) -> Callable:
+    @wraps(func)
+    def wrapper(*args, **kwargs) -> PetabData:
+        petab_data = func(*args, **kwargs)
+        petab_data.name = func.__name__
+        return petab_data
+
+    return wrapper
+
+
 ############################
 ### Define petab problem ###
 ############################
@@ -267,16 +281,17 @@ def define_empty_measurements(
 
 
 def write_initial_petab(
-    base_dir: str | Path,
     model_def: sbml.ModelDefinition,
     pg: ParameterGroup,
     data: PetabData,
+    model_dir: str,
 ) -> PetabPaths:
 
-    model_name = str(model_def.__name__)
-    paths = PetabPaths(base_dir)
-
-    os.makedirs(paths.common_dir, exist_ok=True)
+    model_name = os.path.basename(model_dir)
+    exp_name = str(data.name)
+    data_dir = os.path.join(model_dir, "data", exp_name)
+    paths = PetabPaths(data_dir)
+    print(paths.base_dir)
 
     sbml_filepath = sbml.write_model(
         model_def=model_def, model_filepath=paths.model(model_name)
@@ -287,7 +302,7 @@ def write_initial_petab(
     PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
 
     for p_id in pg.get_ids():
-        os.makedirs(paths.exp_dir(p_id), exist_ok=True)
+        paths.make_exp_dir(p_id)
 
         # Write the true parameters to file
         pg.by_id(p_id).write(paths.params(p_id))

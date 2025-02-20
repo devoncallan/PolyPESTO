@@ -201,6 +201,8 @@ class ParameterContainer:
 
     def get_parameter_group(self, group_id: ParameterGroupID) -> ParameterGroup:
         parameter_set_ids = self.named_groups.get(group_id, [])
+        if not parameter_set_ids:
+            raise KeyError(f"ParameterGroup '{group_id}' not found in {self.filepath}.")
         return ParameterGroup(
             id=group_id,
             parameter_sets={

@@ -32,14 +32,6 @@ def visualize_model(model_filename: str, output_filename: str = "Model.jpg") -> 
     df.draw(output_fileName=output_filename)
 
 
-# def _base_Model_filepath(model_name: str) -> str:
-#     return f"/PolyPESTO/src/models/{model_name}/{model_name}.xml"
-
-
-def _model_name_from_filepath(model_filepath: str) -> str:
-    return os.path.splitext(os.path.basename(model_filepath))[0]
-
-
 def _save_sbml(document: Document, model_filepath: str):
     """Outputs the given model string to the given filename."""
     model_xml_string = libsbml.writeSBMLToString(document)

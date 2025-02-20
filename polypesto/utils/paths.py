@@ -1,48 +1,31 @@
+import os
 from pathlib import Path
 from typing import Dict
 
-"""
-
-model:
-- exp_0:
-    - petab:
-        - common
-            - conditions.tsv
-            - observables.tsv
-            - parameters.tsv
-            - model.xml
-            - all_params.json
-        - p_0:
-            - params.json
-            - measurements.tsv
-            - petab.yaml
-        - p_1:
-            - params.json
-            - measurements.tsv
-            - petab.yaml
-        - ...
-    - figures:
-        - measurements:
-            - p_0_measurements.png
-            - p_1_measurements.png
-        - pypesto:
-            - ...
-    - pypesto:
-        - ...
-- exp_1:
-    - ...
-"""
 class PetabPaths:
     """Manages pathing for PEtab data"""
     
     def __init__(self, base_dir: str | Path):
-        self.base = str(Path(base_dir))
+        self.base_dir = str(Path(base_dir))
+        self.make_dirs()
+        
+    def make_dirs(self):
+        # Should be data directory
+        parent_dir = os.path.dirname(self.base_dir)
+        # Should be model directory
+        grandparent_dir = os.path.dirname(parent_dir)
+        
+        os.makedirs(grandparent_dir, exist_ok=True)
+        os.makedirs(parent_dir, exist_ok=True)
+        os.makedirs(self.base_dir, exist_ok=True)
+        os.makedirs(self.petab_dir, exist_ok=True)
+        os.makedirs(self.common_dir, exist_ok=True)
 
     ### Directories
 
     @property
     def petab_dir(self) -> str:
-        return f"{self.base}/petab"
+        return f"{self.base_dir}/petab"
 
     @property
     def common_dir(self) -> str:
@@ -50,6 +33,9 @@ class PetabPaths:
 
     def exp_dir(self, p_id: str) -> str:
         return f"{self.petab_dir}/{p_id}"
+    
+    def make_exp_dir(self, p_id: str):
+        os.makedirs(self.exp_dir(p_id), exist_ok=True)
 
     ### Common paths
 
@@ -96,12 +82,12 @@ class PyPestoPaths:
 
     def __init__(self, name: str, base_path: str | Path):
         self.name = name
-        self.base = Path(base_path)
+        self.base_dir = Path(base_path)
 
     @property
     def pypesto_dir(self) -> str:
-        return f"{self.base}/pypesto"
+        return f"{self.base_dir}/pypesto"
     
     @property
     def figures_dir(self) -> str:
-        return f"{self.base}/figures"
+        return f"{self.base_dir}/figures"
