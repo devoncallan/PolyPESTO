@@ -7,7 +7,7 @@ from pypesto.petab import PetabImporter
 from polypesto.utils.paths import PetabPaths
 from polypesto.core.petab import PetabData, PetabIO
 from polypesto.core.params import ParameterGroup, ParameterSet
-from polypesto.models import sbml
+from polypesto.models import sbml, ModelInterface
 
 
 def load_pypesto_problem(yaml_path: str, model_name: str, **kwargs):
@@ -30,17 +30,13 @@ def write_initial_petab(
     model_def: sbml.ModelDefinition,
     pg: ParameterGroup,
     data: PetabData,
-    model_dir: str,
+    dir: str,
 ) -> PetabPaths:
-
-    model_name = os.path.basename(model_dir)
-    exp_name = str(data.name)
-    data_dir = os.path.join(model_dir, "data", exp_name)
-    paths = PetabPaths(data_dir)
-    print(paths.base_dir)
+    
+    paths = PetabPaths(dir)
 
     sbml_filepath = sbml.write_model(
-        model_def=model_def, model_filepath=paths.model(model_name)
+        model_def=model_def, model_dir=paths.common_dir
     )
 
     PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
@@ -67,9 +63,10 @@ def write_initial_petab(
 
 
 def create_problem_set(
-    model_def: sbml.ModelDefinition,
+    model: ModelInterface,
     pg: ParameterGroup,
     data: PetabData,
+    dir: str,
     force_compile=False,
 ) -> Dict[str, str]:
     """Create Petab problem set by simulating data.
@@ -87,11 +84,12 @@ def create_problem_set(
         Dictionary of YAML paths for each parameter set in ``pg``.
     """
 
-    model_name = str(model_def.__name__)
-    model_dir = f"/PolyPESTO/experiments/{model_name}"
+    model_name = model.name
+    os.makedirs(os.path.dirname(dir), exist_ok=True)
+    os.makedirs(dir, exist_ok=True)
 
     # Write without simulated data first
-    paths = write_initial_petab(model_def, pg, data, model_dir=model_dir)
+    paths = write_initial_petab(model.sbml_model_def(), pg, data, dir=dir)
 
     yaml_paths = paths.find_yaml_paths()
     yaml_path = list(yaml_paths.values())[0]
@@ -99,8 +97,9 @@ def create_problem_set(
     importer, problem = load_pypesto_problem(
         yaml_path, str(model_name), force_compile=force_compile
     )
-
+    
     for p_id, yaml_path in yaml_paths.items():
+        print(f"Simulating data for {p_id}...")
 
         params_path = paths.params(p_id)
         params = ParameterSet.load(params_path).to_dict()
@@ -119,4 +118,4 @@ def create_problem_set(
 
         PetabIO.write_meas_df(meas_df, filename=paths.measurements(p_id))
 
-    return model_name, yaml_paths
+    return yaml_paths

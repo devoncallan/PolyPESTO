@@ -1,22 +1,21 @@
-# Define Object
-
-# Define SBML model
-from typing import Dict
+from typing import Dict, Tuple
 import pandas as pd
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
 
-from polypesto.models import sbml
+from polypesto.models import sbml, ModelInterface
 from .common import define_irreversible_k
 
 
-class IrreversibleCPE(sbml.ModelInterface):
+class IrreversibleCPE(ModelInterface):
     """Irreversible Copolymerization Equation Model"""
 
+    name: str = "irreversible_cpe"
+
     @staticmethod
-    def create_sbml_model() -> sbml.ModelDefinition:
-        return irreversible_cpe()
+    def sbml_model_def() -> sbml.ModelDefinition:
+        return irreversible_cpe
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
@@ -47,7 +46,7 @@ class IrreversibleCPE(sbml.ModelInterface):
             "rX": pet.FitParameter(
                 id="rX",
                 scale=pet.C.LOG10,
-                bounds=(1e-3, 1e3),
+                bounds=(1e-2, 1e2),
                 nominal_value=1.0,
                 estimate=False,
             ),
@@ -59,18 +58,19 @@ class IrreversibleCPE(sbml.ModelInterface):
 
     @staticmethod
     def get_default_observables() -> pd.DataFrame:
-        return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
+        return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.00)
 
     @staticmethod
     def get_default_conditions() -> pd.DataFrame:
         return IrreversibleCPE.create_conditions_df([1], [1])
 
 
-def irreversible_cpe() -> sbml.ModelDefinition:
+def irreversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
 
-    print("Creating SBML model: irreversible_cpe")
+    name = IrreversibleCPE.name
+    print(f"Creating SBML model: {name}")
 
-    document, model = sbml.create_model()
+    document, model = sbml.create_model(name)
     c = sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
 
     (kpAA, kpAB, kpBA, kpBB) = define_irreversible_k(model)

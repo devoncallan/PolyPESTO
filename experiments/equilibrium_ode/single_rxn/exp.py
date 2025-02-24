@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('webagg')
 import matplotlib.pyplot as plt
 
-from polypesto.models.CRP2 import IrreversibleCPE as Model
+from polypesto.models.equilibrium import EquilibriumODE as Model
 from polypesto.core.params import ParameterGroup
 import polypesto.core.petab as pet
 from polypesto.core.pypesto import create_problem_set, load_pypesto_problem
@@ -31,13 +31,14 @@ DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 # ************** Define parameters **************
 def parameters() -> ParameterGroup:
-    rA = [0.1, 0.5, 1.0, 2.0, 10.0]
-    rB = [0.1, 0.5, 1.0, 2.0, 10.0]
+
+    k1 = [0.1]
+    k2 = [0.5]
 
     pg = ParameterGroup(DIR_NAME, {})
-    for _rA in rA:
-        for _rB in rB:
-            pg.lazy_add({"rA": _rA, "rB": _rB})
+    for _k1 in k1:
+        for _k2 in k2:
+            pg.lazy_add({"k1": _k1, "k2": _k2})
 
     return pg
 

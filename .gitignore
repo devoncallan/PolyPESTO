@@ -176,3 +176,4 @@ amici_models/
 .vscode/
 polypesto/_models/*
 _experiments/
+experiments/**/data/

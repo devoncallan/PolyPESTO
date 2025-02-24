@@ -1,24 +1,22 @@
-# Define Object
-
-# Define SBML model
-from typing import Dict
+from typing import Dict, Tuple
 import pandas as pd
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup
+from polypesto.models import sbml, ModelInterface
 
-from polypesto.models import sbml
-from .. import define_irreversible_k
-
-from .irreversible_cpe import IrreversibleCPE
+from .common import define_irreversible_k
+from .equilibrium_ode import IrreversibleCPE
 
 
-class IrreversibleRxn(sbml.ModelInterface):
+class IrreversibleRxn(ModelInterface):
     """Irreversible Copolymerization ODE (Reaction) Model"""
 
+    name: str = "irreversible_rxn"
+
     @staticmethod
-    def create_sbml_model() -> sbml.ModelDefinition:
-        return irreversible_rxn()
+    def sbml_model_def() -> sbml.ModelDefinition:
+        return irreversible_rxn
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
@@ -41,11 +39,12 @@ class IrreversibleRxn(sbml.ModelInterface):
         return IrreversibleCPE.get_default_conditions()
 
 
-def irreversible_rxn() -> sbml.ModelDefinition:
+def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
 
-    print(f"Creating SBML model: irreversible_ode")
+    name = IrreversibleRxn.name
+    print(f"Creating SBML model: {name}")
 
-    document, model = sbml.create_model()
+    document, model = sbml.create_model(name)
     c = sbml.create_compartment(model, "c")
 
     print("Creating species.")

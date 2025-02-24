@@ -12,9 +12,11 @@ Model: TypeAlias = libsbml.Model
 ModelDefinition: TypeAlias = Callable[[], Tuple[Document, Model]]
 
 
-def write_model(model_def: ModelDefinition, model_filepath: str) -> str:
+def write_model(model_def: ModelDefinition, model_dir: str) -> str:
     """Writes an SBML model from the given file path."""
     document, model = model_def()
+    
+    model_filepath = os.path.join(model_dir, f"{model.getName()}.xml")
 
     _save_sbml(document, model_filepath)
 
@@ -86,15 +88,17 @@ def _check(value, message):
         return
 
 
-def create_model() -> Tuple[Document, Model]:
+def create_model(name: str) -> Tuple[Document, Model]:
 
     try:
         document = Document(SBML_LEVEL, SBML_VERSION)
     except ValueError:
         raise SystemExit("Could not create SBMLDocumention object")
 
-    model = document.createModel()
+    model: Model = document.createModel()
+
     _check(model, "create model")
+    _check(model.setName(name), "set model name")
     _check(model.setTimeUnits("second"), "set model-wide time units")
     _check(model.setExtentUnits("mole"), "set model units of extent")
     _check(model.setSubstanceUnits("mole"), "set model substance units")

@@ -1,23 +1,22 @@
-# Define Object
-
-# Define SBML model
-from typing import Dict
+from typing import Dict, Tuple
 import pandas as pd
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
 
-from polypesto.models import sbml
+from polypesto.models import sbml, ModelInterface
 from .common import define_reversible_k
-from .irreversible_cpe import IrreversibleCPE
+from .equilibrium_ode import IrreversibleCPE
 
 
-class ReversibleCPE(sbml.ModelInterface):
+class ReversibleCPE(ModelInterface):
     """Irreversible Copolymerization Equation Model"""
 
+    name: str = "reversible_cpe"
+
     @staticmethod
-    def create_sbml_model() -> sbml.ModelDefinition:
-        return reversible_cpe()
+    def sbml_model_def() -> sbml.ModelDefinition:
+        return reversible_cpe
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
@@ -89,16 +88,13 @@ class ReversibleCPE(sbml.ModelInterface):
     def get_default_conditions() -> pd.DataFrame:
         return IrreversibleCPE.create_conditions([1], [1])
 
-    @staticmethod
-    def get_simulation_parameters() -> ParameterGroup:
-        return define_simulation_parameters()
 
+def reversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
 
-def reversible_cpe() -> sbml.ModelDefinition:
+    name = ReversibleCPE.name
+    print(f"Creating SBML model: {name}")
 
-    print("Creating SBML model: reversible_cpe")
-
-    document, model = sbml.create_model()
+    document, model = sbml.create_model(name)
     c = sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
 
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_reversible_k(
@@ -166,12 +162,3 @@ def reversible_cpe() -> sbml.ModelDefinition:
     is_valid_xA = sbml.create_parameter(model, "is_valid_xA", value=1)
 
     return document, model
-
-
-def define_simulation_parameters() -> ParameterGroup:
-
-    pg = ParameterGroup()
-
-    # .add("fast", [rA, rB, rX, KAA, KAB, KBA, KBB])
-    # .add("slow", [kdAA, kdAB, kdBA, kdBB])
-    pass

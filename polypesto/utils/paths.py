@@ -10,13 +10,8 @@ class PetabPaths:
         self.make_dirs()
         
     def make_dirs(self):
-        # Should be data directory
-        parent_dir = os.path.dirname(self.base_dir)
-        # Should be model directory
-        grandparent_dir = os.path.dirname(parent_dir)
         
-        os.makedirs(grandparent_dir, exist_ok=True)
-        os.makedirs(parent_dir, exist_ok=True)
+        # os.makedirs(parent_dir, exist_ok=True)
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(self.petab_dir, exist_ok=True)
         os.makedirs(self.common_dir, exist_ok=True)

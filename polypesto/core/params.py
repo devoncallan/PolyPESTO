@@ -72,6 +72,16 @@ class ParameterSet:
         return ParameterSet(id=data["id"], parameters=parameters)
 
     @staticmethod
+    def lazy_from_dict(
+        data: Dict[ParameterID, Any], id: Optional[ParameterSetID] = "default_id"
+    ) -> "ParameterSet":
+        parameters = {
+            param_id: Parameter(id=param_id, value=param_data)
+            for param_id, param_data in data.items()
+        }
+        return ParameterSet(id=id, parameters=parameters)
+
+    @staticmethod
     def load(filepath: str, **kwargs):
         data = file.read_json(filepath)
         return ParameterSet.from_dict(data)
@@ -137,11 +147,22 @@ class ParameterGroup:
         return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
 
     def add(self, parameter_set: ParameterSet):
+        if not self.parameter_sets:
+            self.parameter_sets = {parameter_set.id: parameter_set}
+            return
+
         if parameter_set.id in self.parameter_sets:
             raise KeyError(
                 f"ParameterSet ID '{parameter_set.id}' already exists in ParameterGroup '{self.id}'."
             )
+
         self.parameter_sets[parameter_set.id] = parameter_set
+
+    def lazy_add(self, params: Dict[ParameterID, Any]):
+
+        id = f"p_{len(self.parameter_sets):03d}"
+        param_set = ParameterSet.lazy_from_dict(params, id=id)
+        self.add(param_set)
 
     def by_id(self, parameter_set_id: ParameterSetID) -> ParameterSet:
         if parameter_set_id not in self.parameter_sets:

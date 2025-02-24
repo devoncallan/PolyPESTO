@@ -1,23 +1,25 @@
 # Define Object
 
 # Define SBML model
-from typing import Dict
+from typing import Dict, Tuple
 import pandas as pd
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup
 
-from polypesto.models import sbml
+from polypesto.models import sbml, ModelInterface
 from .common import define_reversible_k
 from .reversible_cpe import ReversibleCPE
 
 
-class ReversibleRxn(sbml.ModelInterface):
+class ReversibleRxn(ModelInterface):
     """Reversible Copolymerization ODE (Reaction) Model"""
 
+    name: str = "reversible_rxn"
+
     @staticmethod
-    def create_sbml_model() -> sbml.ModelDefinition:
-        return reversible_rxn()
+    def sbml_model_def() -> sbml.ModelDefinition:
+        return reversible_rxn
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
@@ -39,16 +41,13 @@ class ReversibleRxn(sbml.ModelInterface):
     def get_default_conditions() -> pd.DataFrame:
         return ReversibleCPE.create_conditions([1], [1])
 
-    @staticmethod
-    def get_simulation_parameters() -> ParameterGroup:
-        return ReversibleCPE.get_simulation_parameters()
 
+def reversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
 
-def reversible_rxn() -> sbml.ModelDefinition:
-
-    print(f"Creating SBML model reversible_ode")
-
-    document, model = sbml.create_model()
+    name = ReversibleRxn.name
+    print(f"Creating SBML model: {name}")
+    
+    document, model = sbml.create_model(name)
     c = sbml.create_compartment(model, "c")
 
     print("Creating species.")
