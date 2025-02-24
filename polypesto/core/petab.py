@@ -2,17 +2,10 @@ import os
 from typing import Dict, Tuple, Sequence, Callable
 from functools import wraps
 from dataclasses import dataclass
-from pathlib import Path
 
 import pandas as pd
 import petab
 import petab.v1.C as C
-
-from polypesto.utils.paths import PetabPaths
-from polypesto.models import sbml
-from polypesto.core.params import ParameterGroup, ParameterSetID
-
-
 
 
 @dataclass
@@ -273,48 +266,3 @@ def define_empty_measurements(
     meas_df = pd.concat(meas_dfs)
     return PetabIO.format_meas_df(meas_df)
     # return PetabIO.format_meas_df(meas_df)
-
-
-#########################
-### Write PETab files ###
-#########################
-
-
-def write_initial_petab(
-    model_def: sbml.ModelDefinition,
-    pg: ParameterGroup,
-    data: PetabData,
-    model_dir: str,
-) -> PetabPaths:
-
-    model_name = os.path.basename(model_dir)
-    exp_name = str(data.name)
-    data_dir = os.path.join(model_dir, "data", exp_name)
-    paths = PetabPaths(data_dir)
-    print(paths.base_dir)
-
-    sbml_filepath = sbml.write_model(
-        model_def=model_def, model_filepath=paths.model(model_name)
-    )
-
-    PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
-    PetabIO.write_cond_df(data.cond_df, filename=paths.conditions)
-    PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
-
-    for p_id in pg.get_ids():
-        paths.make_exp_dir(p_id)
-
-        # Write the true parameters to file
-        pg.by_id(p_id).write(paths.params(p_id))
-
-        PetabIO.write_meas_df(data.meas_df, filename=paths.measurements(p_id))
-        PetabIO.write_yaml(
-            yaml_filepath=str(paths.petab_yaml(p_id)),
-            sbml_filepath=sbml_filepath,
-            cond_filepath=paths.conditions,
-            meas_filepath=paths.measurements(p_id),
-            obs_filepath=paths.observables,
-            param_filepath=paths.fit_parameters,
-        )
-
-    return paths

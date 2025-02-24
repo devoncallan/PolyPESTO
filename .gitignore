@@ -171,8 +171,8 @@ cython_debug/
 .pypirc
 
 # Any PETAB data that is generated
-experiments/CRP2_CPE/data/
-experiments/LV/data/
-experiments/equilibrium/data/
+experiments/*/data/
 amici_models/
 .vscode/
+polypesto/_models/*
+_experiments/

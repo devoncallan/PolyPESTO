@@ -1,15 +1,13 @@
 from typing import Dict
 import os
 
-import pandas as pd
-import numpy as np
-import pypesto
-from pypesto.petab import PetabImporter
-import polypesto.core.petab as pet
-
 from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
+from pypesto.petab import PetabImporter
+
+from polypesto.utils.paths import PetabPaths
+from polypesto.core.petab import PetabData, PetabIO
 from polypesto.core.params import ParameterGroup, ParameterSet
-import polypesto.models.sbml as sbml
+from polypesto.models import sbml
 
 
 def load_pypesto_problem(yaml_path: str, model_name: str, **kwargs):
@@ -23,11 +21,55 @@ def load_pypesto_problem(yaml_path: str, model_name: str, **kwargs):
 
     return importer, problem
 
+#########################
+### Write PETab files ###
+#########################
+
+
+def write_initial_petab(
+    model_def: sbml.ModelDefinition,
+    pg: ParameterGroup,
+    data: PetabData,
+    model_dir: str,
+) -> PetabPaths:
+
+    model_name = os.path.basename(model_dir)
+    exp_name = str(data.name)
+    data_dir = os.path.join(model_dir, "data", exp_name)
+    paths = PetabPaths(data_dir)
+    print(paths.base_dir)
+
+    sbml_filepath = sbml.write_model(
+        model_def=model_def, model_filepath=paths.model(model_name)
+    )
+
+    PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
+    PetabIO.write_cond_df(data.cond_df, filename=paths.conditions)
+    PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
+
+    for p_id in pg.get_ids():
+        paths.make_exp_dir(p_id)
+
+        # Write the true parameters to file
+        pg.by_id(p_id).write(paths.params(p_id))
+
+        PetabIO.write_meas_df(data.meas_df, filename=paths.measurements(p_id))
+        PetabIO.write_yaml(
+            yaml_filepath=str(paths.petab_yaml(p_id)),
+            sbml_filepath=sbml_filepath,
+            cond_filepath=paths.conditions,
+            meas_filepath=paths.measurements(p_id),
+            obs_filepath=paths.observables,
+            param_filepath=paths.fit_parameters,
+        )
+
+    return paths
+
 
 def create_problem_set(
     model_def: sbml.ModelDefinition,
     pg: ParameterGroup,
-    data: pet.PetabData,
+    data: PetabData,
     force_compile=False,
 ) -> Dict[str, str]:
     """Create Petab problem set by simulating data.
@@ -49,7 +91,7 @@ def create_problem_set(
     model_dir = f"/PolyPESTO/experiments/{model_name}"
 
     # Write without simulated data first
-    paths = pet.write_initial_petab(model_def, pg, data, model_dir=model_dir)
+    paths = write_initial_petab(model_def, pg, data, model_dir=model_dir)
 
     yaml_paths = paths.find_yaml_paths()
     yaml_path = list(yaml_paths.values())[0]
@@ -75,6 +117,6 @@ def create_problem_set(
             importer.petab_problem.measurement_df,
         )
 
-        pet.PetabIO.write_meas_df(meas_df, filename=paths.measurements(p_id))
+        PetabIO.write_meas_df(meas_df, filename=paths.measurements(p_id))
 
     return model_name, yaml_paths
