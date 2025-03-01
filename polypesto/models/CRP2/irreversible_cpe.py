@@ -18,11 +18,32 @@ class IrreversibleCPE(ModelInterface):
         return irreversible_cpe
 
     @staticmethod
-    def create_conditions(fA0s, cM0s) -> pd.DataFrame:
+    def create_conditions(fA0, cM0, **kwargs) -> pd.DataFrame:
+        """
+        Create conditions dataframe for the model.
+        
+        Parameters
+        ----------
+        fA0 : List[float] or float
+            Feed fraction of monomer A
+        cM0 : List[float] or float
+            Total monomer concentration
+        
+        Returns
+        -------
+        pd.DataFrame
+            Dataframe with initial conditions
+        """
+        import numpy as np
+        
+        # Convert to numpy arrays for element-wise multiplication
+        fA0_array = np.array(fA0)
+        cM0_array = np.array(cM0)
+        
         return pet.define_conditions(
             {
-                "A0": fA0s * cM0s,
-                "B0": (1 - fA0s) * cM0s,
+                "A0": fA0_array * cM0_array,
+                "B0": (1 - fA0_array) * cM0_array,
             }
         )
 
@@ -54,15 +75,39 @@ class IrreversibleCPE(ModelInterface):
 
     @staticmethod
     def get_default_parameters() -> pd.DataFrame:
-        return pet.define_parameters(IrreversibleCPE.default_fit_params())
+        """
+        Get default parameter dataframe for fitting.
+        
+        Returns
+        -------
+        pd.DataFrame
+            Parameter dataframe for PEtab
+        """
+        return pet.define_parameters(IrreversibleCPE.get_default_fit_params())
 
     @staticmethod
     def get_default_observables() -> pd.DataFrame:
+        """
+        Get default observables dataframe.
+        
+        Returns
+        -------
+        pd.DataFrame
+            Observables dataframe for PEtab
+        """
         return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
 
     @staticmethod
     def get_default_conditions() -> pd.DataFrame:
-        return IrreversibleCPE.create_conditions_df([1], [1])
+        """
+        Get default conditions dataframe.
+        
+        Returns
+        -------
+        pd.DataFrame
+            Conditions dataframe for PEtab
+        """
+        return IrreversibleCPE.create_conditions(fA0=[0.5], cM0=[1.0])
 
 
 def irreversible_cpe() -> Tuple[sbml.Document, sbml.Model]:

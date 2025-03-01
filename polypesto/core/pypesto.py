@@ -13,7 +13,6 @@ import pypesto.sample as sample
 import pypesto.profile as profile
 import pypesto.visualize as visualize
 
-from polypesto.utils.paths import PetabPaths
 from polypesto.core.petab import PetabData, PetabIO
 from polypesto.core.params import (
     ParameterGroup,
@@ -55,7 +54,7 @@ def load_pypesto_problem(
     importer = PetabImporter.from_yaml(
         yaml_path,
         model_name=model_name,
-        base_path="",
+        base_path="", # Use absolute paths
     )
     problem = importer.create_problem(**kwargs)
 
@@ -178,25 +177,6 @@ def sample_problem(
     return result
 
 
-def visualize_sample_traces(result: Result):
-    """Visualize MCMC sampling traces for all parameters.
-
-    Parameters
-    ----------
-    result : Result
-        Parameter estimation result containing sampling results
-
-    Returns
-    -------
-    matplotlib.axes.Axes
-        Axes object with the trace plot
-    """
-    return visualize.sampling_parameter_traces(result)
-
-
-# Additional visualization functions could be added here
-
-
 def run_parameter_estimation(
     experiment_data: Union[ExperimentData, ExperimentCollection],
     config: Optional[PEConfigDict] = None,
@@ -297,158 +277,123 @@ def run_parameter_estimation(
 
     return results
 
-
-# def run_parameter_estimation(
-#     config: Optional[Dict[str, Dict[str, Any]]] = None
-# ) -> Dict[str, Dict[str, pypesto.Result]]:
-#     """
-#     Run parameter estimation for all experiments.
-
-#     Loads all experiments from the data directory and runs parameter estimation
-#     for each parameter set in each experiment.
-
-#     Parameters
-#     ----------
-#     config : Dict[str, Dict[str, Any]], optional
-#         Configuration options for parameter estimation steps.
-#         Can contain keys 'optimize', 'profile', 'sample' with
-#         respective options. If None, the default config will be used.
-
-#     Returns
-#     -------
-#     Dict[str, Dict[str, pypesto.Result]]
-#         Results dictionary mapping experiment names to parameter set results
-#     """
-#     # Use default config if none provided
-#     if config is None:
-#         config = DEFAULT_PE_CONFIG
-
-#     # Load all experiments
-#     experiments = load_all_experiments(DATA_DIR, Model.name)
-
-#     # Run parameter estimation
-#     results = run_parameter_estimation(experiments, config)
-
-#     return results
-
-
 #########################
 ### Write PETab files ###
 #########################
 
 
-def write_initial_petab(
-    model_def: sbml.ModelDefinition,
-    pg: ParameterGroup,
-    data: PetabData,
-    dir: str,
-) -> PetabPaths:
-    """Write initial PEtab files without simulated data.
+# def write_initial_petab(
+#     model_def: sbml.ModelDefinition,
+#     pg: ParameterGroup,
+#     data: PetabData,
+#     dir: str,
+# ) -> PetabPaths:
+#     """Write initial PEtab files without simulated data.
 
-    Parameters
-    ----------
-    model_def : sbml.ModelDefinition
-        SBML model definition
-    pg : ParameterGroup
-        Parameter group with true parameters
-    data : PetabData
-        Petab data (observables, conditions, measurements, parameters)
-    dir : str
-        Directory to write files to
+#     Parameters
+#     ----------
+#     model_def : sbml.ModelDefinition
+#         SBML model definition
+#     pg : ParameterGroup
+#         Parameter group with true parameters
+#     data : PetabData
+#         Petab data (observables, conditions, measurements, parameters)
+#     dir : str
+#         Directory to write files to
 
-    Returns
-    -------
-    PetabPaths
-        Object containing paths to all created files
-    """
-    paths = PetabPaths(dir)
+#     Returns
+#     -------
+#     PetabPaths
+#         Object containing paths to all created files
+#     """
+#     paths = PetabPaths(dir)
 
-    sbml_filepath = sbml.write_model(model_def=model_def, model_dir=paths.common_dir)
+#     sbml_filepath = sbml.write_model(model_def=model_def, model_dir=paths.common_dir)
 
-    PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
-    PetabIO.write_cond_df(data.cond_df, filename=paths.conditions)
-    PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
-    pg.write(paths.true_params)
+#     PetabIO.write_obs_df(data.obs_df, filename=paths.observables)
+#     PetabIO.write_cond_df(data.cond_df, filename=paths.conditions)
+#     PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
+#     pg.write(paths.true_params)
 
-    for p_id in pg.get_ids():
-        paths.make_exp_dir(p_id)
+#     for p_id in pg.get_ids():
+#         paths.make_exp_dir(p_id)
 
-        # Write the true parameters to file
-        pg.by_id(p_id).write(paths.params(p_id))
+#         # Write the true parameters to file
+#         pg.by_id(p_id).write(paths.params(p_id))
 
-        PetabIO.write_meas_df(data.meas_df, filename=paths.measurements(p_id))
-        PetabIO.write_yaml(
-            yaml_filepath=str(paths.petab_yaml(p_id)),
-            sbml_filepath=sbml_filepath,
-            cond_filepath=paths.conditions,
-            meas_filepath=paths.measurements(p_id),
-            obs_filepath=paths.observables,
-            param_filepath=paths.fit_parameters,
-        )
+#         PetabIO.write_meas_df(data.meas_df, filename=paths.measurements(p_id))
+#         PetabIO.write_yaml(
+#             yaml_filepath=str(paths.petab_yaml(p_id)),
+#             sbml_filepath=sbml_filepath,
+#             cond_filepath=paths.conditions,
+#             meas_filepath=paths.measurements(p_id),
+#             obs_filepath=paths.observables,
+#             param_filepath=paths.fit_parameters,
+#         )
 
-    return paths
+#     return paths
 
 
-def create_problem_set(
-    model: ModelInterface,
-    pg: ParameterGroup,
-    data: PetabData,
-    dir: str,
-    force_compile: bool = False,
-) -> PetabPaths:
-    """Create Petab problem set by simulating data.
+# def create_problem_set(
+#     model: ModelInterface,
+#     pg: ParameterGroup,
+#     data: PetabData,
+#     dir: str,
+#     force_compile: bool = False,
+# ) -> PetabPaths:
+#     """Create Petab problem set by simulating data.
 
-    Parameters
-    ----------
-    model : ModelInterface
-        Model interface to use for simulation
-    pg : ParameterGroup
-        Parameter group (multiple sets of parameters) to generate data
-    data : PetabData
-        Contains observables, conditions, measurements, fit params
-    dir : str
-        Directory to write files to
-    force_compile : bool, optional
-        Force recompilation of model, by default False
+#     Parameters
+#     ----------
+#     model : ModelInterface
+#         Model interface to use for simulation
+#     pg : ParameterGroup
+#         Parameter group (multiple sets of parameters) to generate data
+#     data : PetabData
+#         Contains observables, conditions, measurements, fit params
+#     dir : str
+#         Directory to write files to
+#     force_compile : bool, optional
+#         Force recompilation of model, by default False
 
-    Returns
-    -------
-    PetabPaths
-        Object containing paths to all created files
-    """
+#     Returns
+#     -------
+#     PetabPaths
+#         Object containing paths to all created files
+#     """
 
-    model_name = model.name
-    os.makedirs(os.path.dirname(dir), exist_ok=True)
-    os.makedirs(dir, exist_ok=True)
+#     model_name = model.name
+#     os.makedirs(os.path.dirname(dir), exist_ok=True)
+#     os.makedirs(dir, exist_ok=True)
 
-    # Write without simulated data first
-    paths = write_initial_petab(model.sbml_model_def(), pg, data, dir=dir)
+#     # Write without simulated data first
+#     paths = write_initial_petab(model.sbml_model_def(), pg, data, dir=dir)
 
-    yaml_paths = paths.find_yaml_paths()
-    yaml_path = list(yaml_paths.values())[0]
+#     yaml_paths = paths.find_yaml_paths()
+#     yaml_path = list(yaml_paths.values())[0]
 
-    importer, problem = load_pypesto_problem(
-        yaml_path, str(model_name), force_compile=force_compile
-    )
+#     importer, problem = load_pypesto_problem(
+#         yaml_path, str(model_name), force_compile=force_compile
+#     )
 
-    for p_id, yaml_path in yaml_paths.items():
-        print(f"Simulating data for {p_id}...")
+#     for p_id, yaml_path in yaml_paths.items():
+#         print(f"Simulating data for {p_id}...")
 
-        params_path = paths.params(p_id)
-        params = ParameterSet.load(params_path).to_dict()
+#         params_path = paths.params(p_id)
+#         params = ParameterSet.load(params_path).to_dict()
 
-        sim_data = simulate_petab(
-            petab_problem=importer.petab_problem,
-            amici_model=problem.objective.amici_model,
-            solver=problem.objective.amici_solver,
-            problem_parameters=params,
-        )
-        meas_df = rdatas_to_measurement_df(
-            sim_data["rdatas"],
-            problem.objective.amici_model,
-            importer.petab_problem.measurement_df,
-        )
+#         sim_data = simulate_petab(
+#             petab_problem=importer.petab_problem,
+#             amici_model=problem.objective.amici_model,
+#             solver=problem.objective.amici_solver,
+#             problem_parameters=params,
+#         )
+#         meas_df = rdatas_to_measurement_df(
+#             sim_data["rdatas"],
+#             problem.objective.amici_model,
+#             importer.petab_problem.measurement_df,
+#         )
 
-        PetabIO.write_meas_df(meas_df, filename=paths.measurements(p_id))
+#         PetabIO.write_meas_df(meas_df, filename=paths.measurements(p_id))
 
-    return paths
+#     return paths

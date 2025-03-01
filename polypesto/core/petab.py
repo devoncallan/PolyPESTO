@@ -250,16 +250,15 @@ def define_empty_measurements(
     for (cond_id, _), cond_times in zip(conditions_df.iterrows(), timepoints):
         cond_meas_dfs = []
         for obs_id, _ in observables_df.iterrows():
-            cond_meas_dfs.append(
-                pd.DataFrame(
-                    {
-                        C.OBSERVABLE_ID: [obs_id] * len(cond_times),
-                        C.SIMULATION_CONDITION_ID: [cond_id] * len(cond_times),
-                        C.TIME: cond_times,
-                        C.MEASUREMENT: [0] * len(cond_times),
-                    }
-                )
+            df = pd.DataFrame(
+                {
+                    C.OBSERVABLE_ID: [obs_id] * len(cond_times),
+                    C.SIMULATION_CONDITION_ID: [cond_id] * len(cond_times),
+                    C.TIME: cond_times,
+                    C.MEASUREMENT: [0] * len(cond_times),
+                }
             )
+            cond_meas_dfs.append(df)
         meas_df = pd.concat(cond_meas_dfs)
         meas_dfs.append(meas_df)
 

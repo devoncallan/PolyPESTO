@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Optional, TypeAlias
 from dataclasses import dataclass, asdict
+import itertools
 
 import polypesto.utils.file as file
 
@@ -184,6 +185,40 @@ class ParameterGroup:
     def load(filepath: str, **kwargs):
         data = file.read_json(filepath)
         return ParameterGroup.from_dict(data)
+
+    @staticmethod
+    def create_parameter_grid(
+        parameter_ranges: Dict[ParameterID, List[float]],
+        group_id: str = "parameter_grid",
+    ) -> "ParameterGroup":
+        """
+        Create a parameter group from a grid of parameter values.
+
+        Parameters
+        ----------
+        parameter_ranges : Dict[ParameterID, List[float]]
+            Dictionary mapping parameter names to lists of values
+        group_id : str, optional
+            ID for the parameter group
+
+        Returns
+        -------
+        ParameterGroup
+            Parameter group containing all combinations of parameter values
+        """
+        pg = ParameterGroup(id=group_id, parameter_sets={})
+
+        # Get parameter names and values
+        param_names = list(parameter_ranges.keys())
+        param_values = list(parameter_ranges.values())
+
+        # Generate all combinations
+        for i, combination in enumerate(itertools.product(*param_values)):
+
+            param_dict = {name: value for name, value in zip(param_names, combination)}
+            pg.add(ParameterSet.lazy_from_dict(param_dict, id=f"p_{i:03d}"))
+
+        return pg
 
 
 @dataclass

@@ -10,7 +10,7 @@ import pypesto
 from pypesto.petab import PetabImporter
 from pypesto.problem import Problem
 
-from polypesto.utils.paths import PetabPaths
+from polypesto.utils._paths import PetabPaths
 from polypesto.utils.file import read_json
 from polypesto.core.params import ParameterGroup, ParameterSet
 

@@ -50,19 +50,19 @@ class ModelInterface(Protocol):
         """Return simulation parameters"""
         ...
 
-    @classmethod
-    def create_petab_data(
-        cls, conditions: Dict, params_dict: Optional[Dict[str, FitParameter]] = None
-    ) -> PetabData:
-        """Create PEtab data from experiment conditions"""
-        if params_dict is None:
-            params_dict = cls.get_default_fit_params()
+    # @classmethod
+    # def create_petab_data(
+    #     cls, conditions: Dict, params_dict: Optional[Dict[str, FitParameter]] = None
+    # ) -> PetabData:
+    #     """Create PEtab data from experiment conditions"""
+    #     if params_dict is None:
+    #         params_dict = cls.get_default_fit_params()
 
-        param_df = define_parameters(params_dict)
-        cond_df = cls.create_conditions(**conditions)
-        obs_df = cls.get_default_observables()
-        empty_meas_df = define_empty_measurements(obs_df, cond_df, conditions["t_eval"])
+    #     param_df = define_parameters(params_dict)
+    #     cond_df = cls.create_conditions(**conditions)
+    #     obs_df = cls.get_default_observables()
+    #     empty_meas_df = define_empty_measurements(obs_df, cond_df, conditions["t_eval"])
 
-        return PetabData(
-            obs_df=obs_df, cond_df=cond_df, param_df=param_df, meas_df=empty_meas_df
-        )
+    #     return PetabData(
+    #         obs_df=obs_df, cond_df=cond_df, param_df=param_df, meas_df=empty_meas_df
+    #     )
