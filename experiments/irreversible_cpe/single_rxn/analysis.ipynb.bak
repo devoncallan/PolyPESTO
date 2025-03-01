@@ -1,0 +1,463 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Irreversible Copolymer Equation Parameter Estimation\n",
+    "\n",
+    "This notebook performs parameter estimation for an irreversible copolymerization model with a single reaction experiment.\n",
+    "\n",
+    "**Hypothesis:**\n",
+    "- Parameter identifiability will vary with feed fraction conditions\n",
+    "- Low feed fractions will be more challenging for accurate parameter estimation\n",
+    "\n",
+    "The analysis workflow includes:\n",
+    "1. Generating experimental data\n",
+    "2. Parameter optimization\n",
+    "3. Profile likelihood analysis\n",
+    "4. MCMC sampling\n",
+    "5. Visualization and comparison"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Import standard libraries\n",
+    "import numpy as np\n",
+    "import matplotlib.pyplot as plt\n",
+    "import pandas as pd\n",
+    "import os\n",
+    "from pathlib import Path\n",
+    "import seaborn as sns\n",
+    "\n",
+    "# PyPESTO and related libraries\n",
+    "import pypesto\n",
+    "import pypesto.visualize as visualize\n",
+    "import amici\n",
+    "\n",
+    "# PolyPESTO imports\n",
+    "from polypesto.models.CRP2 import IrreversibleCPE as Model\n",
+    "from polypesto.core.experiments import load_all_experiments, load_experiment\n",
+    "from polypesto.utils.plot import plot_all_measurements\n",
+    "from polypesto.utils import visualization as viz\n",
+    "\n",
+    "# Import the experiment configuration\n",
+    "import exp\n",
+    "\n",
+    "# Enable autoreload for easier development\n",
+    "%load_ext autoreload\n",
+    "%autoreload 2"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 1. Generate Experiment Data\n",
+    "\n",
+    "We start by generating the experimental data for different feed fraction conditions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Option to regenerate experiment data\n",
+    "regenerate_data = False\n",
+    "\n",
+    "if regenerate_data:\n",
+    "    print(\"Generating experiment data...\")\n",
+    "    param_groups, petab_paths = exp.generate_experiment_data()\n",
+    "    print(f\"Generated data for {len(petab_paths)} feed fraction conditions\")\n",
+    "else:\n",
+    "    print(\"Using existing experiment data\")\n",
+    "\n",
+    "# Verify data is available\n",
+    "if not os.path.exists(exp.DATA_DIR):\n",
+    "    print(\"Data directory not found. Generating experiment data...\")\n",
+    "    param_groups, petab_paths = exp.generate_experiment_data()\n",
+    "else:\n",
+    "    print(f\"Data directory found at: {exp.DATA_DIR}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 2. Run Parameter Estimation\n",
+    "\n",
+    "Now we'll run the parameter estimation process for all experiments. This includes:\n",
+    "- Optimization: Finding the best-fit parameters\n",
+    "- Profiling: Creating likelihood profiles for each parameter\n",
+    "- Sampling: MCMC sampling of the posterior distribution"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Define parameter estimation configuration\n",
+    "# You can customize these settings as needed\n",
+    "pe_config = {\n",
+    "    'optimize': {\n",
+    "        'n_starts': 20,  # Reduced for notebook demonstration\n",
+    "        'method': 'Nelder-Mead'\n",
+    "    },\n",
+    "    'profile': {\n",
+    "        'method': 'Nelder-Mead'\n",
+    "    },\n",
+    "    'sample': {\n",
+    "        'n_samples': 2000,  # Reduced for notebook demonstration\n",
+    "        'n_chains': 3\n",
+    "    }\n",
+    "}\n",
+    "\n",
+    "# Option to run parameter estimation\n",
+    "run_estimation = False\n",
+    "\n",
+    "if run_estimation:\n",
+    "    print(\"Running parameter estimation with config:\")\n",
+    "    print(pe_config)\n",
+    "    results = exp.run_parameter_estimation(pe_config)\n",
+    "    print(\"Parameter estimation completed\")\n",
+    "else:\n",
+    "    print(\"Skipping parameter estimation (use existing results)\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 3. Load and Analyze Results\n",
+    "\n",
+    "Now we'll load the existing results and analyze them."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Load all experiments\n",
+    "experiments = load_all_experiments(exp.DATA_DIR, Model.name)\n",
+    "\n",
+    "if not experiments:\n",
+    "    print(\"No experiments found. Please run data generation and parameter estimation first.\")\n",
+    "else:\n",
+    "    print(f\"Loaded {len(experiments)} experiments:\")\n",
+    "    for exp_name, exp_data in experiments.items():\n",
+    "        print(f\"  {exp_name}: {len(exp_data.param_ids)} parameter sets\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 3.1 Select a Specific Experiment\n",
+    "\n",
+    "We'll focus on one feed fraction condition for detailed analysis."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Select feed fraction to analyze\n",
+    "feed_fraction = 0.5\n",
+    "exp_dir = os.path.join(exp.DATA_DIR, f\"fA0_{feed_fraction:.2f}\")\n",
+    "    \n",
+    "print(f\"Loading experiment from: {exp_dir}\")\n",
+    "experiment = load_experiment(exp_dir, Model.name)\n",
+    "    \n",
+    "# Print basic information\n",
+    "print(f\"Loaded experiment with {len(experiment.param_ids)} parameter sets\")\n",
+    "print(f\"Parameter set IDs: {experiment.param_ids[:5]}... (showing first 5)\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "### 3.2 Analyze a Specific Parameter Set\n",
+    "\n",
+    "Now we'll select one parameter set and analyze its results in detail."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Choose a parameter set to analyze\n",
+    "param_id = experiment.param_ids[0]  # Using the first parameter set\n",
+    "\n",
+    "# Get true and estimated parameters\n",
+    "true_params = experiment.get_true_params(param_id)\n",
+    "print(f\"\\nTrue parameters for {param_id}:\")\n",
+    "for param_name, param in true_params.parameters.items():\n",
+    "    print(f\"  {param_name}: {param.value}\")\n",
+    "\n",
+    "# Get problem and result\n",
+    "importer, problem = experiment.get_problem(param_id)\n",
+    "result = experiment.get_result(param_id)\n",
+    "\n",
+    "# Create an OptimizationResult object for parameter comparison\n",
+    "opt_result = viz.OptimizationResult(result, true_params)\n",
+    "\n",
+    "# Get best parameters and compare with true values\n",
+    "best_params = opt_result.get_best_parameters()\n",
+    "true_values = opt_result.get_true_parameter_values(scaled=False)\n",
+    "\n",
+    "# Create comparison DataFrame\n",
+    "comparison_data = []\n",
+    "for name in opt_result.param_names:\n",
+    "    if name in best_params and name in true_values:\n",
+    "        true_val = true_values[name]\n",
+    "        est_val = best_params[name]\n",
+    "        rel_error = abs(est_val - true_val) / abs(true_val) if true_val \!= 0 else float('inf')\n",
+    "        \n",
+    "        comparison_data.append({\n",
+    "            'Parameter': name,\n",
+    "            'True Value': true_val,\n",
+    "            'Estimated Value': est_val,\n",
+    "            'Relative Error': rel_error\n",
+    "        })\n",
+    "\n",
+    "comparison_df = pd.DataFrame(comparison_data)\n",
+    "display(comparison_df)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 4. Visualize Parameter Estimation Results\n",
+    "\n",
+    "Now we'll create visualizations of parameter estimation results using our visualization utilities."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Create all parameter estimation visualizations at once\n",
+    "estimation_plots = viz.visualize_parameter_estimation(\n",
+    "    result=result,\n",
+    "    true_params=true_params,\n",
+    "    plots=['waterfall', 'scatter', 'profiles', 'traces', 'intervals', 'sampling_scatter'],\n",
+    "    figsize=(12, 6)\n",
+    ")\n",
+    "\n",
+    "# Display waterfall plot (optimization convergence)\n",
+    "if 'waterfall' in estimation_plots:\n",
+    "    fig, ax = estimation_plots['waterfall']\n",
+    "    ax.set_title(f\"Optimization Waterfall - {param_id}\")\n",
+    "    plt.show()\n",
+    "\n",
+    "# Display parameter profiles\n",
+    "if 'profiles' in estimation_plots:\n",
+    "    fig, ax = estimation_plots['profiles']\n",
+    "    fig.suptitle(f\"Parameter Profiles with True Values - {param_id}\")\n",
+    "    plt.show()\n",
+    "\n",
+    "# Display parameter scatter plot from optimization\n",
+    "if 'scatter' in estimation_plots:\n",
+    "    fig, grid = estimation_plots['scatter']\n",
+    "    fig.suptitle(f\"Parameter Optimization Scatter Plot\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 5. Visualize MCMC Sampling Results\n",
+    "\n",
+    "Now we'll focus on the MCMC sampling results."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Display parameter traces\n",
+    "if 'traces' in estimation_plots:\n",
+    "    fig, ax = estimation_plots['traces']\n",
+    "    fig.suptitle(f\"Parameter Traces with True Values\")\n",
+    "    plt.show()\n",
+    "\n",
+    "# Display parameter credible intervals\n",
+    "if 'intervals' in estimation_plots:\n",
+    "    fig, ax = estimation_plots['intervals']\n",
+    "    ax.set_title(f\"Parameter Credible Intervals\")\n",
+    "    plt.show()\n",
+    "\n",
+    "# Display parameter sampling scatter\n",
+    "if 'sampling_scatter' in estimation_plots:\n",
+    "    fig, grid = estimation_plots['sampling_scatter']\n",
+    "    fig.suptitle(f\"Parameter Sampling Scatter Plot\")\n",
+    "    plt.show()"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 6. Visualize Data Fit\n",
+    "\n",
+    "Now let's visualize how well the model fits the experimental data."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def visualize_model_fit(importer, problem, result):\n",
+    "    \"\"\"Visualize how well the model fits the experimental data.\"\"\"\n",
+    "    # Get measurements\n",
+    "    measurements = importer.petab_problem.get_measurement_df()\n",
+    "    \n",
+    "    # Setup model and solver\n",
+    "    model = importer.model\n",
+    "    solver = importer.solver\n",
+    "    best_params = result.optimize_result.x\n",
+    "    \n",
+    "    # Setup simulation\n",
+    "    edatas = []\n",
+    "    for condition_id in importer.petab_problem.get_condition_df().index:\n",
+    "        condition = importer.petab_problem.get_condition_df().loc[condition_id].to_dict()\n",
+    "        edatas.append(amici.amici.ExpData(\n",
+    "            model=model,\n",
+    "            condition_df=pd.DataFrame(condition, index=[0])\n",
+    "        ))\n",
+    "    \n",
+    "    # Simulate\n",
+    "    best_rdatas = amici.runAmiciSimulation(model, solver, problem.get_x_nominal(), edatas)\n",
+    "    \n",
+    "    # Plot measurements with best fit\n",
+    "    fig, axes = plt.subplots(1, len(edatas), figsize=(12, 5))\n",
+    "    if len(edatas) == 1:\n",
+    "        axes = [axes]\n",
+    "    \n",
+    "    # Extract measurements and predictions for each condition\n",
+    "    for i, (edata, rdata) in enumerate(zip(edatas, best_rdatas)):\n",
+    "        # Get condition ID\n",
+    "        condition_id = list(importer.petab_problem.get_condition_df().index)[i]\n",
+    "        \n",
+    "        # Filter measurements for this condition\n",
+    "        condition_meas = measurements[measurements['simulationConditionId'] == condition_id]\n",
+    "        \n",
+    "        # Get unique observables\n",
+    "        observables = condition_meas['observableId'].unique()\n",
+    "        \n",
+    "        # Plot each observable\n",
+    "        for obs_id in observables:\n",
+    "            obs_meas = condition_meas[condition_meas['observableId'] == obs_id]\n",
+    "            \n",
+    "            # Find observable index\n",
+    "            obs_index = list(model.getObservableIds()).index(obs_id)\n",
+    "            \n",
+    "            # Extract time points and measurements\n",
+    "            t = obs_meas['time'].values\n",
+    "            y = obs_meas['measurement'].values\n",
+    "            \n",
+    "            # Plot measurements\n",
+    "            axes[i].plot(t, y, 'o', label=f'{obs_id} (Data)')\n",
+    "            \n",
+    "            # Plot model prediction\n",
+    "            sim_t = rdata['t']\n",
+    "            sim_y = rdata['y'][:, obs_index]\n",
+    "            axes[i].plot(sim_t, sim_y, '-', label=f'{obs_id} (Model)')\n",
+    "        \n",
+    "        axes[i].set_title(f\"Condition {condition_id}\")\n",
+    "        axes[i].set_xlabel('Time')\n",
+    "        axes[i].set_ylabel('Measurement')\n",
+    "        axes[i].legend()\n",
+    "    \n",
+    "    plt.tight_layout()\n",
+    "    return fig, axes\n",
+    "\n",
+    "# Visualize model fit to data\n",
+    "try:\n",
+    "    fig, axes = visualize_model_fit(importer, problem, result)\n",
+    "    plt.show()\n",
+    "except Exception as e:\n",
+    "    print(f\"Could not create data fit plots: {e}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## 7. Compare Results Across Feed Fractions\n",
+    "\n",
+    "Now we'll compare parameter estimation results across different feed fraction conditions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# Compare parameters across conditions\n",
+    "comparison_df, figures = viz.compare_parameters_across_conditions(\n",
+    "    data_dir=exp.DATA_DIR, \n",
+    "    model_name=Model.name, \n",
+    "    param_id=\"p_000\",\n",
+    "    figsize=(12, 8)\n",
+    ")\n",
+    "\n",
+    "# Display the dataframe\n",
+    "if not comparison_df.empty:\n",
+    "    display(comparison_df.head())\n",
+    "    \n",
+    "    # Show all figures\n",
+    "    for name, (fig, ax) in figures.items():\n",
+    "        plt.figure(fig.number)\n",
+    "        plt.show()\n",
+    "else:\n",
+    "    print(\"No comparison data available\")"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.12"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

@@ -36,19 +36,19 @@ def define_reversible_k(model: sbml.Model, **kwargs) -> List[libsbml.Parameter]:
     [kpAA, kpAB, kpBA, kpBB] = define_irreversible_k(model, **kwargs)
 
     print("Creating reversile CRP parameters.")
-    kdAA = sbml.create_parameter(model, "kdAA", value=1)
-    kdAB = sbml.create_parameter(model, "kdAB", value=1)
-    kdBA = sbml.create_parameter(model, "kdBA", value=1)
-    kdBB = sbml.create_parameter(model, "kdBB", value=1)
+    kdAA = sbml.create_parameter(model, "kdAA", value=0)
+    kdAB = sbml.create_parameter(model, "kdAB", value=0)
+    kdBA = sbml.create_parameter(model, "kdBA", value=0)
+    kdBB = sbml.create_parameter(model, "kdBB", value=0)
 
     KAA = sbml.create_parameter(model, "KAA", value=0)
     KAB = sbml.create_parameter(model, "KAB", value=0)
     KBA = sbml.create_parameter(model, "KBA", value=0)
     KBB = sbml.create_parameter(model, "KBB", value=0)
 
-    sbml.create_rule(model, kdAA, formula=f"{kpAA.getId()} * {KAA.getId()}")
-    sbml.create_rule(model, kdAB, formula=f"{kpAB.getId()} * {KAB.getId()}")
-    sbml.create_rule(model, kdBA, formula=f"{kpBA.getId()} * {KBA.getId()}")
-    sbml.create_rule(model, kdBB, formula=f"{kpBB.getId()} * {KBB.getId()}")
+    sbml.create_rule(model, kdAA, formula=f"kpAA*KAA")
+    sbml.create_rule(model, kdAB, formula=f"kpAB*KAB")
+    sbml.create_rule(model, kdBA, formula=f"kpBA*KBA")
+    sbml.create_rule(model, kdBB, formula=f"kpBB*KBB")
 
     return [kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB]

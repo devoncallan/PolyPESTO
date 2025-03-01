@@ -15,6 +15,8 @@ class PetabPaths:
         os.makedirs(self.base_dir, exist_ok=True)
         os.makedirs(self.petab_dir, exist_ok=True)
         os.makedirs(self.common_dir, exist_ok=True)
+        
+        os.makedirs(self.pypesto_dir, exist_ok=True)
 
     ### Directories
 
@@ -31,6 +33,16 @@ class PetabPaths:
     
     def make_exp_dir(self, p_id: str):
         os.makedirs(self.exp_dir(p_id), exist_ok=True)
+        
+    @property
+    def pypesto_dir(self) -> str:
+        return f"{self.base_dir}/pypesto"
+    
+    def results_dir(self, p_id: str) -> str:
+        return f"{self.pypesto_dir}/{p_id}"
+    
+    def make_results_dir(self, p_id: str):
+        os.makedirs(self.results_dir(p_id), exist_ok=True)
 
     ### Common paths
 
@@ -45,6 +57,10 @@ class PetabPaths:
     @property
     def fit_parameters(self) -> str:
         return f"{self.common_dir}/parameters.tsv"
+    
+    @property
+    def true_params(self) -> str:
+        return f"{self.common_dir}/true_params.json"
 
     def model(self, name: str = "") -> str:
         return f"{self.common_dir}/{name}.xml"
@@ -59,6 +75,11 @@ class PetabPaths:
 
     def measurements(self, p_id: str) -> str:
         return f"{self.exp_dir(p_id)}/measurements.tsv"
+    
+    
+    ### Results specific paths
+    def pypesto_results(self, p_id: str) -> str:
+        return f"{self.results_dir(p_id)}/results.hdf5"
 
     ### Helper functions
 
@@ -69,6 +90,7 @@ class PetabPaths:
         for yaml_path in base_path.glob("**/petab.yaml"):
             p_id = yaml_path.parent.name
             yaml_paths[p_id] = str(yaml_path)
+        yaml_paths = dict(sorted(yaml_paths.items()))
         return yaml_paths
 
 

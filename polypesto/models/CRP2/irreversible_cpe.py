@@ -58,7 +58,7 @@ class IrreversibleCPE(ModelInterface):
 
     @staticmethod
     def get_default_observables() -> pd.DataFrame:
-        return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.00)
+        return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
 
     @staticmethod
     def get_default_conditions() -> pd.DataFrame:

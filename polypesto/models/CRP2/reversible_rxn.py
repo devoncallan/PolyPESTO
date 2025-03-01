@@ -9,7 +9,7 @@ from polypesto.core.params import ParameterGroup
 
 from polypesto.models import sbml, ModelInterface
 from .common import define_reversible_k
-from .reversible_cpe import ReversibleCPE
+from . import ReversibleCPE, IrreversibleRxn
 
 
 class ReversibleRxn(ModelInterface):
@@ -23,7 +23,7 @@ class ReversibleRxn(ModelInterface):
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
-        return ReversibleCPE.create_conditions(fA0s, cM0s)
+        return IrreversibleRxn.create_conditions(fA0s, cM0s)
 
     @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
@@ -46,15 +46,21 @@ def reversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
 
     name = ReversibleRxn.name
     print(f"Creating SBML model: {name}")
-    
+
     document, model = sbml.create_model(name)
     c = sbml.create_compartment(model, "c")
 
     print("Creating species.")
     R = sbml.create_species(model, "R", initialAmount=0.001)
 
-    A = sbml.create_species(model, "A", initialAmount=0.5)
-    B = sbml.create_species(model, "B", initialAmount=0.5)
+    A0 = sbml.create_parameter(model, "A0")
+    B0 = sbml.create_parameter(model, "B0")
+
+    A = sbml.create_species(model, "A")
+    B = sbml.create_species(model, "B")
+
+    sbml.create_initial_assignment(model, "A", formula="A0")
+    sbml.create_initial_assignment(model, "B", formula="B0")
 
     RA = sbml.create_species(model, "RA")
     RB = sbml.create_species(model, "RB")
@@ -70,38 +76,30 @@ def reversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
     (kpAA, kpAB, kpBA, kpBB, kdAA, kdAB, kdBA, kdBB) = define_reversible_k(model)
 
     # Calculates monomer conversion
-    A0 = sbml.create_parameter(model, "A0", value=0)
-    B0 = sbml.create_parameter(model, "B0", value=0)
+    # A0 = sbml.create_parameter(model, "A0", value=0)
+    # B0 = sbml.create_parameter(model, "B0", value=0)
     xA = sbml.create_parameter(model, "xA", value=0)
     xB = sbml.create_parameter(model, "xB", value=0)
 
-    sbml.create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
-    sbml.create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
+    # sbml.create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
+    # sbml.create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
 
-    sbml.create_rule(model, xA, formula=f"1 - {A.getId()}/{A0.getId()}")
-    sbml.create_rule(model, xB, formula=f"1 - {B.getId()}/{B0.getId()}")
+    sbml.create_rule(model, xA, formula=f"1 - A/A0")
+    sbml.create_rule(model, xB, formula=f"1 - B/B0")
 
     # Define chain-end dyad fractions
     fPAA = sbml.create_parameter(model, "fPAA", value=1)
     fPAB = sbml.create_parameter(model, "fPAB", value=1)
     fPBA = sbml.create_parameter(model, "fPBA", value=1)
     fPBB = sbml.create_parameter(model, "fPBB", value=1)
-    sbml.create_rule(model, PA, formula=f"{PAA.getId()} + {PBA.getId()}")
-    sbml.create_rule(model, PB, formula=f"{PAB.getId()} + {PBB.getId()}")
+    sbml.create_rule(model, PA, formula=f"PAA + PBA")
+    sbml.create_rule(model, PB, formula=f"PAB + PBB")
 
     eps = 1e-10
-    sbml.create_rule(
-        model, fPAA, formula=f"({PAA.getId()} + {eps}) / ({PA.getId()} + {eps})"
-    )
-    sbml.create_rule(
-        model, fPAB, formula=f"({PAB.getId()} + {eps}) / ({PB.getId()} + {eps})"
-    )
-    sbml.create_rule(
-        model, fPBA, formula=f"({PBA.getId()} + {eps}) / ({PA.getId()} + {eps})"
-    )
-    sbml.create_rule(
-        model, fPBB, formula=f"({PBB.getId()} + {eps}) / ({PB.getId()} + {eps})"
-    )
+    sbml.create_rule(model, fPAA, formula=f"(PAA + {eps}) / (PA + {eps})")
+    sbml.create_rule(model, fPAB, formula=f"(PAB + {eps}) / (PB + {eps})")
+    sbml.create_rule(model, fPBA, formula=f"(PBA + {eps}) / (PA + {eps})")
+    sbml.create_rule(model, fPBB, formula=f"(PBB + {eps}) / (PB + {eps})")
 
     # Defining reactions
     # Syntax: (reaction_id, {reactants: stoich}, {products: stoich}, kinetic_law)

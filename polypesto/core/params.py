@@ -177,7 +177,7 @@ class ParameterGroup:
     def get_parameter_sets(self) -> List[ParameterSet]:
         return list(self.parameter_sets.values())
 
-    def write(self, filepath: str, **kwargs):
+    def write(self, filepath: str):
         file.write_json(filepath, asdict(self))
 
     @staticmethod

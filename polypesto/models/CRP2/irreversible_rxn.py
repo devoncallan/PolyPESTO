@@ -6,7 +6,7 @@ from polypesto.core.params import ParameterGroup
 from polypesto.models import sbml, ModelInterface
 
 from .common import define_irreversible_k
-from .equilibrium_ode import IrreversibleCPE
+from .irreversible_cpe import IrreversibleCPE
 
 
 class IrreversibleRxn(ModelInterface):
@@ -20,7 +20,12 @@ class IrreversibleRxn(ModelInterface):
 
     @staticmethod
     def create_conditions(fA0s, cM0s) -> pd.DataFrame:
-        return IrreversibleCPE.create_conditions(fA0s, cM0s)
+        return pet.define_conditions(
+            {
+                "A0": fA0s * cM0s,
+                "B0": (1 - fA0s) * cM0s,
+            }
+        )
 
     @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
@@ -50,8 +55,14 @@ def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
     print("Creating species.")
     R = sbml.create_species(model, "R", initialAmount=0.001)
 
-    A = sbml.create_species(model, "A", initialAmount=0.5)
-    B = sbml.create_species(model, "B", initialAmount=0.5)
+    A0 = sbml.create_parameter(model, "A0")
+    B0 = sbml.create_parameter(model, "B0")
+
+    A = sbml.create_species(model, "A")
+    B = sbml.create_species(model, "B")
+    
+    sbml.create_initial_assignment(model, "A", formula="A0")
+    sbml.create_initial_assignment(model, "B", formula="B0")
 
     RA = sbml.create_species(model, "RA")
     RB = sbml.create_species(model, "RB")
@@ -67,13 +78,12 @@ def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
     (kpAA, kpAB, kpBA, kpBB) = define_irreversible_k(model)
 
     # Calculates monomer conversion
-    A0 = sbml.create_parameter(model, "A0", value=0)
-    B0 = sbml.create_parameter(model, "B0", value=0)
+
     xA = sbml.create_parameter(model, "xA", value=0)
     xB = sbml.create_parameter(model, "xB", value=0)
 
-    sbml.create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
-    sbml.create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
+    # sbml.create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
+    # sbml.create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
 
     sbml.create_rule(model, xA, formula=f"1 - {A.getId()}/{A0.getId()}")
     sbml.create_rule(model, xB, formula=f"1 - {B.getId()}/{B0.getId()}")
