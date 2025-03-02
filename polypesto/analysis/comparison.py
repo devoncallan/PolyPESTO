@@ -12,7 +12,7 @@ import pandas as pd
 import seaborn as sns
 from typing import Dict, List, Tuple, Union, Optional, Any
 
-from polypesto.core.experiments import load_all_experiments, load_experiment
+from experiments.irreversible_cpe.single_rxn.experiments import load_all_experiments, load_experiment
 
 
 def create_parameter_comparison_df(data_dir, model_name="irreversible_cpe", param_id="p_000"):

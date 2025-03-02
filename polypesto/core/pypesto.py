@@ -21,7 +21,7 @@ from polypesto.core.params import (
     ParameterSetID,
 )
 from polypesto.models import sbml, ModelInterface
-from polypesto.core.experiments import ExperimentData
+from experiments.irreversible_cpe.single_rxn.experiments import ExperimentData
 
 # Type aliases for better code clarity
 ExperimentName: TypeAlias = str

@@ -25,7 +25,7 @@ from polypesto.core.pypesto import (
     run_parameter_estimation,
     load_pypesto_problem,
 )
-from polypesto.core.experiments import load_all_experiments
+from experiments.irreversible_cpe.single_rxn.experiments import load_all_experiments
 
 # Data directory for experimental data and results
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")

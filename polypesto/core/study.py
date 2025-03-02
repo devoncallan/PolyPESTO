@@ -1,8 +1,6 @@
 from typing import Type, TypeAlias, Dict, List, Optional, Tuple, Any, Union
 from dataclasses import dataclass
 import os
-from pathlib import Path
-import json
 import shutil
 
 import pandas as pd
@@ -14,6 +12,7 @@ from polypesto.core.params import ParameterGroup, ParameterSetID, ParameterSet
 from polypesto.core.experiment import Experiment, ExperimentConfig, simulate_experiment
 from polypesto.utils.paths import ExperimentPaths, find_yaml_paths
 from polypesto.core.pypesto import run_parameter_estimation, PEConfigDict
+from polypesto.utils.file import read_json, write_json
 
 
 TrialID: TypeAlias = str
@@ -145,36 +144,8 @@ class Study:
         }
 
         # Write metadata file
-        with open(os.path.join(save_dir, "metadata.json"), "w") as f:
-            json.dump(metadata, f, indent=2)
-
-        # # Add results metadata if available
-        # if not self.results:
-        #     return save_dir
-        
-        # result_summary = {}
-        # for trial_id, trial_results in self.results.items():
-        #     result_summary[trial_id] = {}
-        #     for p_id, result in trial_results.items():
-        #         # Get result metadata safely
-        #         best_ll = None
-        #         if hasattr(result, "optimize_result") and result.optimize_result:
-        #             if (
-        #                 hasattr(result.optimize_result, "fval")
-        #                 and len(result.optimize_result.fval) > 0
-        #             ):
-        #                 best_ll = float(result.optimize_result.fval[0])
-
-        #         result_summary[trial_id][p_id] = {
-        #             "best_ll": best_ll,
-        #             "has_profile": hasattr(result, "profile_result")
-        #             and result.profile_result is not None,
-        #             "has_samples": hasattr(result, "sample_result")
-        #             and result.sample_result is not None,
-        #         }
-
-        # with open(os.path.join(save_dir, "result_summary.json"), "w") as f:
-        #     json.dump(result_summary, f, indent=2)
+        metadata_path = os.path.join(save_dir, "metadata.json")
+        write_json(metadata_path, metadata)
 
         # Note: The actual experiment data is already saved in the directory structure
         # when it was created, so we don't need to save it again.
@@ -334,15 +305,13 @@ class Study:
         metadata = {}
         metadata_path = os.path.join(dir_path, "metadata.json")
         if os.path.exists(metadata_path):
-            with open(metadata_path, "r") as f:
-                metadata = json.load(f)
+            metadata = read_json(metadata_path)
 
-        # Load experiments
         experiments: List[StudyExperiment] = []
         parameter_sets: Dict[ParameterSetID, ParameterSet] = {}
-        yaml_paths = find_yaml_paths(dir_path)
-        print(yaml_paths)
 
+        # Load experiments
+        yaml_paths = find_yaml_paths(dir_path)
         for p_id, yaml_paths in yaml_paths.items():
             for yaml_path in yaml_paths:
                 paths = ExperimentPaths.from_yaml(yaml_path)

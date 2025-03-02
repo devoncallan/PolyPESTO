@@ -13,7 +13,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath('/PolyPESTO'))
 
 # Import PolyPESTO visualization and analysis modules
-from polypesto.core.experiments import load_experiment
+from experiments.irreversible_cpe.single_rxn.experiments import load_experiment
 from polypesto.visualization import (
     plot_waterfall,
     plot_optimization_scatter,

@@ -2,7 +2,7 @@
 
 # Run pypesto experiment
 
-from polypesto.core.experiments import load_all_experiments
+from experiments.irreversible_cpe.single_rxn.experiments import load_all_experiments
 from polypesto.core.pypesto import run_parameter_estimation
 from . import exp
 
