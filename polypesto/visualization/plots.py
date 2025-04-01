@@ -71,17 +71,20 @@ def plot_waterfall(result, **kwargs):
 
     # Return empty figure if no optimization results
     if not hasattr(result, "optimize_result") or result.optimize_result is None:
-        return plot_empty_figure("No optimization results available", kwargs.get('figsize', (10, 6)))
+        return plot_empty_figure(
+            "No optimization results available", kwargs.get("figsize", (10, 6))
+        )
 
     # Get parameters
     figsize = kwargs.pop("figsize", (10, 6))
     scale_y = kwargs.pop("scale_y", "log10")
-    
+
     # Create figure and plot
     fig, ax = plt.subplots(figsize=figsize)
     pypesto_viz.waterfall(results=result, ax=ax, scale_y=scale_y, **kwargs)
 
     plt.tight_layout()
+
     return fig, ax
 
 
@@ -113,12 +116,14 @@ def plot_profiles(result, true_params=None, **kwargs):
 
     # Return empty figure if no profile results
     if not profile_result.has_profile_results():
-        return plot_empty_figure("No profile results available", kwargs.get("figsize", (12, 5)))
+        return plot_empty_figure(
+            "No profile results available", kwargs.get("figsize", (12, 5))
+        )
 
     # Get plotting parameters
     figsize = kwargs.pop("figsize", (12, 5))
     show_bounds = kwargs.pop("show_bounds", True)
-    
+
     # Get indices with profile results if not provided
     profile_indices = kwargs.pop("profile_indices", None)
     if profile_indices is None:
@@ -143,13 +148,15 @@ def plot_profiles(result, true_params=None, **kwargs):
         return fig, axes
 
     # Convert axes to list for iteration
-    axes_list = ([axes] if not isinstance(axes, (list, np.ndarray))
-                else axes.flatten() if isinstance(axes, np.ndarray) else axes)
-    
+    axes_list = (
+        [axes]
+        if not isinstance(axes, (list, np.ndarray))
+        else axes.flatten() if isinstance(axes, np.ndarray) else axes
+    )
+
     # Create true value line style
     true_line = plt.Line2D(
-        [0], [0], color="red", linestyle="--", 
-        linewidth=2, label="True value"
+        [0], [0], color="red", linestyle="--", linewidth=2, label="True value"
     )
 
     # Add vertical lines for true parameter values
@@ -159,9 +166,12 @@ def plot_profiles(result, true_params=None, **kwargs):
             continue
 
         # Get parameter name
-        param_name = (profile_result.param_names[param_idx] 
-                      if param_idx < len(profile_result.param_names) else None)
-        
+        param_name = (
+            profile_result.param_names[param_idx]
+            if param_idx < len(profile_result.param_names)
+            else None
+        )
+
         # Skip if no true value
         if param_name is None or param_name not in true_values:
             continue
@@ -170,8 +180,10 @@ def plot_profiles(result, true_params=None, **kwargs):
         ax = axes_list[i]
         ax.axvline(
             x=true_values[param_name],
-            color="red", linestyle="--", linewidth=2,
-            label="True value"
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label="True value",
         )
 
         # Update legend
@@ -213,11 +225,15 @@ def plot_parameter_traces(result, true_params=None, **kwargs):
     import pypesto.visualize as pypesto_viz
 
     # Create sampling result handler
-    sampling_result = SamplingResult(result, true_params, kwargs.get("parameter_indices"))
+    sampling_result = SamplingResult(
+        result, true_params, kwargs.get("parameter_indices")
+    )
 
     # Return empty figure if no sampling results
     if not sampling_result.has_sampling_results():
-        return plot_empty_figure("No sampling results available", kwargs.get("figsize", (12, 5)))
+        return plot_empty_figure(
+            "No sampling results available", kwargs.get("figsize", (12, 5))
+        )
 
     # Get plotting parameters
     figsize = kwargs.pop("figsize", (12, 5))
@@ -247,13 +263,15 @@ def plot_parameter_traces(result, true_params=None, **kwargs):
 
     # Create a line for the legend
     true_line = plt.Line2D(
-        [0], [0], color="red", linestyle="--", 
-        linewidth=2, label="True value"
+        [0], [0], color="red", linestyle="--", linewidth=2, label="True value"
     )
 
     # Convert axes to list for iteration
-    axes_list = ([axes] if not isinstance(axes, (list, np.ndarray))
-                else axes.flatten() if isinstance(axes, np.ndarray) else axes)
+    axes_list = (
+        [axes]
+        if not isinstance(axes, (list, np.ndarray))
+        else axes.flatten() if isinstance(axes, np.ndarray) else axes
+    )
 
     # Add true values to each subplot
     for i, param_name in enumerate(sampling_result.param_names):
@@ -263,10 +281,7 @@ def plot_parameter_traces(result, true_params=None, **kwargs):
 
         # Get axis and add horizontal line
         ax = axes_list[i]
-        ax.axhline(
-            true_values[param_name], 
-            color="red", linestyle="--", linewidth=2
-        )
+        ax.axhline(true_values[param_name], color="red", linestyle="--", linewidth=2)
 
         # Update legend
         handles, labels = ax.get_legend_handles_labels()
@@ -294,7 +309,7 @@ def plot_confidence_intervals(result, true_params=None, **kwargs):
     **kwargs
         Additional arguments passed to pypesto.visualize.sampling_parameter_cis
         figsize: tuple - Figure size for the plot
-        
+
     Returns
     -------
     fig, ax
@@ -304,33 +319,35 @@ def plot_confidence_intervals(result, true_params=None, **kwargs):
 
     # Create sampling result handler
     sampling_result = SamplingResult(result, true_params, None)
-    
+
     # Return empty figure if no results
     if not sampling_result.has_sampling_results():
-        return plot_empty_figure("No sampling results available", kwargs.get('figsize', (10, 6)))
-    
+        return plot_empty_figure(
+            "No sampling results available", kwargs.get("figsize", (10, 6))
+        )
+
     # Create figure
-    figsize = kwargs.pop('figsize', (10, 6))
+    figsize = kwargs.pop("figsize", (10, 6))
     fig, ax = plt.subplots(figsize=figsize)
-    
+
     # Set default alpha if not provided
-    if 'alpha' not in kwargs:
+    if "alpha" not in kwargs:
         print(kwargs)
-        kwargs['alpha'] = [0.9, 0.95, 0.99]  # Default confidence levels
-    
+        kwargs["alpha"] = [90, 95, 99]  # Default confidence levels
+
     # Plot confidence intervals
     pypesto_viz.sampling_parameter_cis(result=result, ax=ax, **kwargs)
-    
+
     # Get true parameter values
     true_values = sampling_result.get_true_parameter_values(scaled=True)
     if not true_values:
         plt.tight_layout()
         return fig, ax
-    
+
     # Get parameter positions from plot
     y_ticks = ax.get_yticks()
     y_labels = [label.get_text() for label in ax.get_yticklabels()]
-    
+
     # Collect parameters with true values
     true_x_vals = []
     true_y_pos = []
@@ -338,26 +355,34 @@ def plot_confidence_intervals(result, true_params=None, **kwargs):
         if param_id in true_values:
             true_x_vals.append(true_values[param_id])
             true_y_pos.append(y_ticks[i])
-    
+
     # Skip if no matching parameters
     if not true_x_vals:
         plt.tight_layout()
         return fig, ax
-    
+
     # Plot true values
     ax.scatter(
-        true_x_vals, true_y_pos,
-        marker="*", s=200, color="red",
-        label="True value", zorder=10
+        true_x_vals,
+        true_y_pos,
+        marker="*",
+        s=200,
+        color="red",
+        label="True value",
+        zorder=10,
     )
-    
+
     # Add to legend
     true_marker = plt.Line2D(
-        [0], [0], marker="*", color="red",
-        linestyle="none", markersize=10,
-        label="True value"
+        [0],
+        [0],
+        marker="*",
+        color="red",
+        linestyle="none",
+        markersize=10,
+        label="True value",
     )
-    
+
     # Update existing legend or create new one
     if ax.get_legend() is not None:
         handles, labels = ax.get_legend_handles_labels()
@@ -397,7 +422,9 @@ def plot_optimization_scatter(result, true_params=None, **kwargs):
 
     # Return empty figure if no optimization results
     if not hasattr(result, "optimize_result") or result.optimize_result is None:
-        return plot_empty_figure("No optimization results available", kwargs.get("figsize", (10, 10)))
+        return plot_empty_figure(
+            "No optimization results available", kwargs.get("figsize", (10, 10))
+        )
 
     # Get plotting parameters
     figsize = kwargs.pop("figsize", (10, 10))
@@ -425,7 +452,7 @@ def plot_optimization_scatter(result, true_params=None, **kwargs):
     opt_result = OptimizationResult(result, true_params, parameter_indices)
     param_names = opt_result.param_names
     true_values = opt_result.get_true_parameter_values(scaled=True)
-    
+
     # Return if no grid axes or parameter names
     if not param_names or not hasattr(grid, "axes") or len(grid.axes) == 0:
         plt.tight_layout()
@@ -445,29 +472,41 @@ def plot_optimization_scatter(result, true_params=None, **kwargs):
                 continue
 
             ax = grid.axes[i, j]
-            
+
             # Diagonal plots (marginal distributions)
             if i == j:
                 ax.axvline(
                     x=true_values[param_y],
-                    color="red", linestyle="--", linewidth=2,
-                    label="True value"
+                    color="red",
+                    linestyle="--",
+                    linewidth=2,
+                    label="True value",
                 )
             # Off-diagonal scatter plots
             else:
                 ax.scatter(
-                    x=true_values[param_x], y=true_values[param_y],
-                    marker="*", s=150, color="red", alpha=0.8, zorder=10,
-                    label="True value"
+                    x=true_values[param_x],
+                    y=true_values[param_y],
+                    marker="*",
+                    s=150,
+                    color="red",
+                    alpha=0.8,
+                    zorder=10,
+                    label="True value",
                 )
 
     # Add legend if we have true values
     if true_values:
         true_point = plt.Line2D(
-            [0], [0], marker="*", color="red",
-            linestyle="none", markersize=10, label="True value"
+            [0],
+            [0],
+            marker="*",
+            color="red",
+            linestyle="none",
+            markersize=10,
+            label="True value",
         )
-        
+
         # Add to figure legend if it doesn't exist
         if not plt.figlegend().get_texts():
             plt.figlegend(handles=[true_point], loc="upper right")
@@ -499,34 +538,33 @@ def plot_sampling_scatter(result, true_params=None, **kwargs):
     import pypesto.visualize as pypesto_viz
 
     # Create sampling result handler
-    sampling_result = SamplingResult(result, true_params, kwargs.get("parameter_indices"))
+    sampling_result = SamplingResult(
+        result, true_params, kwargs.get("parameter_indices")
+    )
 
     # Return empty figure if no sampling results
     if not sampling_result.has_sampling_results():
-        return plot_empty_figure("No sampling results available", kwargs.get("figsize", (10, 10)))
+        return plot_empty_figure(
+            "No sampling results available", kwargs.get("figsize", (10, 10))
+        )
 
     # Get parameters
     figsize = kwargs.pop("figsize", (10, 10))
-    
+
     # Create scatter plot
-    grid = pypesto_viz.sampling_scatter(
-        result=result,
-        size=figsize,
-        **kwargs
-    )
+    grid = pypesto_viz.sampling_scatter(result=result, size=figsize, **kwargs)
 
     # Get figure and true values
     fig = plt.gcf()
     true_values = sampling_result.get_true_parameter_values(scaled=True)
-    
+
     # Return if no true values or no valid grid
     if not true_values or not hasattr(grid, "axes") or len(grid.axes) == 0:
         plt.tight_layout()
         return fig, grid
-        
-    # Get parameter names from grid
-    param_names = [ax.get_title() for ax in grid.axes[0, :]]
-    
+
+    param_names = grid.x_vars
+
     # Add true values to plots
     for i, param_y in enumerate(param_names):
         if i >= len(grid.axes):
@@ -541,28 +579,40 @@ def plot_sampling_scatter(result, true_params=None, **kwargs):
                 continue
 
             ax = grid.axes[i, j]
-            
+
             # Diagonal plots (marginals)
             if i == j:
                 ax.axvline(
                     x=true_values[param_y],
-                    color="red", linestyle="--", linewidth=2,
-                    label="True value"
+                    color="red",
+                    linestyle="--",
+                    linewidth=2,
+                    label="True value",
                 )
             # Off-diagonal scatter plots
             else:
                 ax.scatter(
-                    x=true_values[param_x], y=true_values[param_y],
-                    marker="*", s=150, color="red", alpha=0.8, zorder=10,
-                    label="True value"
+                    x=true_values[param_x],
+                    y=true_values[param_y],
+                    marker="*",
+                    s=150,
+                    color="red",
+                    alpha=0.8,
+                    zorder=10,
+                    label="True value",
                 )
 
     # Add legend
     true_point = plt.Line2D(
-        [0], [0], marker="*", color="red",
-        linestyle="none", markersize=10, label="True value"
+        [0],
+        [0],
+        marker="*",
+        color="red",
+        linestyle="none",
+        markersize=10,
+        label="True value",
     )
-    
+
     # Add to figure if no legend exists
     if not plt.figlegend().get_texts():
         plt.figlegend(handles=[true_point], loc="upper right")
@@ -599,7 +649,9 @@ def visualize_parameter_estimation(result, true_params=None, **kwargs):
         Dictionary mapping plot types to (fig, ax) tuples
     """
     # Extract plotting parameters
-    plots = kwargs.pop("plots", ("waterfall", "scatter", "profiles", "traces", "intervals"))
+    plots = kwargs.pop(
+        "plots", ("waterfall", "scatter", "profiles", "traces", "intervals")
+    )
     figsize = kwargs.pop("figsize", (10, 6))
 
     # Get plot-specific kwargs
@@ -609,18 +661,16 @@ def visualize_parameter_estimation(result, true_params=None, **kwargs):
         "profiles": kwargs.pop("profiles_kwargs", {}),
         "traces": kwargs.pop("traces_kwargs", {}),
         "intervals": kwargs.pop("intervals_kwargs", {}),
-        "sampling_scatter": kwargs.pop("sampling_scatter_kwargs", {})
+        "sampling_scatter": kwargs.pop("sampling_scatter_kwargs", {}),
     }
-    
+
     # Initialize results
     results = {}
 
     # Define plot creators with custom sizes
     plot_creators = {
         "waterfall": lambda: plot_waterfall(
-            result=result, 
-            figsize=figsize, 
-            **plot_kwargs["waterfall"]
+            result=result, figsize=figsize, **plot_kwargs["waterfall"]
         ),
         "scatter": lambda: plot_optimization_scatter(
             result=result,
@@ -651,24 +701,28 @@ def visualize_parameter_estimation(result, true_params=None, **kwargs):
             true_params=true_params,
             figsize=(figsize[0] * 1.5, figsize[1] * 1.5),
             **plot_kwargs["sampling_scatter"]
-        )
+        ),
     }
-    
+
     # Create requested plots if data is available
     for plot_type in plots:
         # Skip if plot type not defined
         if plot_type not in plot_creators:
             continue
-            
+
         # Check data availability based on plot type
-        if plot_type in ["waterfall", "scatter"] and not hasattr(result, "optimize_result"):
+        if plot_type in ["waterfall", "scatter"] and not hasattr(
+            result, "optimize_result"
+        ):
             continue
         if plot_type == "profiles" and not hasattr(result, "profile_result"):
             continue
-        if plot_type in ["traces", "intervals", "sampling_scatter"] and not hasattr(result, "sample_result"):
+        if plot_type in ["traces", "intervals", "sampling_scatter"] and not hasattr(
+            result, "sample_result"
+        ):
             continue
-            
+
         # Create the plot
         results[plot_type] = plot_creators[plot_type]()
-        
+
     return results

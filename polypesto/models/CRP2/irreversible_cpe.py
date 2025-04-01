@@ -21,25 +21,25 @@ class IrreversibleCPE(ModelInterface):
     def create_conditions(fA0, cM0, **kwargs) -> pd.DataFrame:
         """
         Create conditions dataframe for the model.
-        
+
         Parameters
         ----------
         fA0 : List[float] or float
             Feed fraction of monomer A
         cM0 : List[float] or float
             Total monomer concentration
-        
+
         Returns
         -------
         pd.DataFrame
             Dataframe with initial conditions
         """
         import numpy as np
-        
+
         # Convert to numpy arrays for element-wise multiplication
         fA0_array = np.array(fA0)
         cM0_array = np.array(cM0)
-        
+
         return pet.define_conditions(
             {
                 "A0": fA0_array * cM0_array,
@@ -77,7 +77,7 @@ class IrreversibleCPE(ModelInterface):
     def get_default_parameters() -> pd.DataFrame:
         """
         Get default parameter dataframe for fitting.
-        
+
         Returns
         -------
         pd.DataFrame
@@ -89,7 +89,7 @@ class IrreversibleCPE(ModelInterface):
     def get_default_observables() -> pd.DataFrame:
         """
         Get default observables dataframe.
-        
+
         Returns
         -------
         pd.DataFrame
@@ -101,7 +101,7 @@ class IrreversibleCPE(ModelInterface):
     def get_default_conditions() -> pd.DataFrame:
         """
         Get default conditions dataframe.
-        
+
         Returns
         -------
         pd.DataFrame
