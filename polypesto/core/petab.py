@@ -3,6 +3,7 @@ from typing import Dict, Tuple, Sequence, Callable
 from functools import wraps
 from dataclasses import dataclass
 
+import numpy as np
 import pandas as pd
 import petab
 import petab.v1.C as C
@@ -265,3 +266,22 @@ def define_empty_measurements(
     meas_df = pd.concat(meas_dfs)
     return PetabIO.format_meas_df(meas_df)
     # return PetabIO.format_meas_df(meas_df)
+
+
+def add_noise_to_measurements(
+    measurements_df: pd.DataFrame,
+    noise_level: float,
+) -> pd.DataFrame:
+    """Add Gaussian noise to the measurements DataFrame.
+
+    Args:
+        measurements_df: DataFrame with measurements
+        noise_level: Standard deviation of the Gaussian noise
+    """
+    noisy_measurements = measurements_df.copy()
+    values = noisy_measurements[C.MEASUREMENT].values
+
+    noise = np.random.normal(0, noise_level * np.abs(values))
+    noisy_measurements[C.MEASUREMENT] = values + noise
+
+    return noisy_measurements

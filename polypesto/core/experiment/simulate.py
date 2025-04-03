@@ -6,7 +6,12 @@ import pandas as pd
 
 from polypesto.core.params import ParameterSet
 from polypesto.models import ModelInterface
-from polypesto.core.petab import PetabData, define_empty_measurements, PetabIO
+from polypesto.core.petab import (
+    PetabData,
+    define_empty_measurements,
+    PetabIO,
+    add_noise_to_measurements,
+)
 
 from . import Experiment, ExperimentPaths
 
@@ -26,7 +31,8 @@ def create_simulation_conditions(conditions_dict: Dict) -> List[SimulationCondit
     # Check that all lists have the same length
     ntrials = len(next(iter(conditions_dict.values())))
     for key, value in conditions_dict.items():
-        if len(value) != ntrials:
+        if key != "conditions" and len(value) != ntrials:
+            print(f"Key: {key}, Value: {value}")
             raise ValueError(
                 f"Length mismatch for {key}: expected {ntrials}, got {len(value)}"
             )
@@ -84,6 +90,7 @@ def create_simulated_experiment(
     data: PetabData,
     paths: ExperimentPaths,
     force_compile: bool = False,
+    noise_level: float = 0.0,
 ) -> SimulatedExperiment:
 
     # Write SBML model
@@ -134,6 +141,8 @@ def create_simulated_experiment(
         importer.petab_problem.measurement_df,
     )
 
+    meas_df = add_noise_to_measurements(meas_df, noise_level=noise_level)
+
     PetabIO.write_meas_df(meas_df, filename=paths.measurements())
 
     return SimulatedExperiment.load(paths, model)
@@ -183,5 +192,5 @@ def simulate_experiment(
     paths = ExperimentPaths(exp_dir, true_params.id)
 
     return create_simulated_experiment(
-        model=model, true_params=true_params, data=petab_data, paths=paths
+        model=model, true_params=true_params, data=petab_data, paths=paths, noise_level=conditions.noise_level
     )
