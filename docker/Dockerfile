@@ -59,6 +59,9 @@ RUN patch /usr/local/lib/python3.10/dist-packages/petab/v1/problem.py mnt/tmp/pe
 COPY docker/patches/pypesto_import_changes.patch /mnt/tmp/pypesto_import_changes.patch
 RUN patch /usr/local/lib/python3.10/dist-packages/pypesto/petab/importer.py mnt/tmp/pypesto_import_changes.patch
 
+COPY docker/patches/sampling_bounds.patch /mnt/tmp/sampling_bounds_changes.patch
+RUN patch /usr/local/lib/python3.10/dist-packages/pypesto/visualize/sampling.py mnt/tmp/sampling_bounds_changes.patch
+
 # Install Claude Code
 RUN npm install -g @anthropic-ai/claude-code
 
