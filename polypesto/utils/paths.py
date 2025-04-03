@@ -16,3 +16,17 @@ def find_experiment_paths(base_dir: str) -> Dict[Tuple[str, str], ExperimentPath
         experiment_paths[paths.get_base_name(), paths.get_exp_id()] = paths
 
     return experiment_paths
+
+
+def setup_data_dirs(script_path):
+
+    script_dir = os.path.dirname(script_path)
+    script_name = os.path.splitext(os.path.basename(script_path))[0]
+
+    data_dir = os.path.join(script_dir, "data", script_name)
+    test_dir = os.path.join(script_dir, "data", "test")
+
+    os.makedirs(data_dir, exist_ok=True)
+    os.makedirs(test_dir, exist_ok=True)
+
+    return data_dir, test_dir

@@ -98,6 +98,10 @@ class ExperimentPaths:
         return f"{self.figures_base_dir}/{self.exp_id}"
 
     @property
+    def measurements_data_plot(self) -> str:
+        return f"{self.figures_dir}/measurements.png"
+
+    @property
     def waterfall_plot(self) -> str:
         return f"{self.figures_dir}/waterfall.png"
 
@@ -108,7 +112,7 @@ class ExperimentPaths:
     @property
     def sampling_trace_plot(self) -> str:
         return f"{self.figures_dir}/sampling_trace.png"
-    
+
     @property
     def confidence_intervals_plot(self) -> str:
         return f"{self.figures_dir}/confidence_intervals.png"
@@ -120,6 +124,10 @@ class ExperimentPaths:
     @property
     def optimization_scatter_plot(self) -> str:
         return f"{self.figures_dir}/optimization_scatter.png"
+
+    @property
+    def ensemble_predictions_plot(self) -> str:
+        return f"{self.figures_dir}/ensemble_predictions.png"
 
     ########################
     ### Helper functions ###
@@ -158,22 +166,5 @@ class ExperimentPaths:
             exp_id=ExperimentPaths.get_exp_id_from_yaml(results_path),
         )
 
-    # @staticmethod
-    # def from_results(yaml_path: str | Path) -> "ExperimentPaths":
-    #     """Create ExperimentPaths from a results.hdf5 file"""
-    #     return ExperimentPaths.from_yaml(yaml_path)
 
-
-# class SimulatedExperimentPaths(ExperimentPaths):
-#     """
-#     Paths for simulated experiments.
-#     """
-
-#     def true_params(self) -> str:
-#         return f"{self.exp_dir}/params.json"
-
-#     def assert_parameters_exist(self):
-#         if not os.path.exists(self.true_params()):
-#             raise FileNotFoundError(
-#                 f"True parameters file not found at {self.true_params()}"
 #             )

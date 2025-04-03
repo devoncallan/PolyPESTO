@@ -105,18 +105,3 @@ def create_study(
         simulation_params=simulation_params,
         experiments=experiments,
     )
-
-
-"""
-
-data
-    study_000
-    study_001
-        conditions_000
-        conditions_001
-            petab
-                common
-                p_000
-                p_001
-
-"""
