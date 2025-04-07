@@ -170,7 +170,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# Any PETAB models that are generated
-src/models/**/
-src/data/datasets/**/
-src/data/fitting/**/
+# Any PETAB data that is generated
+experiments/*/data/
+amici_models/
+.vscode/
+polypesto/_models/*
+_experiments/
+experiments/**/data/
