@@ -16,12 +16,14 @@ from .true import (
     plot_true_params_on_trace,
     draw_true_param_marker,
 )
+from .base import safe_plot
 
 ######################
 ### Sampling Plots ###
 ######################
 
 
+@safe_plot
 def plot_parameter_traces(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, List[Axes]]:
@@ -56,7 +58,10 @@ def plot_parameter_traces(
     return fig, axes
 
 
-def plot_confidence_intervals(result, true_params=None, **kwargs):
+@safe_plot
+def plot_confidence_intervals(
+    result, true_params: Optional[Dict[str, float]] = None, **kwargs
+) -> Tuple[Figure, Axes]:
 
     # Create sampling result handler
     sampling_result = SamplingResult(result, true_params)
@@ -101,7 +106,7 @@ def plot_confidence_intervals(result, true_params=None, **kwargs):
     plt.tight_layout()
     return fig, ax
 
-
+@safe_plot
 def plot_sampling_scatter(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, sns.PairGrid]:

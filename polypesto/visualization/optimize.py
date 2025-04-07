@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Dict
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.axes import Axes
 import seaborn as sns
 
 import pypesto.visualize as vis
@@ -9,13 +10,15 @@ from pypesto.result import Result
 
 from polypesto.core.results import OptimizationResult
 from .true import plot_true_params_on_pairgrid
+from .base import safe_plot
 
 ##########################
 ### Optimization Plots ###
 ##########################
 
 
-def plot_waterfall(result: Result, **kwargs):
+@safe_plot
+def plot_waterfall(result: Result, **kwargs) -> Tuple[Figure, Axes]:
 
     if not hasattr(result, "optimize_result") or result.optimize_result is None:
         return plt.subplots()
@@ -27,6 +30,7 @@ def plot_waterfall(result: Result, **kwargs):
     return fig, axes
 
 
+@safe_plot
 def plot_optimization_scatter(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, sns.PairGrid]:
