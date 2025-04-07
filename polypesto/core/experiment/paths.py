@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Dict, List
 
 
 class ExperimentPaths:
@@ -8,7 +7,7 @@ class ExperimentPaths:
     Manages pathing for experiment data.
     - Petab Data
     - PyPESTO Results
-    - Figures etc.
+    - Figures
     """
 
     def __init__(self, base_dir: str | Path, exp_id: str):
@@ -165,6 +164,3 @@ class ExperimentPaths:
             base_dir=ExperimentPaths.get_base_dir_from_yaml(results_path),
             exp_id=ExperimentPaths.get_exp_id_from_yaml(results_path),
         )
-
-
-#             )

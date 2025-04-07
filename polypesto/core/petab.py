@@ -157,16 +157,6 @@ class PetabIO:
         return yaml_filepath
 
 
-def store_function_name(func: Callable) -> Callable:
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> PetabData:
-        petab_data = func(*args, **kwargs)
-        petab_data.name = func.__name__
-        return petab_data
-
-    return wrapper
-
-
 ############################
 ### Define petab problem ###
 ############################

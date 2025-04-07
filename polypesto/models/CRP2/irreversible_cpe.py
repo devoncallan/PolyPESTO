@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 import pandas as pd
+from numpy.typing import ArrayLike
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
@@ -18,15 +19,15 @@ class IrreversibleCPE(ModelInterface):
         return irreversible_cpe
 
     @staticmethod
-    def create_conditions(fA0, cM0, **kwargs) -> pd.DataFrame:
+    def create_conditions(fA0: ArrayLike, cM0: ArrayLike, **kwargs) -> pd.DataFrame:
         """
         Create conditions dataframe for the model.
 
         Parameters
         ----------
-        fA0 : List[float] or float
+        fA0 : ArrayLike
             Feed fraction of monomer A
-        cM0 : List[float] or float
+        cM0 : ArrayLike
             Total monomer concentration
 
         Returns
@@ -49,6 +50,14 @@ class IrreversibleCPE(ModelInterface):
 
     @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
+        """
+        Get default fit parameters for the model.
+
+        Returns
+        -------
+        Dict[str, pet.FitParameter]
+            Dictionary of fit parameters
+        """
         return {
             "rA": pet.FitParameter(
                 id="rA",

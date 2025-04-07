@@ -18,6 +18,8 @@ from . import Experiment, ExperimentPaths
 
 @dataclass
 class SimulationConditions:
+    """
+    Class to hold simulation conditions for a single experiment."""
 
     name: str
     t_eval: List[float]
@@ -27,6 +29,15 @@ class SimulationConditions:
 
 
 def create_simulation_conditions(conditions_dict: Dict) -> List[SimulationConditions]:
+    """
+    Create a list of SimulationConditions from a dictionary.
+    Dictionary keys should be:
+    - name: Name of the simulation
+    - t_eval: Time points for the simulation
+    - conditions: Dictionary of experimental conditions
+    - fit_params: DataFrame of fit parameters
+    - noise_level: Noise level for the simulation
+    """
 
     # Check that all lists have the same length
     ntrials = len(next(iter(conditions_dict.values())))
@@ -55,6 +66,15 @@ def create_simulation_conditions(conditions_dict: Dict) -> List[SimulationCondit
 
 @dataclass
 class SimulatedExperiment:
+    
+    """
+    Class to hold a simulated experiment.
+    ----------
+    experiment : Experiment
+        The experiment object containing the simulated data.
+    true_params : ParameterSet
+        The true parameter values used for the simulation.
+    """
 
     experiment: Experiment
     true_params: ParameterSet
@@ -163,8 +183,9 @@ def simulate_experiment(
         Model class to use for simulation
     true_params : ParameterSet
         True parameter values for simulation
-    config : ExperimentConfig
-        Configuration for the experiment
+    conditions : SimulationConditions
+        Conditions for the simulation, including time points and
+        experimental conditions
     base_dir : str, optional
         Base directory for data, by default "data"
 

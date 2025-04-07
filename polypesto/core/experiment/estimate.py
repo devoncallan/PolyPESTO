@@ -5,7 +5,6 @@ from polypesto.core.pypesto import (
     optimize_problem,
     profile_problem,
     sample_problem,
-    save_result,
 )
 
 from . import Experiment
