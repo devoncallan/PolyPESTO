@@ -1,9 +1,7 @@
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict
 
 from numpy.typing import ArrayLike
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-from matplotlib.lines import Line2D
 import seaborn as sns
 
 
