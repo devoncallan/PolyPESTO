@@ -1,0 +1,4 @@
+parameterId	parameterScale	lowerBound	upperBound	nominalValue	estimate
+rA	log10	0.01	100.0	1.0	True
+rB	log10	0.01	100.0	1.0	True
+rX	log10	0.01	100.0	1.0	False

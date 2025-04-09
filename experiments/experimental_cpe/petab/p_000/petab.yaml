@@ -1,0 +1,16 @@
+parameter_file: /PolyPESTO/experiments/irreversible_cpe/data/single_rxn/fA0_[0.03,
+  0.05, 0.1]_cM0_[1.0, 1.0, 1.0]/petab/common/parameters.tsv
+format_version: 1
+problems:
+- condition_files:
+  - /PolyPESTO/experiments/irreversible_cpe/data/single_rxn/fA0_[0.03, 0.05, 0.1]_cM0_[1.0,
+    1.0, 1.0]/petab/common/conditions.tsv
+  measurement_files:
+  - /PolyPESTO/experiments/irreversible_cpe/data/single_rxn/fA0_[0.03, 0.05, 0.1]_cM0_[1.0,
+    1.0, 1.0]/petab/p_000/measurements.tsv
+  sbml_files:
+  - /PolyPESTO/experiments/irreversible_cpe/data/single_rxn/fA0_[0.03, 0.05, 0.1]_cM0_[1.0,
+    1.0, 1.0]/petab/common/irreversible_cpe.xml
+  observable_files:
+  - /PolyPESTO/experiments/irreversible_cpe/data/single_rxn/fA0_[0.03, 0.05, 0.1]_cM0_[1.0,
+    1.0, 1.0]/petab/common/observables.tsv

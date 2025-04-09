@@ -85,14 +85,15 @@ test_study = create_study(
 test_study = Study.load(TEST_DIR, IrreversibleCPE)
 
 # Run parameter estimation
-# study.run_parameter_estimation(
-#     config=dict(
-#         optimize=dict(n_starts=100, method="Nelder-Mead"),
-#         profile=dict(method="Nelder-Mead"),
-#         sample=dict(n_samples=10000, n_chains=5),
-#     )
-# )
+study.run_parameter_estimation(
+    config=dict(
+        optimize=dict(n_starts=100, method="Nelder-Mead"),
+        profile=dict(method="Nelder-Mead"),
+        sample=dict(n_samples=10000, n_chains=5),
+    )
+)
 
+quit()
 
 for (cond_id, p_id), result in study.results.items():
 

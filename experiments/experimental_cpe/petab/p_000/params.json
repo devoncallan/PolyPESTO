@@ -1,0 +1,13 @@
+{
+    "id": "p_000",
+    "parameters": {
+        "rA": {
+            "id": "rA",
+            "value": 0.5
+        },
+        "rB": {
+            "id": "rB",
+            "value": 0.5
+        }
+    }
+}
