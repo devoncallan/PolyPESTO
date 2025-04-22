@@ -25,20 +25,21 @@ DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 
 simulation_params = ParameterGroup.create_parameter_grid(
     {
-        "rA": [0.5, 1.0, 2.0],
-        "rB": [0.5, 1.0, 2.0],
-    }
+        "rA": [0.1, 0.5, 1.0, 2.0, 10.0],
+        "rB": [0.1, 0.5, 1.0, 2.0, 10.0],
+    },
+    filter_fn=lambda p: p["rA"] >= p["rB"],
 )
-
+quit()
 # Define fitting parameters
 fit_params = IrreversibleCPE.get_default_parameters()
 
 # Define experimental configurations
-ntrials = 1
+ntrials = 5
 t_eval = np.arange(0, 1, 0.1)
 
-fA0s = [[0.03, 0.05, 0.1]]
-cM0s = [[1.0, 1.0, 1.0]]
+fA0s = [[0.1], [0.2], [0.3], [0.4], [0.5], [0.6], [0.7], [0.8], [0.9]]
+cM0s = [[1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0]]
 names = [f"fA0_{fA0}_cM0_{cM0}" for fA0, cM0 in zip(fA0s, cM0s)]
 n_trials = len(fA0s)
 assert len(fA0s) == len(cM0s), "fA0s and cM0s must have the same length"
@@ -54,13 +55,13 @@ conditions = create_simulation_conditions(
 )
 
 # Create the study - this will simulate all experiments
-study = create_study(
-    model=IrreversibleCPE,
-    simulation_params=simulation_params,
-    conditions=conditions,
-    base_dir=DATA_DIR,
-    overwrite=True,
-)
+# study = create_study(
+#     model=IrreversibleCPE,
+#     simulation_params=simulation_params,
+#     conditions=conditions,
+#     base_dir=DATA_DIR,
+#     overwrite=True,
+# )
 study = Study.load(DATA_DIR, IrreversibleCPE)
 
 # Create testing conditions for ensemble predictions
@@ -75,26 +76,31 @@ test_conditions = create_simulation_conditions(
         noise_level=[0.02],
     )
 )
-test_study = create_study(
-    model=IrreversibleCPE,
-    simulation_params=simulation_params,
-    conditions=test_conditions,
-    base_dir=TEST_DIR,
-)
+# test_study = create_study(
+#     model=IrreversibleCPE,
+#     simulation_params=simulation_params,
+#     conditions=test_conditions,
+#     base_dir=TEST_DIR,
+# )
 
 test_study = Study.load(TEST_DIR, IrreversibleCPE)
 
+# quit()
 # Run parameter estimation
-# study.run_parameter_estimation(
-#     config=dict(
-#         optimize=dict(n_starts=100, method="Nelder-Mead"),
-#         profile=dict(method="Nelder-Mead"),
-#         sample=dict(n_samples=10000, n_chains=5),
-#     )
-# )
+study.run_parameter_estimation(
+    config=dict(
+        optimize=dict(n_starts=100, method="Nelder-Mead"),
+        profile=dict(method="Nelder-Mead"),
+        sample=dict(n_samples=10000, n_chains=5),
+    )
+)
+print("Hello!")
+print(study.results)
 
 
 for (cond_id, p_id), result in study.results.items():
+
+    print()
 
     exp = study.experiments[(cond_id, p_id)]
     true_params = exp.true_params
