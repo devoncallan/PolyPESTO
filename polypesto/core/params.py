@@ -190,6 +190,7 @@ class ParameterGroup:
     def create_parameter_grid(
         parameter_ranges: Dict[ParameterID, List[float]],
         group_id: str = "parameter_grid",
+        filter_fn: Optional[callable] = None,
     ) -> "ParameterGroup":
         """
         Create a parameter group from a grid of parameter values.
@@ -200,6 +201,9 @@ class ParameterGroup:
             Dictionary mapping parameter names to lists of values
         group_id : str, optional
             ID for the parameter group
+        filter_fn : callable, optional
+            Function to filter parameter combinations. Should take a dictionary
+            of parameter values and return True or False.
 
         Returns
         -------
@@ -216,6 +220,10 @@ class ParameterGroup:
         for i, combination in enumerate(itertools.product(*param_values)):
 
             param_dict = {name: value for name, value in zip(param_names, combination)}
+
+            if filter_fn is not None and not filter_fn(param_dict):
+                continue
+
             pg.add(ParameterSet.lazy_from_dict(param_dict, id=f"p_{i:03d}"))
 
         return pg
