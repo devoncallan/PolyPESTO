@@ -4,6 +4,7 @@ import os
 
 from pypesto import Result, store
 
+from matplotlib.axes import Axes
 from polypesto.models import ModelInterface
 from polypesto.core.params import ParameterGroup
 from polypesto.core.experiment import (
@@ -72,18 +73,20 @@ class Study:
         unique_keys = sorted(list(set(keys)))
         return unique_keys
 
-    def run_parameter_estimation(self, config: Dict[str, Any]) -> None:
+    def run_parameter_estimation(
+        self, config: Dict[str, Any], overwrite: bool = False
+    ) -> None:
         """Run parameter estimation for all experiments in the study."""
 
-        results = {}
         for (cond_id, p_id), experiment in self.experiments.items():
 
+            if not overwrite and (cond_id, p_id) in self.results:
+                print(f"Skipping {cond_id}, {p_id} as it is already estimated.")
+                continue
+
+            print(f"Running parameter estimation for {cond_id}, {p_id}...")
             result = run_parameter_estimation(experiment, config)
-            results[(cond_id, p_id)] = result
-
-        self.results = results
-
-        # return
+            self.results[(cond_id, p_id)] = result
 
     @staticmethod
     def load(dir_path: str, model: Type[ModelInterface]) -> "Study":

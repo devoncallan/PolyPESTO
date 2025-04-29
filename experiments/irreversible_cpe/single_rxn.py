@@ -46,6 +46,26 @@ DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 # names = [f"fA0_{fA0}_cM0_{cM0}" for fA0, cM0 in zip(fA0s, cM0s)]
 # n_trials = len(fA0s)
 # assert len(fA0s) == len(cM0s), "fA0s and cM0s must have the same length"
+simulation_params = ParameterGroup.create_parameter_grid(
+    {
+        "rA": [0.1, 0.5, 1.0, 2.0, 10.0],
+        "rB": [0.1, 0.5, 1.0, 2.0, 10.0],
+    },
+    filter_fn=lambda p: p["rA"] >= p["rB"],
+)
+quit()
+# Define fitting parameters
+fit_params = IrreversibleCPE.get_default_parameters()
+
+# Define experimental configurations
+ntrials = 5
+t_eval = np.arange(0, 1, 0.1)
+
+fA0s = [[0.1], [0.2], [0.3], [0.4], [0.5], [0.6], [0.7], [0.8], [0.9]]
+cM0s = [[1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0]]
+names = [f"fA0_{fA0}_cM0_{cM0}" for fA0, cM0 in zip(fA0s, cM0s)]
+n_trials = len(fA0s)
+assert len(fA0s) == len(cM0s), "fA0s and cM0s must have the same length"
 
 # conditions = create_simulation_conditions(
 #     dict(
@@ -57,7 +77,7 @@ DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 #     )
 # )
 
-# # Create the study - this will simulate all experiments
+# Create the study - this will simulate all experiments
 # study = create_study(
 #     model=IrreversibleCPE,
 #     simulation_params=simulation_params,
@@ -67,18 +87,18 @@ DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 # )
 study = Study.load(DATA_DIR, IrreversibleCPE)
 
-# # Create testing conditions for ensemble predictions
-# fA0s_test = [[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]]
-# cM0s_test = [[1.0] * 9]
-# test_conditions = create_simulation_conditions(
-#     dict(
-#         name=["Test_Study"],
-#         t_eval=[t_eval],
-#         conditions=dict(fA0=fA0s_test, cM0=cM0s_test),
-#         fit_params=[fit_params],
-#         noise_level=[0.02],
-#     )
-# )
+# Create testing conditions for ensemble predictions
+fA0s_test = [[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]]
+cM0s_test = [[1.0] * 9]
+test_conditions = create_simulation_conditions(
+    dict(
+        name=["Test_Study"],
+        t_eval=[t_eval],
+        conditions=dict(fA0=fA0s_test, cM0=cM0s_test),
+        fit_params=[fit_params],
+        noise_level=[0.02],
+    )
+)
 # test_study = create_study(
 #     model=IrreversibleCPE,
 #     simulation_params=simulation_params,
@@ -88,20 +108,26 @@ study = Study.load(DATA_DIR, IrreversibleCPE)
 
 # test_study = Study.load(TEST_DIR, IrreversibleCPE)
 
-# # Run parameter estimation
-# study.run_parameter_estimation(
-#     config=dict(
-#         optimize=dict(n_starts=100, method="Nelder-Mead"),
-#         profile=dict(method="Nelder-Mead"),
-#         sample=dict(n_samples=10000, n_chains=5),
-#     )
-# )
+# quit()
+# Run parameter estimation
+study.run_parameter_estimation(
+    config=dict(
+        optimize=dict(n_starts=100, method="Nelder-Mead"),
+        profile=dict(method="Nelder-Mead"),
+        sample=dict(n_samples=10000, n_chains=5),
+    )
+)
+print("Hello!")
+print(study.results)
 
 # for (cond_id, p_id), result in study.results.items():
 
-plot_all_comparisons(study)
+# plot_all_comparisons(study)
 
-# print(result.sample_result)
+#     print()
+
+#     exp = study.experiments[(cond_id, p_id)]
+#     true_params = exp.true_params
 
 # # for ci in pypesto.sample.calculate_ci_mcmc_sample(result):
 # #     print((10 ** ci[0], 10 ** ci[1]))
