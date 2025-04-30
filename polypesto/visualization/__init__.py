@@ -18,6 +18,8 @@ from polypesto.visualization.measurements import (
     plot_all_measurements,
 )
 
+from polypesto.visualization.compare import plot_comparisons, plot_all_comparisons
+
 __all__ = [
     "plot_waterfall",
     "plot_optimization_scatter",

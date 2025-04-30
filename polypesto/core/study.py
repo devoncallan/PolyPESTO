@@ -33,9 +33,45 @@ class Study:
         self.experiments = experiments
         self.results = results if results is not None else {}
 
-    def get_experiment(self, cond_id: str, p_id: str) -> SimulatedExperiment:
+    def get_experiments(
+        self, cond_id: Optional[str] = None, p_id: Optional[str] = None
+    ) -> SimulatedExperimentDict:
+        filtered_experiments: SimulatedExperimentDict = {}
 
-        return self.experiments.get((cond_id, p_id))
+        for (cond_id, p_id), experiment in self.experiments.items():
+            if (cond_id is None or cond_id == cond_id) and (
+                p_id is None or p_id == p_id
+            ):
+                filtered_experiments[(cond_id, p_id)] = experiment
+
+        return filtered_experiments
+
+    def get_results(
+        self, cond_id: Optional[str] = None, p_id: Optional[str] = None
+    ) -> ResultsDict:
+        filtered_results: ResultsDict = {}
+
+        for (cond_id, p_id), result in self.results.items():
+            if (cond_id is None or cond_id == cond_id) and (
+                p_id is None or p_id == p_id
+            ):
+                filtered_results[(cond_id, p_id)] = result
+
+        return filtered_results
+
+    def get_parameter_ids(self) -> List[str]:
+        """Get all parameter IDs from the simulation parameters."""
+
+        keys = [p_id for (cond_id, p_id) in self.experiments.keys()]
+        unique_keys = sorted(list(set(keys)))
+        return unique_keys
+
+    def get_condition_ids(self) -> List[str]:
+        """Get all condition IDs from the simulation parameters."""
+
+        keys = [cond_id for (cond_id, p_id) in self.experiments.keys()]
+        unique_keys = sorted(list(set(keys)))
+        return unique_keys
 
     def run_parameter_estimation(
         self, config: Dict[str, Any], overwrite: bool = False
