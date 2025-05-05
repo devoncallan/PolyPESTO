@@ -18,7 +18,12 @@ from polypesto.visualization.measurements import (
     plot_all_measurements,
 )
 
-from polypesto.visualization.compare import plot_comparisons, plot_all_comparisons
+from polypesto.visualization.compare import plot_comparisons_1D, plot_all_comparisons_1D, plot_comparisons_2D, plot_all_comparisons_2D
+
+from polypesto.visualization.study import (
+    plot_all_results,
+    plot_all_ensemble_predictions,
+)
 
 __all__ = [
     "plot_waterfall",
@@ -30,4 +35,9 @@ __all__ = [
     "plot_ensemble_predictions",
     "plot_measurements",
     "plot_all_measurements",
+    # "plot_comparisons_1D",
+    "plot_all_comparisons_1D",
+    "plot_all_results",
+    "plot_all_ensemble_predictions",
+    "plot_all_comparisons_2D",
 ]
