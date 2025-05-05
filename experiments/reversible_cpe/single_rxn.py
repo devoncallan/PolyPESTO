@@ -3,7 +3,7 @@ import numpy as np
 from polypesto.core.params import ParameterGroup
 from polypesto.core.study import Study, create_study
 from polypesto.core.experiment import create_simulation_conditions
-from polypesto.models.CRP2 import IrreversibleCPE
+from polypesto.models.CRP2 import ReversibleCPE
 from polypesto.utils.paths import setup_data_dirs
 from polypesto.visualization import (
     plot_all_results,
@@ -11,7 +11,7 @@ from polypesto.visualization import (
     plot_all_comparisons_1D,
 )
 
-from util import get_test_study
+from experiments.irreversible_cpe.util import get_test_study
 
 # from .util import get_test_study
 
@@ -19,17 +19,19 @@ DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 
 simulation_params = ParameterGroup.create_parameter_grid(
     {
-        "rA": [0.1, 0.5, 1.0, 2.0, 10.0],
-        "rB": [0.1, 0.5, 1.0, 2.0, 10.0],
+        "rA": [10.0],
+        "rB": [0.5],
+        "KAA": [0.0, 0.01, 0.1, 1.0, 10.0]
+        
     },
     filter_fn=lambda p: p["rA"] >= p["rB"],
 )
 
 # Define fitting parameters
-fit_params = IrreversibleCPE.get_default_parameters()
+fit_params = ReversibleCPE.get_default_parameters()
 
 # Define experimental configurations
-t_eval = np.arange(0, 1, 0.05)
+t_eval = np.arange(0, 0.8, 0.05)
 # fA0s = [[0.1], [0.2], [0.3], [0.4], [0.5], [0.6], [0.7], [0.8], [0.9]]
 # cM0s = [[1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0], [1.0]]
 fA0s = [[0.1], [0.3], [0.5], [0.7], [0.9]]
@@ -50,7 +52,7 @@ conditions = create_simulation_conditions(
 
 # Create the study - this will simulate all experiments
 study = create_study(
-    model=IrreversibleCPE,
+    model=ReversibleCPE,
     simulation_params=simulation_params,
     conditions=conditions,
     base_dir=DATA_DIR,
