@@ -1,5 +1,6 @@
 from typing import Dict, Tuple
 import pandas as pd
+import numpy as np
 
 from polypesto.core import petab as pet
 from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
@@ -19,28 +20,20 @@ class ReversibleCPE(ModelInterface):
         return reversible_cpe
 
     @staticmethod
-    def create_conditions(fA0s, cM0s) -> pd.DataFrame:
-        A0s = fA0s * cM0s
-        B0s = (1 - fA0s) * cM0s
+    def create_conditions(fA0, cM0) -> pd.DataFrame:
+
+        fA0 = np.array(fA0)
+        cM0 = np.array(cM0)
+
+        A0 = fA0 * cM0
+        B0 = (1 - fA0) * cM0
 
         return pet.define_conditions(
             {
-                "A0": A0s,
-                "B0": B0s,
-                # "fA0": fA0s,
-                # "pA": fA0s,
-                # "pB": 1 - fA0s,
-                # "pAA": fA0s,
-                # "pBA": 1 - fA0s,
-                # "pAB": fA0s,
-                # "pBB": 1-fA0s,
+                "A0": A0,
+                "B0": B0,
             }
         )
-
-    #     sbml.create_rule(model, pA, formula="1 - pB")
-    # sbml.create_rule(model, pAA, formula="1 - pBA")
-    # sbml.create_rule(model, pBB, formula="1 - pAB")
-    # return IrreversibleCPE.create_conditions(fA0s, cM0s)
 
     @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
@@ -98,7 +91,7 @@ class ReversibleCPE(ModelInterface):
 
     @staticmethod
     def get_default_parameters() -> pd.DataFrame:
-        return pet.define_parameters(ReversibleCPE.default_fit_params())
+        return pet.define_parameters(ReversibleCPE.get_default_fit_params())
 
     @staticmethod
     def get_default_observables() -> pd.DataFrame:
@@ -291,7 +284,7 @@ def irr_reversible_cpe_() -> Tuple[sbml.Document, sbml.Model]:
     xA = sbml.create_species(model, "xA", initialAmount=0.0)
     A = sbml.create_parameter(model, "A", value=0, units="mole")
     sbml.create_rule(model, A, formula=f"A0 * (1 - xA)")
-    
+
     xB = sbml.create_parameter(model, "xB", value=0)
     B = sbml.create_parameter(model, "B", value=0, units="mole")
     sbml.create_rule(model, B, formula=f"(A0 + B0)*(1 - time) - A")
