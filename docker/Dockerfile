@@ -48,6 +48,8 @@ RUN pip3 install --no-cache-dir pypesto[amici,petab,fides]
 RUN pip3 install --no-cache-dir jupyter
 RUN pip3 install --no-cache-dir pyswarm
 RUN pip3 install --no-cache-dir SBMLDiagrams
+RUN pip3 install --no-cache-dir streamlit
+RUN pip3 install --no-cache-dir plotly
 
 # Copy the patch file
 COPY docker/patches/sbml_import_changes.patch /mnt/tmp/sbml_import_changes.patch
