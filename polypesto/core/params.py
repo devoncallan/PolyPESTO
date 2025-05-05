@@ -147,6 +147,9 @@ class ParameterGroup:
         }
         return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
 
+    def to_dict(self) -> dict:
+        return asdict(self)
+
     def add(self, parameter_set: ParameterSet):
         if not self.parameter_sets:
             self.parameter_sets = {parameter_set.id: parameter_set}
@@ -179,7 +182,7 @@ class ParameterGroup:
         return list(self.parameter_sets.values())
 
     def write(self, filepath: str):
-        file.write_json(filepath, asdict(self))
+        file.write_json(filepath, self.to_dict())
 
     @staticmethod
     def load(filepath: str, **kwargs):
@@ -217,14 +220,16 @@ class ParameterGroup:
         param_values = list(parameter_ranges.values())
 
         # Generate all combinations
-        for i, combination in enumerate(itertools.product(*param_values)):
+        num_params = 0
+        for combination in itertools.product(*param_values):
 
             param_dict = {name: value for name, value in zip(param_names, combination)}
 
             if filter_fn is not None and not filter_fn(param_dict):
                 continue
 
-            pg.add(ParameterSet.lazy_from_dict(param_dict, id=f"p_{i:03d}"))
+            pg.add(ParameterSet.lazy_from_dict(param_dict, id=f"p_{num_params:03d}"))
+            num_params += 1
 
         return pg
 

@@ -24,7 +24,7 @@ class SimulationConditions:
     name: str
     t_eval: List[float]
     conditions: Dict[str, List[float]]
-    fit_params: pd.DataFrame
+    fit_params: Optional[pd.DataFrame]
     noise_level: float
 
 
@@ -66,7 +66,6 @@ def create_simulation_conditions(conditions_dict: Dict) -> List[SimulationCondit
 
 @dataclass
 class SimulatedExperiment:
-    
     """
     Class to hold a simulated experiment.
     ----------
@@ -199,6 +198,9 @@ def simulate_experiment(
     cond_df = model.create_conditions(**conditions.conditions)
     meas_df = define_empty_measurements(obs_df, cond_df, conditions.t_eval)
 
+    if conditions.fit_params is None:
+        conditions.fit_params = model.get_default_parameters()
+
     petab_data = PetabData(
         obs_df=obs_df,
         cond_df=cond_df,
@@ -213,5 +215,9 @@ def simulate_experiment(
     paths = ExperimentPaths(exp_dir, true_params.id)
 
     return create_simulated_experiment(
-        model=model, true_params=true_params, data=petab_data, paths=paths, noise_level=conditions.noise_level
+        model=model,
+        true_params=true_params,
+        data=petab_data,
+        paths=paths,
+        noise_level=conditions.noise_level,
     )

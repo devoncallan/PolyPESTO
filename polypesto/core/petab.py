@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Tuple, Sequence, Callable
+from typing import Dict, Tuple, Sequence, Callable, Optional
 from functools import wraps
 from dataclasses import dataclass
 

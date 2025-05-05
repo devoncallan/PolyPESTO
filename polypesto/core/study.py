@@ -34,15 +34,24 @@ class Study:
         self.results = results if results is not None else {}
 
     def get_experiments(
-        self, cond_id: Optional[str] = None, p_id: Optional[str] = None
+        self, filter_cond_id: Optional[str] = None, filter_p_id: Optional[str] = None
     ) -> SimulatedExperimentDict:
         filtered_experiments: SimulatedExperimentDict = {}
 
+        print("Filtering experiments...")
+        print(f"Filter condition ID: {filter_cond_id}")
+        print(f"Filter parameter ID: {filter_p_id}")
+
         for (cond_id, p_id), experiment in self.experiments.items():
-            if (cond_id is None or cond_id == cond_id) and (
-                p_id is None or p_id == p_id
+
+            if (filter_cond_id is None or cond_id == filter_cond_id) and (
+                filter_p_id is None or p_id == filter_p_id
             ):
                 filtered_experiments[(cond_id, p_id)] = experiment
+            # else:
+            #     print(
+            #         f"Skipping experiment {cond_id}, {p_id} as it does not match the filter."
+            #     )
 
         return filtered_experiments
 
@@ -65,6 +74,9 @@ class Study:
         keys = [p_id for (cond_id, p_id) in self.experiments.keys()]
         unique_keys = sorted(list(set(keys)))
         return unique_keys
+    
+    def get_parameter_values(self) -> Dict[str, Dict[str, float]]:
+        return
 
     def get_condition_ids(self) -> List[str]:
         """Get all condition IDs from the simulation parameters."""
@@ -78,8 +90,11 @@ class Study:
     ) -> None:
         """Run parameter estimation for all experiments in the study."""
 
+        print("Running parameter estimation for all experiments...")
+        print(self.results)
         for (cond_id, p_id), experiment in self.experiments.items():
 
+            # print(self.results[(cond_id, p_id)])
             if not overwrite and (cond_id, p_id) in self.results:
                 print(f"Skipping {cond_id}, {p_id} as it is already estimated.")
                 continue
@@ -99,18 +114,27 @@ class Study:
         results = {}
         experiment_paths = find_experiment_paths(dir_path)
 
+        if len(experiment_paths) == 0:
+            raise FileNotFoundError(
+                f"No experiment paths found in directory {dir_path}."
+            )
+
         for (cond_id, p_id), paths in experiment_paths.items():
 
+            print(f"Loading experiment {cond_id}, {p_id}...")
             experiment = SimulatedExperiment.load(paths, model)
             experiments[(cond_id, p_id)] = experiment
-            simulation_params = experiment.true_params
+            simulation_params[p_id] = experiment.true_params
 
             if os.path.exists(paths.pypesto_results):
                 result = store.read_result(paths.pypesto_results)
                 results[(cond_id, p_id)] = result
 
+            # break
+
         simulation_params = ParameterGroup("Loaded", simulation_params)
 
+        print("Done loading experiments.")
         return Study(
             model=model,
             simulation_params=simulation_params,
@@ -127,6 +151,17 @@ def create_study(
     overwrite: bool = False,
 ) -> Study:
 
+    # Try to load the study if it already exists (no overwrite)
+    if not overwrite:
+        try:
+            study = Study.load(base_dir, model)
+            print("Study already exists.")
+            print("Loading existing study.")
+            return study
+        except FileNotFoundError:
+            print("Study does not exist.")
+
+    print("Creating new study.")
     experiments = {}
     for condition in conditions:
         for p_id in simulation_params.get_ids():

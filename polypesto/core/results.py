@@ -140,7 +140,7 @@ class ParameterResult:
                 result[name] = value
 
         return result
-
+ 
 
 class OptimizationResult(ParameterResult):
     """
@@ -352,7 +352,7 @@ class SamplingResult(ParameterResult):
 
         # Extract each parameter trace
         for i, idx in enumerate(self.parameter_indices):
-            if idx < len(self.param_names):
+            if idx < len(self.param_names)-1: # SPECIFICALLY FOR rX in (rA, rB, rX)
                 name = self.param_names[idx]
                 values = chain[:, idx]
                 result["parameters"][name] = values
@@ -389,9 +389,9 @@ class SamplingResult(ParameterResult):
                 upper = 1.0 - lower
 
                 # Calculate percentiles
-                low_val = np.percentile(values, lower * 100)
-                med_val = np.percentile(values, 50)
-                up_val = np.percentile(values, upper * 100)
+                low_val = np.percentile(10**values, lower * 100)
+                med_val = np.percentile(10**values, 50)
+                up_val = np.percentile(10**values, upper * 100)
 
                 intervals[alpha] = (low_val, med_val, up_val)
 
