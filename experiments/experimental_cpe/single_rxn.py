@@ -1,10 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 from polypesto.core.experiment import Experiment
 from polypesto.core.experiment.paths import ExperimentPaths
 from polypesto.models.CRP2 import IrreversibleCPE
 from polypesto.core.experiment import run_parameter_estimation
+from create_petab import create_tsvs
 
 from polypesto.visualization import (
     plot_optimization_scatter,
@@ -15,6 +17,18 @@ from polypesto.visualization import (
     plot_profiles,
     plot_all_measurements,
 )
+
+base_dir = os.path.dirname(__file__)
+csv_path = os.path.join(base_dir, "data")
+
+
+monomer_As = [f"{csv_path}/monomer_A.csv", f"{csv_path}/monomer_A_2.csv"]
+monomer_Bs = [f"{csv_path}/monomer_B.csv", f"{csv_path}/monomer_B_2.csv"]
+condition_ids = ["c_0", "c_1"]
+fA0s = [0.09, 0.03]
+
+create_tsvs(monomer_As, monomer_Bs, condition_ids, fA0s, base_dir)
+
 
 # Define where your data lives
 EXPERIMENT_BASE_DIR = "/PolyPESTO/experiments/experimental_cpe/data"
