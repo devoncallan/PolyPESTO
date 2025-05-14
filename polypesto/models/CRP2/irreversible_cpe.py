@@ -49,6 +49,10 @@ class IrreversibleCPE(ModelInterface):
         )
 
     @staticmethod
+    def create_observables(**kwargs) -> pd.DataFrame:
+        return pet.define_observables(**kwargs)
+
+    @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
         """
         Get default fit parameters for the model.
@@ -149,6 +153,12 @@ def irreversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
 
     dB = sbml.create_parameter(model, "dB", value=0)
     sbml.create_rule(model, dB, formula=f"-B*(A+rB*B)")
+
+    # Define unreacted monomer composition
+    fA = sbml.create_parameter(model, "fA", value=0)
+    sbml.create_rule(model, fA, formula="A / (A + B + 1e-10)")
+    fB = sbml.create_parameter(model, "fB", value=0)
+    sbml.create_rule(model, fB, formula="1 - fA")
 
     # Define dxA/dt (dX)
     sbml.create_rate_rule(model, xA, formula="(A0+B0)/A0 * ((dA+1e-10)/(dA+dB+1e-10))")

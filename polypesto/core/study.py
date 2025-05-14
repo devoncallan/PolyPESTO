@@ -4,6 +4,7 @@ import os
 
 from pypesto import Result, store
 
+import pandas as pd
 from matplotlib.axes import Axes
 from polypesto.models import ModelInterface
 from polypesto.core.params import ParameterGroup
@@ -74,7 +75,7 @@ class Study:
         keys = [p_id for (cond_id, p_id) in self.experiments.keys()]
         unique_keys = sorted(list(set(keys)))
         return unique_keys
-    
+
     def get_parameter_values(self) -> Dict[str, Dict[str, float]]:
         return
 
@@ -91,16 +92,15 @@ class Study:
         """Run parameter estimation for all experiments in the study."""
 
         print("Running parameter estimation for all experiments...")
-        print(self.results)
         for (cond_id, p_id), experiment in self.experiments.items():
 
-            # print(self.results[(cond_id, p_id)])
-            if not overwrite and (cond_id, p_id) in self.results:
-                print(f"Skipping {cond_id}, {p_id} as it is already estimated.")
-                continue
+            result = None
+            if (cond_id, p_id) in self.results:
+                result = self.results[(cond_id, p_id)]
+                print(f"Found existing result for {cond_id}, {p_id}.")
 
             print(f"Running parameter estimation for {cond_id}, {p_id}...")
-            result = run_parameter_estimation(experiment, config)
+            result = run_parameter_estimation(experiment, config, result, overwrite)
             self.results[(cond_id, p_id)] = result
 
     @staticmethod
@@ -147,6 +147,7 @@ def create_study(
     model: Type[ModelInterface],
     simulation_params: ParameterGroup,
     conditions: List[SimulationConditions],
+    obs_df: Optional[pd.DataFrame] = None,
     base_dir: str = "data",
     overwrite: bool = False,
 ) -> Study:
@@ -170,6 +171,7 @@ def create_study(
                 model=model,
                 true_params=simulation_params.by_id(p_id),
                 conditions=condition,
+                obs_df=obs_df,
                 base_dir=base_dir,
             )
             experiments[(condition.name, p_id)] = experiment

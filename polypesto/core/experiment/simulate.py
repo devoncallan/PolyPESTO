@@ -1,4 +1,4 @@
-from typing import Optional, Type, Dict, List
+from typing import Optional, Type, Dict, List, TypeAlias
 from dataclasses import dataclass
 import os
 
@@ -16,6 +16,9 @@ from polypesto.core.petab import (
 from . import Experiment, ExperimentPaths
 
 
+ConditionsDict: TypeAlias = Dict[str, List[float]]
+
+
 @dataclass
 class SimulationConditions:
     """
@@ -23,12 +26,14 @@ class SimulationConditions:
 
     name: str
     t_eval: List[float]
-    conditions: Dict[str, List[float]]
+    conditions: ConditionsDict
     fit_params: Optional[pd.DataFrame]
-    noise_level: float
+    noise_level: float = 0.0
 
 
-def create_simulation_conditions(conditions_dict: Dict) -> List[SimulationConditions]:
+def create_simulation_conditions(
+    conditions_dict: ConditionsDict,
+) -> List[SimulationConditions]:
     """
     Create a list of SimulationConditions from a dictionary.
     Dictionary keys should be:
@@ -171,6 +176,7 @@ def simulate_experiment(
     model: Type[ModelInterface],
     true_params: ParameterSet,
     conditions: SimulationConditions,
+    obs_df: Optional[pd.DataFrame] = None,
     base_dir: str = "data",
 ) -> SimulatedExperiment:
     """
@@ -194,7 +200,8 @@ def simulate_experiment(
         Experiment object with simulated data
     """
     # Create PetabData from configuration
-    obs_df = model.get_default_observables()
+    if obs_df is None:
+        obs_df = model.get_default_observables()
     cond_df = model.create_conditions(**conditions.conditions)
     meas_df = define_empty_measurements(obs_df, cond_df, conditions.t_eval)
 

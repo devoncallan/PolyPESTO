@@ -20,6 +20,11 @@ class ModelInterface(Protocol):
         ...
 
     @staticmethod
+    def create_observables(**kwargs) -> pd.DataFrame:
+        """Create observables dataframe"""
+        ...
+
+    @staticmethod
     def create_default_conditions() -> pd.DataFrame:
         """Create default conditions dataframe"""
         ...

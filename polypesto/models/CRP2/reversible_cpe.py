@@ -36,6 +36,10 @@ class ReversibleCPE(ModelInterface):
         )
 
     @staticmethod
+    def create_observables(**kwargs) -> pd.DataFrame:
+        return pet.define_observables(**kwargs)
+
+    @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
         return {
             "rA": pet.FitParameter(
@@ -64,7 +68,7 @@ class ReversibleCPE(ModelInterface):
                 scale=pet.C.LIN,
                 bounds=(0, 1),
                 nominal_value=0.0,
-                estimate=False,
+                estimate=True,
             ),
             "KAB": pet.FitParameter(
                 id="KAB",
@@ -326,6 +330,11 @@ def irr_reversible_cpe_() -> Tuple[sbml.Document, sbml.Model]:
     sbml.create_rule(model, dA, formula=f"-A*(kpAA*pA + kpBA*pB)")
     dB = sbml.create_parameter(model, "dB", value=0)
     sbml.create_rule(model, dB, formula=f"-B*(kpBB*pB + kpAB*pA)")
+
+    fA = sbml.create_parameter(model, "fA", value=0)
+    sbml.create_rule(model, fA, formula="A / (A + B + 1e-10)")
+    fB = sbml.create_parameter(model, "fB", value=0)
+    sbml.create_rule(model, fB, formula="1 - fA")
 
     # Define dxA/dt with regularization to prevent extreme values
     sbml.create_rate_rule(

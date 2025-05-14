@@ -11,6 +11,38 @@ import numpy as np
 from pypesto import Result
 
 
+def has_optimization_results(result: Result) -> bool:
+    return hasattr(result, "optimize_result") and result.optimize_result is not None
+
+
+def has_profile_results(result: Result) -> bool:
+    return hasattr(result, "profile_result") and result.profile_result is not None
+
+
+def has_sampling_results(result: Result) -> bool:
+    # print("Checking for sampling results...")
+    # print(f"Result: {result}")
+    # attributes = dir(result.sample_result)
+    # print(f"Attributes:", attributes)
+    # # print(f"Result:", getattr(attributes))
+    return hasattr(result, "sample_result") and result.sample_result is not None
+
+
+def has_results(result: Optional[Result], key: str) -> bool:
+
+    if result is None:
+        return False
+
+    if key == "optimize":
+        return has_optimization_results(result)
+    elif key == "profile":
+        return has_profile_results(result)
+    elif key == "sample":
+        return has_sampling_results(result)
+    else:
+        raise ValueError(f"Unknown result type: {key}")
+
+
 class ParameterResult:
     """
     Base class for parameter estimation results with common functionality.
@@ -140,7 +172,7 @@ class ParameterResult:
                 result[name] = value
 
         return result
- 
+
 
 class OptimizationResult(ParameterResult):
     """
@@ -352,7 +384,7 @@ class SamplingResult(ParameterResult):
 
         # Extract each parameter trace
         for i, idx in enumerate(self.parameter_indices):
-            if idx < len(self.param_names)-1: # SPECIFICALLY FOR rX in (rA, rB, rX)
+            if idx < len(self.param_names) - 1:  # SPECIFICALLY FOR rX in (rA, rB, rX)
                 name = self.param_names[idx]
                 values = chain[:, idx]
                 result["parameters"][name] = values

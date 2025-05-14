@@ -1,6 +1,7 @@
 from typing import Optional
 from dataclasses import dataclass
 
+import pandas as pd
 from pypesto.problem import Problem as PypestoProblem
 from petab.v1 import Problem as PetabProblem
 
@@ -48,3 +49,6 @@ class Experiment:
             pypesto_problem=problem,
             paths=paths,
         )
+        
+    def get_conditions(self) -> pd.DataFrame:
+        return self.petab_problem.condition_df

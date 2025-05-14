@@ -7,12 +7,14 @@ from polypesto.core.pypesto import (
     sample_problem,
 )
 
+from polypesto.core.results import has_results
 from . import Experiment
 
 
 def run_parameter_estimation(
     exp: Experiment,
     config: dict = {},
+    result: Optional[Result] = None,
     overwrite: bool = False,
     save: bool = True,
 ) -> Result:
@@ -21,16 +23,20 @@ def run_parameter_estimation(
         print("No parameter estimation steps configured - skipping")
         return None
 
-    result: Optional[Result] = None
     save_components: Dict[str, bool] = {"problem": True}
 
     def run_if_found(
         key: str, fun: Callable, result: Optional[Result] = None
     ) -> Optional[Result]:
-        if not key in config:
+
+        if key not in config:
             return result
 
-        print(f"    Running {fun.__name__} with {config[key]}")
+        if not overwrite and has_results(result, key):
+            print(f"\tSkipping {key} as results already exist and overwrite=False")
+            return result
+
+        print(f"\tRunning {fun.__name__} with {config[key]}")
         result = fun(exp.pypesto_problem, result=result, **config[key])
         save_components[key] = True
         return result
@@ -40,7 +46,7 @@ def run_parameter_estimation(
     result = run_if_found("sample", sample_problem, result=result)
 
     if result and save:
-        print(f"    Saving results to {exp.paths.pypesto_results}")
+        print(f"\tSaving results to {exp.paths.pypesto_results}")
 
         store.write_result(
             result=result,
@@ -50,4 +56,3 @@ def run_parameter_estimation(
         )
 
     return result
-
