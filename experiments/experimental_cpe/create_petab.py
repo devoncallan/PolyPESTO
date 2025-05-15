@@ -16,9 +16,12 @@ def create_tsvs(
     monomer_Bs: List[str],
     condition_ids: List[str],
     fA0s: List[float],
+    observables: List[str],
     base_dir: str,
 ):
-    create_measurements_dfs(monomer_As, monomer_Bs, condition_ids, fA0s, base_dir)
+    create_measurements_dfs(
+        monomer_As, monomer_Bs, condition_ids, fA0s, observables, base_dir
+    )
     create_conditions_df(condition_ids, fA0s, base_dir)
 
 
@@ -27,6 +30,7 @@ def create_measurements_dfs(
     monomer_Bs: List[str],
     condition_ids: List[str],
     fA0s: List[float],
+    observables: List[str],
     base_dir: str,
 ):
     list_measurements_dfs = []
@@ -34,7 +38,7 @@ def create_measurements_dfs(
     for i in range(len(monomer_As)):
         df = process_data(monomer_As[i], monomer_Bs[i])
         df_conv = convert_axes(df, fA0s[i])
-        meas_df = convert_petab(df_conv, condition_ids[i])
+        meas_df = convert_petab(observables, fA0s[i], df_conv, condition_ids[i])
         list_measurements_dfs.append(meas_df)
 
     joined_measurements = join_dfs(list_measurements_dfs)
