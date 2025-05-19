@@ -8,7 +8,7 @@ results (optimization, profile, sampling) with a consistent interface.
 from typing import Dict, List, Optional, Tuple, Union, Any
 import numpy as np
 
-from pypesto import Result
+from pypesto import Result, Problem
 
 
 def has_optimization_results(result: Result) -> bool:
@@ -63,57 +63,10 @@ class ParameterResult:
 
     def __init__(self, result: Result, true_params=None, parameter_indices=None):
         self.result = result
-        self.true_params = self._normalize_true_params(true_params)
-        self.parameter_indices = parameter_indices or self._get_default_indices()
-        self.param_names = self._get_parameter_names()
-
-    def _normalize_true_params(self, true_params):
-        """Convert true parameters to standard dictionary format."""
-        if true_params is None:
-            return None
-        elif isinstance(true_params, dict):
-            return true_params
-        elif hasattr(true_params, "to_dict"):
-            return true_params.to_dict()
-        return None
-
-    def _get_default_indices(self):
-        """Get default parameter indices based on result."""
-        if hasattr(self.result.problem, "x_names"):
-            return list(range(len(self.result.problem.x_names)))
-        return []
-
-    def _get_parameter_names(self):
-        """Get parameter names for selected indices."""
-        if not hasattr(self.result.problem, "x_names"):
-            return []
-
-        # Handle string value 'free_only' for parameter_indices
-        if self.parameter_indices == "free_only":
-            # Get only free parameters (where lower bound != upper bound)
-            if hasattr(self.result.problem, "lb") and hasattr(
-                self.result.problem, "ub"
-            ):
-                indices = [
-                    i
-                    for i, (lb, ub) in enumerate(
-                        zip(self.result.problem.lb, self.result.problem.ub)
-                    )
-                    if lb != ub
-                ]
-                return [
-                    self.result.problem.x_names[i]
-                    for i in indices
-                    if i < len(self.result.problem.x_names)
-                ]
-            return self.result.problem.x_names
-
-        # Normal case - numeric indices
-        return [
-            self.result.problem.x_names[i]
-            for i in self.parameter_indices
-            if i < len(self.result.problem.x_names)
-        ]
+        self.true_params = true_params
+        problem: Problem = result.problem
+        self.parameter_indices = problem.x_free_indices
+        self.param_names = [problem.x_names[i] for i in self.parameter_indices]
 
     def get_scaled_value(self, param_id, value):
         """
@@ -384,10 +337,9 @@ class SamplingResult(ParameterResult):
 
         # Extract each parameter trace
         for i, idx in enumerate(self.parameter_indices):
-            if idx < len(self.param_names) - 1:  # SPECIFICALLY FOR rX in (rA, rB, rX)
-                name = self.param_names[idx]
-                values = chain[:, idx]
-                result["parameters"][name] = values
+            name = self.param_names[i]
+            values = chain[:, i]
+            result["parameters"][name] = values
 
         return result
 

@@ -1,5 +1,5 @@
 from typing import Tuple
-from amici.amici import Solver
+from amici.amici import Solver, Model
 from pypesto.petab import PetabImporter
 from pypesto.problem import Problem
 
@@ -42,20 +42,16 @@ def load_pypesto_problem(
     )
     problem = importer.create_problem(**kwargs)
 
-    # problem = set_amici_solver_params(problem)
-    # problem.objective.amici_solver.setPreequilibration(True)
     problem.objective.amici_solver.setNewtonMaxSteps(10000)
-    problem.objective.amici_solver.setNewtonDampingFactorMode(2)
-    problem.objective.amici_solver.setAbsoluteTolerance(1e-8)
+    problem.objective.amici_solver.setNewtonDampingFactorMode(1)
+    problem.objective.amici_solver.setAbsoluteTolerance(1e-10)
     problem.objective.amici_solver.setRelativeTolerance(1e-6)
-    # problem.objective.amici_solver.setStabilityLimitFlag(True)
     problem.objective.amici_solver.setMaxSteps(100000)
+    problem.objective.amici_solver.setMaxConvFails(100)
+    problem.objective.amici_solver.setMaxNonlinIters(10000)
     problem.objective.amici_solver.setLinearSolver(6)
-    # problem.objective.amici_solver.setStabilityLimitFlag(True)
-    # problem.objective.amici_solver.setLinearMultistepMethod(1)
-
-    # print(problem.objective.amici_solver.getNewtonMaxSteps())
-    # print(problem.objective.amici_solver.getNewtonDampingFactorMode())
-    # print(problem.objective.amici_solver.getAbsoluteTolerance())
+    problem.objective.amici_solver.setStabilityLimitFlag(False)
+    problem.objective.amici_solver.setReturnDataReportingMode(0)
+    problem.objective.amici_solver.setLinearMultistepMethod(2)
 
     return importer, problem

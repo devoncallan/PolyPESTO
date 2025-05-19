@@ -91,17 +91,27 @@ class Study:
     ) -> None:
         """Run parameter estimation for all experiments in the study."""
 
+        from polypesto.visualization import plot_results, plot_all_comparisons_1D
+
         print("Running parameter estimation for all experiments...")
         for (cond_id, p_id), experiment in self.experiments.items():
 
-            result = None
-            if (cond_id, p_id) in self.results:
-                result = self.results[(cond_id, p_id)]
-                print(f"Found existing result for {cond_id}, {p_id}.")
+            result = self.results.get((cond_id, p_id), None)
 
-            print(f"Running parameter estimation for {cond_id}, {p_id}...")
-            result = run_parameter_estimation(experiment, config, result, overwrite)
-            self.results[(cond_id, p_id)] = result
+            if overwrite or result is None:
+                print(f"Running parameter estimation for {cond_id}, {p_id}...")
+                result = run_parameter_estimation(experiment, config, result)
+                self.results[(cond_id, p_id)] = result
+                print("Done running parameter estimation.")
+            else:
+                print(f"Found existing result for {cond_id}, {p_id}.")
+                print("Skipping parameter estimation.")
+
+            print("Plotting results...")
+            plot_results(experiment, result)
+
+        print("Plotting all comparisons...")
+        plot_all_comparisons_1D(self)
 
     @staticmethod
     def load(dir_path: str, model: Type[ModelInterface]) -> "Study":
@@ -130,7 +140,6 @@ class Study:
                 result = store.read_result(paths.pypesto_results)
                 results[(cond_id, p_id)] = result
 
-            # break
 
         simulation_params = ParameterGroup("Loaded", simulation_params)
 

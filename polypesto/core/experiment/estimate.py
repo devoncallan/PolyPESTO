@@ -15,7 +15,6 @@ def run_parameter_estimation(
     exp: Experiment,
     config: dict = {},
     result: Optional[Result] = None,
-    overwrite: bool = False,
     save: bool = True,
 ) -> Result:
 
@@ -30,10 +29,6 @@ def run_parameter_estimation(
     ) -> Optional[Result]:
 
         if key not in config:
-            return result
-
-        if not overwrite and has_results(result, key):
-            print(f"\tSkipping {key} as results already exist and overwrite=False")
             return result
 
         print(f"\tRunning {fun.__name__} with {config[key]}")
