@@ -13,8 +13,6 @@ from polypesto.visualization import (
 
 from util import get_test_study
 
-# from .util import get_test_study
-
 DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 
 simulation_params = ParameterGroup.create_parameter_grid(
@@ -27,6 +25,7 @@ simulation_params = ParameterGroup.create_parameter_grid(
 
 # Define fitting parameters
 fit_params = IrreversibleCPE.get_default_parameters()
+obs_df = IrreversibleCPE.create_observables({"fA": "fA"}, noise_value=0.02)
 
 # Define experimental configurations
 t_eval = np.arange(0, 1, 0.05)
@@ -53,6 +52,7 @@ study = create_study(
     model=IrreversibleCPE,
     simulation_params=simulation_params,
     conditions=conditions,
+    obs_df=obs_df,
     base_dir=DATA_DIR,
     overwrite=False,
 )
@@ -70,7 +70,6 @@ study.run_parameter_estimation(
 
 plot_all_comparisons_1D(study)
 plot_all_results(study)
-
 
 test_study = get_test_study(study, TEST_DIR)
 plot_all_ensemble_predictions(study, test_study)
