@@ -108,7 +108,9 @@ class IrreversibleCPE(ModelInterface):
         pd.DataFrame
             Observables dataframe for PEtab
         """
-        return pet.define_observables({"xA": "xA", "xB": "xB"}, noise_value=0.02)
+        return pet.define_observables(
+            {"fA": "fA", "fB": "fB", "xA": "xA", "xB": "xB"}, noise_value=0.02
+        )
 
     @staticmethod
     def get_default_conditions() -> pd.DataFrame:

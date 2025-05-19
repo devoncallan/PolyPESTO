@@ -143,27 +143,66 @@ def plot_conv_df(df: pd.DataFrame):
 # Function(s) to convert dataframe into petab format
 
 
-def convert_petab(df: pd.DataFrame, condition_id: str) -> pd.DataFrame:
-    df_conv_A = df.copy()
-    df_conv_A.drop(columns=["Conversion B [%]"], inplace=True)
-    df_conv_A.rename(
-        columns={"Total Conversion [%]": "time", "Conversion A [%]": "measurement"},
+def convert_petab(
+    observables: List[str], fA0: float, df: pd.DataFrame, condition_id: str
+) -> pd.DataFrame:
+    list_dfs = []
+
+    for i in range(len(observables)):
+        df_updated = create_meas(observables[i], fA0, df, condition_id)
+        list_dfs.append(df_updated)
+
+    final_df = pd.concat(list_dfs, ignore_index=True)
+    return final_df
+
+
+def create_meas(
+    observable: str, fA0: float, df: pd.DataFrame, condition_id: str
+) -> pd.DataFrame:
+    if observable == "fA" or observable == "xA":
+        monomer = "A"
+        alt_monomer = "B"
+    else:
+        monomer = "B"
+        alt_monomer = "A"
+
+    df_conv = df.copy()
+    df_conv.rename(
+        columns={
+            "Total Conversion [%]": "time",
+            f"Conversion {monomer} [%]": "measurement",
+        },
         inplace=True,
     )
-    df_conv_A["simulationConditionId"] = condition_id
-    df_conv_A["observableId"] = "obs_xA"
+    df_conv["simulationConditionId"] = condition_id
 
-    df_conv_B = df.copy()
-    df_conv_B.drop(columns=["Conversion A [%]"], inplace=True)
-    df_conv_B.rename(
-        columns={"Total Conversion [%]": "time", "Conversion B [%]": "measurement"},
-        inplace=True,
-    )
-    df_conv_B["simulationConditionId"] = condition_id
-    df_conv_B["observableId"] = "obs_xB"
+    if observable == "fA" or observable == "fB":
+        if observable == "fA":
+            df_conv["measurement"] = (
+                fA0
+                * (1 - df_conv["measurement"])
+                / (
+                    fA0 * (1 - df_conv["measurement"])
+                    + (1 - fA0) * (1 - df_conv[f"Conversion {alt_monomer} [%]"])
+                )
+            )
+        else:
+            df_conv["measurement"] = (
+                (1 - fA0)
+                * (1 - df_conv["measurement"])
+                / (
+                    (1 - fA0) * (1 - df_conv["measurement"])
+                    + fA0 * (1 - df_conv[f"Conversion {alt_monomer} [%]"])
+                )
+            )
+        df_conv["observableId"] = f"obs_f{monomer}"
+    else:
+        df_conv["observableId"] = f"obs_x{monomer}"
 
-    df_conv = pd.concat([df_conv_A, df_conv_B], ignore_index=True)
+    df_conv.drop(columns=[f"Conversion {alt_monomer} [%]"], inplace=True)
+
     df_conv = df_conv[["observableId", "simulationConditionId", "time", "measurement"]]
+
     return df_conv
 
 

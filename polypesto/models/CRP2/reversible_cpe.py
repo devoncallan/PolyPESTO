@@ -65,9 +65,13 @@ class ReversibleCPE(ModelInterface):
             ),
             "KAA": pet.FitParameter(
                 id="KAA",
-                scale=pet.C.LIN,
-                bounds=(0, 1),
-                nominal_value=0.0,
+                # scale=pet.C.LIN,
+                # bounds=(0, 1),
+                # nominal_value=0.0,
+                # estimate=True,
+                scale=pet.C.LOG10,
+                bounds=(1e-2, 1e2),
+                nominal_value=1.0,
                 estimate=True,
             ),
             "KAB": pet.FitParameter(
