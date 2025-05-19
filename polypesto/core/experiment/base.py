@@ -22,7 +22,7 @@ class Experiment:
     paths: Optional[ExperimentPaths] = None
 
     @staticmethod
-    def load(paths: ExperimentPaths, model: ModelInterface) -> "Experiment":
+    def load(paths: ExperimentPaths, model: ModelInterface, **kwargs) -> "Experiment":
         """
         Load an experiment.
 
@@ -41,7 +41,7 @@ class Experiment:
         from polypesto.core.pypesto import load_pypesto_problem
 
         importer, problem = load_pypesto_problem(
-            yaml_path=paths.petab_yaml(), model_name=model.name
+            yaml_path=paths.petab_yaml, model_name=model.name, **kwargs
         )
 
         return Experiment(

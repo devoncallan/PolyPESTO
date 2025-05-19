@@ -96,12 +96,12 @@ class SimulatedExperiment:
         return self.experiment.paths
 
     @staticmethod
-    def load(paths: ExperimentPaths, model: ModelInterface) -> "SimulatedExperiment":
+    def load(paths: ExperimentPaths, model: ModelInterface, **kwargs) -> "SimulatedExperiment":
 
         paths.assert_parameters_exist()
 
-        experiment = Experiment.load(paths, model)
-        true_params = ParameterSet.load(paths.true_params())
+        experiment = Experiment.load(paths, model, **kwargs)
+        true_params = ParameterSet.load(paths.true_params)
         return SimulatedExperiment(
             experiment=experiment,
             true_params=true_params,
@@ -130,15 +130,15 @@ def create_simulated_experiment(
     PetabIO.write_param_df(data.param_df, filename=paths.fit_parameters)
 
     # Write experiment specific files
-    true_params.write(paths.true_params())
-    PetabIO.write_meas_df(data.meas_df, filename=paths.measurements())
+    true_params.write(paths.true_params)
+    PetabIO.write_meas_df(data.meas_df, filename=paths.measurements)
 
     # Write YAML file
     PetabIO.write_yaml(
-        yaml_filepath=paths.petab_yaml(),
+        yaml_filepath=paths.petab_yaml,
         sbml_filepath=sbml_filepath,
         cond_filepath=paths.conditions,
-        meas_filepath=paths.measurements(),
+        meas_filepath=paths.measurements,
         obs_filepath=paths.observables,
         param_filepath=paths.fit_parameters,
     )
@@ -147,12 +147,13 @@ def create_simulated_experiment(
     from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
 
     importer, problem = load_pypesto_problem(
-        yaml_path=paths.petab_yaml(), model_name=model.name, force_compile=force_compile
+        yaml_path=paths.petab_yaml, model_name=model.name, force_compile=force_compile
     )
+    petab_problem = importer.petab_problem
 
     # Simulate experiment
     sim_data = simulate_petab(
-        petab_problem=importer.petab_problem,
+        petab_problem=petab_problem,
         amici_model=problem.objective.amici_model,
         solver=problem.objective.amici_solver,
         problem_parameters=true_params.to_dict(),
@@ -162,12 +163,12 @@ def create_simulated_experiment(
     meas_df = rdatas_to_measurement_df(
         sim_data["rdatas"],
         problem.objective.amici_model,
-        importer.petab_problem.measurement_df,
+        petab_problem.measurement_df,
     )
 
     meas_df = add_noise_to_measurements(meas_df, noise_level=noise_level)
 
-    PetabIO.write_meas_df(meas_df, filename=paths.measurements())
+    PetabIO.write_meas_df(meas_df, filename=paths.measurements)
 
     return SimulatedExperiment.load(paths, model)
 

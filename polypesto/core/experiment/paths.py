@@ -59,12 +59,15 @@ class ExperimentPaths:
     def exp_dir(self) -> str:
         return f"{self.petab_dir}/{self.exp_id}"
 
+    @property
     def true_params(self) -> str:
         return f"{self.exp_dir}/params.json"
 
+    @property
     def measurements(self) -> str:
         return f"{self.exp_dir}/measurements.tsv"
 
+    @property
     def petab_yaml(self) -> str:
         return f"{self.exp_dir}/petab.yaml"
 
@@ -133,7 +136,7 @@ class ExperimentPaths:
     ########################
 
     def assert_parameters_exist(self):
-        if not os.path.exists(self.true_params()):
+        if not os.path.exists(self.true_params):
             raise FileNotFoundError(
                 f"True parameters file not found at {self.true_params()}"
             )
