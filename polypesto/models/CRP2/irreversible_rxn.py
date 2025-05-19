@@ -1,4 +1,5 @@
 from typing import Dict, Tuple
+import numpy as np
 import pandas as pd
 
 from polypesto.core import petab as pet
@@ -19,13 +20,24 @@ class IrreversibleRxn(ModelInterface):
         return irreversible_rxn
 
     @staticmethod
-    def create_conditions(fA0s, cM0s) -> pd.DataFrame:
+    def create_conditions(fA0, cM0) -> pd.DataFrame:
+
+        fA0 = np.array(fA0)
+        cM0 = np.array(cM0)
+
+        A0 = fA0 * cM0
+        B0 = (1 - fA0) * cM0
+
         return pet.define_conditions(
             {
-                "A0": fA0s * cM0s,
-                "B0": (1 - fA0s) * cM0s,
+                "A0": A0,
+                "B0": B0,
             }
         )
+
+    @staticmethod
+    def create_observables(**kwargs) -> pd.DataFrame:
+        return pet.define_observables(**kwargs)
 
     @staticmethod
     def get_default_fit_params() -> Dict[str, pet.FitParameter]:
@@ -55,12 +67,12 @@ def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
     print("Creating species.")
     R = sbml.create_species(model, "R", initialAmount=0.001)
 
-    A0 = sbml.create_parameter(model, "A0")
-    B0 = sbml.create_parameter(model, "B0")
+    A0 = sbml.create_species(model, "A0")
+    B0 = sbml.create_species(model, "B0")
 
     A = sbml.create_species(model, "A")
     B = sbml.create_species(model, "B")
-    
+
     sbml.create_initial_assignment(model, "A", formula="A0")
     sbml.create_initial_assignment(model, "B", formula="B0")
 
@@ -79,14 +91,17 @@ def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
 
     # Calculates monomer conversion
 
-    xA = sbml.create_parameter(model, "xA", value=0)
-    xB = sbml.create_parameter(model, "xB", value=0)
+    xA = sbml.create_species(model, "xA")
+    xB = sbml.create_species(model, "xB")
+    x = sbml.create_species(model, "x")
+    fA = sbml.create_species(model, "fA")
+    fB = sbml.create_species(model, "fB")
 
-    # sbml.create_initial_assignment(model, A0.getId(), formula=f"{A.getId()}")
-    # sbml.create_initial_assignment(model, B0.getId(), formula=f"{B.getId()}")
-
-    sbml.create_rule(model, xA, formula=f"1 - {A.getId()}/{A0.getId()}")
-    sbml.create_rule(model, xB, formula=f"1 - {B.getId()}/{B0.getId()}")
+    sbml.create_rule(model, xA, formula=f"1 - A/A0")
+    sbml.create_rule(model, xB, formula=f"1 - B/B0")
+    sbml.create_rule(model, x, formula=f"1 - (A0+B0-A-B)/(A0+B0+1e-10)")
+    sbml.create_rule(model, fA, formula=f"A/(A+B+1e-10)")
+    sbml.create_rule(model, fB, formula=f"B/(A+B+1e-10)")
 
     # Defining reactions
     # Syntax: (reaction_id, {reactants: stoich}, {products: stoich}, kinetic_law)
@@ -185,4 +200,7 @@ def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
         reaction = sbml.create_reaction(model, r[0], r[1], r[2], r[3])
         generated_reactions.append(reaction)
 
+    # x_thresholds = np.arange(0.01, 1, 0.01)
+    # print(x_thresholds)
+    # sbml.add_conversion_snapshot_events(model, x_thresholds=x_thresholds)
     return document, model

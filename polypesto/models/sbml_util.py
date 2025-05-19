@@ -1,4 +1,4 @@
-from typing import Dict, Tuple, Callable, Optional, TypeAlias
+from typing import Dict, Tuple, Callable, List, TypeAlias, Optional
 import os
 import time
 import libsbml
@@ -15,7 +15,7 @@ ModelDefinition: TypeAlias = Callable[[], Tuple[Document, Model]]
 def write_model(model_def: ModelDefinition, model_dir: str) -> str:
     """Writes an SBML model from the given file path."""
     document, model = model_def()
-    
+
     model_filepath = os.path.join(model_dir, f"{model.getName()}.xml")
 
     _save_sbml(document, model_filepath)
@@ -139,7 +139,7 @@ def create_compartment(
 def create_species(
     model: Model,
     id: str,
-    initialAmount: float = 0.0,
+    initialAmount: Optional[float] = 0.0,
     constant=False,
     units: str = "dimensionless",
     boundaryCondition: bool = False,
@@ -152,7 +152,8 @@ def create_species(
     _check(s1.setId(id), "set species s1 id")
     _check(s1.setCompartment(c.getId()), "set species s1 compartment")
     _check(s1.setConstant(constant), 'set "constant" attribute on s1')
-    _check(s1.setInitialAmount(initialAmount), "set initial amount for s1")
+    if initialAmount is not None:
+        _check(s1.setInitialAmount(initialAmount), "set initial amount for s1")
     _check(s1.setSubstanceUnits(units), "set substance units for s1")
     _check(s1.setBoundaryCondition(boundaryCondition), 'set "boundaryCondition" on s1')
     _check(s1.setHasOnlySubstanceUnits(False), 'set "hasOnlySubstanceUnits" on s1')
@@ -315,6 +316,85 @@ def add_termination_event(model: Model, formula: str = "") -> libsbml.Event:
     )  # Stop immediately when the condition is met
 
     return termination_event
+
+
+def create_event_assignment(
+    model: Model, event_id: str, variable_id: str, formula: str
+) -> libsbml.EventAssignment:
+    """
+    Create an event assignment in the SBML model.
+
+    Parameters:
+    - model: The SBML model to which the event assignment will be added.
+    - event_id: The ID of the event to which the assignment belongs.
+    - variable_id: The ID of the parameter or species for which the assignment is defined.
+    - formula: The formula representing the assignment.
+
+    Returns:
+    - EventAssignment: The created event assignment object.
+    """
+    event = model.getEvent(event_id)
+    if not event:
+        raise ValueError(f"Event with ID '{event_id}' not found in the model.")
+
+    assignment = event.createEventAssignment()
+    _check(assignment, "create event assignment")
+    _check(assignment.setVariable(variable_id), "set event assignment variable")
+
+    # Convert the formula string into an ASTNode and assign it to the event assignment
+    math_ast = libsbml.parseL3Formula(formula)
+    _check(math_ast, "create AST for event assignment formula")
+    _check(assignment.setMath(math_ast), "set math on event assignment")
+
+    return assignment
+
+
+def add_conversion_snapshot_events(model: Model, x_thresholds: List[float]):
+    """
+    For each x threshold, adds snapshot species for xA and xB and an event to assign their values
+    when x crosses the threshold.
+
+    Parameters
+    ----------
+    model : libsbml.Model
+        Your SBML model.
+    x_thresholds : list of float
+        The values of `x` at which to snapshot.
+    """
+
+    for x_val in x_thresholds:
+
+        x_str = f"{int(round(x_val * 100)):02d}"
+        # print(x_str)
+        xa_snap_id = f"xA_at_x_{x_str}"
+        xb_snap_id = f"xB_at_x_{x_str}"
+        fa_snap_id = f"fA_at_x_{x_str}"
+        fb_snap_id = f"fB_at_x_{x_str}"
+        event_id = f"snapshot_event_{x_str}"
+        print(event_id)
+
+        # Create snapshot species (dimensionless, not boundary)
+        create_parameter(model, xa_snap_id)
+        create_parameter(model, xb_snap_id)
+        create_parameter(model, fa_snap_id)
+        create_parameter(model, fb_snap_id)
+
+        # Create event
+        event = model.createEvent()
+        event.setId(event_id)
+        event.setUseValuesFromTriggerTime(True)
+
+        # Trigger when x > x_val
+        trigger = event.createTrigger()
+        trigger.setMath(libsbml.parseL3Formula(f"x > {x_val}"))
+        trigger.setPersistent(True)
+        trigger.setInitialValue(True)
+
+        # Assign snapshot species
+        create_event_assignment(model, event_id, xa_snap_id, "xA")
+        create_event_assignment(model, event_id, xb_snap_id, "xB")
+        create_event_assignment(model, event_id, fa_snap_id, "fA")
+        create_event_assignment(model, event_id, fb_snap_id, "fB")
 
 
 ###############################################
