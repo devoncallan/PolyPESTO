@@ -21,6 +21,7 @@ from polypesto.visualization.measurements import (
 from polypesto.visualization.compare import plot_comparisons_1D, plot_all_comparisons_1D, plot_comparisons_2D, plot_all_comparisons_2D
 
 from polypesto.visualization.study import (
+    plot_results,
     plot_all_results,
     plot_all_ensemble_predictions,
 )

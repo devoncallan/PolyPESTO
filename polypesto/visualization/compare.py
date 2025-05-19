@@ -1,9 +1,10 @@
 import re
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 import pypesto
 from matplotlib.axes import Axes
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from pypesto.sample import calculate_ci_mcmc_sample
 
@@ -27,20 +28,34 @@ def extract_fA0_value(cond_id: str, num_values: int = 1) -> float:
 from polypesto.core.results import SamplingResult
 
 
-def plot_comparisons_1D(study: Study, p_id: str, axes: List[Axes]) -> List[Axes]:
+def plot_comparisons_1D(
+    study: Study, p_id: str, axes: Optional[List[Axes]] = None
+) -> List[Axes]:
 
     exp = study.get_experiments(filter_p_id=p_id)
     results = study.get_results(p_id)
 
-    param_names = ["rA", "rB"]
+    # Get any experiment from exp
+    experiment = list(exp.values())[0]
+    param_names = experiment.petab_problem.get_optimization_parameters()
+
+    if axes is None:
+        fig, axes = plt.subplots(1, len(param_names), figsize=(12, 4))
 
     for j, ((cond_id, p_id), experiment) in enumerate(exp.items()):
+
+        print(experiment.petab_problem.x_free_ids)
+        print(experiment.petab_problem.get_optimization_parameters())
 
         print(f"Plotting comparison for condition {cond_id}, parameter set {p_id}")
         result = results[(cond_id, p_id)]
         true_params = experiment.true_params.to_dict()
 
-        sampling_result = SamplingResult(result, true_params=true_params)
+        sampling_result = SamplingResult(
+            result,
+            true_params=true_params,
+            parameter_indices=experiment.petab_problem.x_free_indices,
+        )
         alpha = 0.95
         intervals = sampling_result.get_credible_intervals(
             alpha_levels=(alpha,), burn_in=0
@@ -62,8 +77,6 @@ def plot_comparisons_1D(study: Study, p_id: str, axes: List[Axes]) -> List[Axes]
             ub = np.abs(ub - med)
 
             print(f"Parameter {p_name} confidence intervals: {lb}, {med}, {ub}")
-            # lb, med, ub = 10**lb, 10**med, 10**ub
-            # lb, med, ub
 
             axes[i].errorbar(
                 fA0_value,
@@ -77,6 +90,7 @@ def plot_comparisons_1D(study: Study, p_id: str, axes: List[Axes]) -> List[Axes]
             if j == 0:
                 plot_params = np.log10([true_params[p_name]])
                 axes[i].axhline(plot_params, color="red", linestyle="--")
+                axes[i].set_ylim([-2, 2])
 
     return axes
 
@@ -92,18 +106,16 @@ def plot_all_comparisons_1D(study: Study) -> None:
         print(f"Found {len(experiments)} experiments for parameter set {p_id}")
         results = study.get_results(p_id)
 
-        fig, axes = plt.subplots(1, 2)
-        for ax in axes:
-            ax.set_xlim(0, 1)
-
         # plot_comparisons(experiments, results, axes)
-        plot_comparisons_1D(study, p_id, axes)
+        ax = plot_comparisons_1D(study, p_id)
         comp_dir = (
             list(experiments.values())[0].experiment.paths.base_dir.parent.absolute()
             / "comparison_plots"
         )
         comp_dir.mkdir(parents=True, exist_ok=True)
         fig_path = comp_dir / f"comparison_plot_{p_id}.png"
+        
+        fig = plt.gcf()
         fig.savefig(fig_path, bbox_inches="tight", dpi=300)
         plt.close(fig)
         # break
@@ -240,3 +252,59 @@ def plot_all_comparisons_2D(study: Study) -> None:
             f"Plotting 2D grid comparison for parameter set {i + 1}/{len(parameter_ids)}"
         )
         plot_comparisons_2D(study, p_id)
+
+
+def summarize_study(study: Study) -> pd.DataFrame:
+
+    # parameter_ids = study.get_parameter_ids()
+    for (cond_id, p_id), sim_exp in study.experiments.items():
+
+        true_params = sim_exp.true_params.to_dict()
+        exp = sim_exp.experiment
+
+        result = study.results[(cond_id, p_id)]
+
+        sampling_result = SamplingResult(result, true_params=true_params)
+        alpha = 0.95
+        intervals = sampling_result.get_credible_intervals(
+            alpha_levels=(alpha,), burn_in=0
+        )
+
+        # lb, med, ub =
+
+    return
+
+
+"""
+DataFrame columns:
+
+p_id: str
+- e.g. "p_000"
+
+true_params: dict
+- e.g. {
+    "rA": 0.1, 
+    "rB": 0.5
+}
+
+cond_id: str
+- e.g. "fA0_[0.1]_cM0_[1.0]"
+
+conditions: dict
+- e.g. {
+    "fA0": [0.1, 0.2],
+    "cM0": [1.0, 2.0]
+}
+
+sampling_confidence_intervals: dict
+- e.g. {
+    "rA": {
+        0.95: (0.05, 0.5, 0.95)
+    },
+    "rB": {
+        0.95: (0.05, 0.5, 0.95)
+    }
+}
+
+
+"""

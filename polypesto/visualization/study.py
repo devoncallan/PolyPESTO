@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
 
+from polypesto.core.experiment import Experiment, SimulatedExperiment
+from polypesto.core.results import Result
 from polypesto.core.study import Study
 from polypesto.core.pypesto import (
     create_ensemble,
@@ -18,6 +20,37 @@ from polypesto.visualization import (
 )
 
 
+def plot_results(exp: Experiment | SimulatedExperiment, result: Result):
+
+    true_params = None
+    if isinstance(exp, SimulatedExperiment):
+        true_params = exp.true_params.to_dict()
+        exp = exp.experiment
+
+    axs = plot_all_measurements(exp.petab_problem.measurement_df)
+    plt.gcf().savefig(exp.paths.measurements_data_plot, dpi=300)
+
+    fig, ax = plot_optimization_scatter(result, true_params)
+    plt.gcf().savefig(exp.paths.optimization_scatter_plot, dpi=300)
+
+    fig, ax = plot_waterfall(result)
+    plt.gcf().savefig(exp.paths.waterfall_plot, dpi=300)
+
+    fig, ax = plot_sampling_scatter(result, true_params)
+    plt.gcf().savefig(exp.paths.sampling_scatter_plot, dpi=300)
+
+    fig, ax = plot_parameter_traces(result, true_params)
+    plt.gcf().savefig(exp.paths.sampling_trace_plot, dpi=300)
+
+    fig, ax = plot_profiles(result, true_params)
+    plt.gcf().savefig(exp.paths.profile_plot, dpi=300)
+
+    fig, ax = plot_confidence_intervals(result, true_params)
+    plt.gcf().savefig(exp.paths.confidence_intervals_plot, dpi=300)
+
+    plt.close("all")
+
+
 def plot_all_results(
     study: Study,
 ):
@@ -26,29 +59,8 @@ def plot_all_results(
 
         exp = study.experiments[(cond_id, p_id)]
         true_params = exp.true_params.to_dict()
-
-        axs = plot_all_measurements(exp.petab_problem.measurement_df)
-        plt.gcf().savefig(exp.paths.measurements_data_plot, dpi=300)
-
-        fig, ax = plot_optimization_scatter(result, true_params)
-        plt.gcf().savefig(exp.paths.optimization_scatter_plot, dpi=300)
-
-        fig, ax = plot_waterfall(result)
-        plt.gcf().savefig(exp.paths.waterfall_plot, dpi=300)
-
-        fig, ax = plot_sampling_scatter(result, true_params)
-        plt.gcf().savefig(exp.paths.sampling_scatter_plot, dpi=300)
-
-        fig, ax = plot_parameter_traces(result, true_params)
-        plt.gcf().savefig(exp.paths.sampling_trace_plot, dpi=300)
-
-        fig, ax = plot_profiles(result, true_params)
-        plt.gcf().savefig(exp.paths.profile_plot, dpi=300)
-
-        fig, ax = plot_confidence_intervals(result, true_params)
-        plt.gcf().savefig(exp.paths.confidence_intervals_plot, dpi=300)
-
-        plt.close("all")
+        
+        plot_results(exp, result)
 
 
 def plot_all_ensemble_predictions(study: Study, test_study: Study):
