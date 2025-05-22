@@ -50,7 +50,10 @@ conditions = create_simulation_conditions(
     dict(
         name=names,
         t_eval=[t_eval] * ntrials,
-        conditions=dict(fA0=fA0s, cM0=cM0s, ),
+        conditions=dict(
+            fA0=fA0s,
+            cM0=cM0s,
+        ),
         fit_params=[fit_params] * ntrials,
         noise_level=[0.005] * ntrials,
     )

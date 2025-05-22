@@ -26,9 +26,10 @@ monomer_As = [f"{csv_path}/monomer_A.csv", f"{csv_path}/monomer_A_2.csv"]
 monomer_Bs = [f"{csv_path}/monomer_B.csv", f"{csv_path}/monomer_B_2.csv"]
 condition_ids = ["c_0", "c_1"]
 fA0s = [0.09, 0.03]
+cM0s = [1.5, 1.5]
 observables = ["fA", "fB", "xA", "xB"]
 
-create_tsvs(monomer_As, monomer_Bs, condition_ids, fA0s, observables, base_dir)
+create_tsvs(monomer_As, monomer_Bs, condition_ids, fA0s, cM0s, observables, base_dir)
 
 
 # Define where your data lives
@@ -40,14 +41,23 @@ exp_paths = ExperimentPaths(base_dir=EXPERIMENT_BASE_DIR, exp_id=EXPERIMENT_ID)
 exp = Experiment.load(paths=exp_paths, model=ReversibleCPE)
 
 # Run parameter estimation
+# result = run_parameter_estimation(
+#     exp,
+#     config=dict(
+#         optimize=dict(n_starts=100, method="L-BFGS-B"),
+#         profile=dict(method="L-BFGS-B"),
+#         sample=dict(n_samples=10000, n_chains=5),
+#     ),
+#     overwrite=True,
+# )
+
 result = run_parameter_estimation(
     exp,
     config=dict(
         optimize=dict(n_starts=100, method="Nelder-Mead"),
-        profile=dict(method="Nelder-Mead"),
-        sample=dict(n_samples=10000, n_chains=5),
+        # profile=dict(method="Nelder-Mead"),
+        sample=dict(n_samples=20000, n_chains=3),
     ),
-    overwrite=True,
 )
 
 # Visualization

@@ -213,11 +213,13 @@ def save_tsv(df: pd.DataFrame, output_file: str):
 # Function(s) to create conditions dataframe
 
 
-def create_conditions(df: pd.DataFrame, condition_id: str, fA0: float) -> pd.DataFrame:
+def create_conditions(
+    df: pd.DataFrame, condition_id: str, fA0: float, cM0: float
+) -> pd.DataFrame:
     new_row = {
         "conditionId": condition_id,
-        "A0": fA0,
-        "B0": 1 - fA0,
+        "A0": fA0 * cM0,
+        "B0": (1 - fA0) * cM0,
         "conditionName": condition_id,
     }
     df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)

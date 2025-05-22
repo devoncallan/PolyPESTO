@@ -16,13 +16,14 @@ def create_tsvs(
     monomer_Bs: List[str],
     condition_ids: List[str],
     fA0s: List[float],
+    cM0s: List[float],
     observables: List[str],
     base_dir: str,
 ):
     create_measurements_dfs(
         monomer_As, monomer_Bs, condition_ids, fA0s, observables, base_dir
     )
-    create_conditions_df(condition_ids, fA0s, base_dir)
+    create_conditions_df(condition_ids, fA0s, cM0s, base_dir)
 
 
 def create_measurements_dfs(
@@ -47,12 +48,16 @@ def create_measurements_dfs(
     save_tsv(joined_measurements, output_file)
 
 
-def create_conditions_df(condition_ids: List[str], fA0s: List[float], base_dir: str):
+def create_conditions_df(
+    condition_ids: List[str], fA0s: List[float], cM0s: List[float], base_dir: str
+):
     list_conditions_dfs = []
 
     for i in range(len(condition_ids)):
         conditions_df = pd.DataFrame()
-        conditions_df = create_conditions(conditions_df, condition_ids[i], fA0s[i])
+        conditions_df = create_conditions(
+            conditions_df, condition_ids[i], fA0s[i], cM0s[i]
+        )
         list_conditions_dfs.append(conditions_df)
 
     joined_conditions = join_dfs(list_conditions_dfs)
