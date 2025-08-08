@@ -18,8 +18,8 @@ def create_ensemble(exp: Experiment, result: Result) -> Ensemble:
 
     ensemble = Ensemble.from_sample(
         result=result,
-        remove_burn_in=False,
-        chain_slice=slice(None, None, 5),
+        remove_burn_in=True,
+        chain_slice=slice(None, None, 10),
         x_names=x_names,
         ensemble_type=EnsembleType.sample,
         lower_bound=result.problem.lb,

@@ -9,14 +9,13 @@ from polypesto.utils.paths import setup_data_dirs
 from polypesto.visualization import (
     plot_all_results,
     plot_all_ensemble_predictions,
-    plot_all_comparisons_1D,
     plot_all_comparisons_1D_fill,
 )
-
 
 from experiments.irreversible_cpe.util import (
     get_test_study,
     get_standard_simulation_params,
+    get_gradient_lg,
 )
 
 
@@ -27,31 +26,19 @@ def get_conditions_and_study(data_dir: Optional[str] = None, overwrite: bool = F
         print(f"Data directory: {data_dir}")
         print(f"Test directory: {test_dir}")
 
-    simulation_params = get_standard_simulation_params()
+    simulation_params = get_gradient_lg()
 
     # Define fitting parameters
     fit_params = IrreversibleCPE.get_default_parameters()
     obs_df = IrreversibleCPE.create_observables(
-        observables={"fA": "fA", "fB": "fB", "xA": "xA", "xB": "xB"}, noise_value=0.02
+        # observables={"fA": "fA", "fB": "fB", "xA": "xA", "xB": "xB"}, noise_value=0.02
+        observables={"xA": "xA", "xB": "xB"},
     )
 
     # Define experimental configurations
-    t_eval = np.arange(0, 0.4, 0.01)
-    fA0s = [
-        [0.05],
-        [0.1],
-        [0.2],
-        [0.3],
-        [0.4],
-        [0.45],
-        [0.5],
-        [0.55],
-        [0.6],
-        [0.7],
-        [0.8],
-        [0.9],
-        [0.95],
-    ]
+    # t_eval = np.arange(0, 6, 0.01)
+    t_eval = np.array([0.0, 0.06, 0.15, 0.22, 0.32, 0.49, 0.65])
+    fA0s = [[0.7]]
     ntrials = len(fA0s)
     cM0s = [[1.0] for _ in range(ntrials)]
     names = [f"fA0_{fA0}_cM0_{cM0}" for fA0, cM0 in zip(fA0s, cM0s)]
@@ -63,7 +50,7 @@ def get_conditions_and_study(data_dir: Optional[str] = None, overwrite: bool = F
             t_eval=[t_eval] * ntrials,
             conditions=dict(fA0=fA0s, cM0=cM0s),
             fit_params=[fit_params] * ntrials,
-            noise_level=[0.00] * ntrials,
+            noise_level=[0.15] * ntrials,
         )
     )
 
@@ -88,11 +75,11 @@ if __name__ == "__main__":
     conditions, study = get_conditions_and_study(DATA_DIR, overwrite=False)
 
     # Run parameter estimation
-    study.run_parameter_estimation(
-        config=dict(
-            optimize=dict(n_starts=100),
-            profile=dict(method="Nelder-Mead"),
-            sample=dict(n_samples=50000, n_chains=3),
-        ),
-        overwrite=False,
-    )
+    # study.run_parameter_estimation(
+    #     config=dict(
+    #         optimize=dict(n_starts=100),
+    #         profile=dict(method="Nelder-Mead"),
+    #         sample=dict(n_samples=50000, n_chains=3),
+    #     ),
+    #     overwrite=False,
+    # )

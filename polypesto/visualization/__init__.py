@@ -18,12 +18,22 @@ from polypesto.visualization.measurements import (
     plot_all_measurements,
 )
 
-from polypesto.visualization.compare import plot_comparisons_1D, plot_all_comparisons_1D, plot_comparisons_2D, plot_all_comparisons_2D
+from polypesto.visualization.compare import (
+    plot_comparisons_1D,
+    plot_all_comparisons_1D,
+    plot_comparisons_2D,
+    plot_all_comparisons_2D,
+    plot_all_comparisons_1D_fill,
+)
 
 from polypesto.visualization.study import (
     plot_results,
     plot_all_results,
     plot_all_ensemble_predictions,
+)
+
+from polypesto.visualization.predict import (
+    plot_ensemble_predictions
 )
 
 __all__ = [
@@ -40,5 +50,7 @@ __all__ = [
     "plot_all_comparisons_1D",
     "plot_all_results",
     "plot_all_ensemble_predictions",
+    "plot_ensemble_predictions",
     "plot_all_comparisons_2D",
+    "plot_all_comparisons_1D_fill",
 ]

@@ -42,6 +42,7 @@ def plot_comparisons_1D(
     if axes is None:
         fig, axes = plt.subplots(1, len(param_names), figsize=(12, 4))
 
+    colors = ["#60A88D", "#2D69B2"]
     for j, ((cond_id, p_id), experiment) in enumerate(exp.items()):
 
         print(experiment.petab_problem.x_free_ids)
@@ -83,6 +84,7 @@ def plot_comparisons_1D(
                 med,
                 yerr=[[lb], [ub]],
                 fmt="o",
+                color=colors[i],
                 capsize=5,
                 label=f"{p_id}" if j == 0 else None,
             )
@@ -93,6 +95,306 @@ def plot_comparisons_1D(
                 axes[i].set_ylim([-2, 2])
 
     return axes
+
+
+# def plot_comparisons_1D_fill(
+#     study: Study, p_id: str, axes: Optional[List[Axes]] = None
+# ) -> List[Axes]:
+#     exp = study.get_experiments(filter_p_id=p_id)
+#     results = study.get_results(p_id)
+
+#     # Get any experiment from exp
+#     experiment = list(exp.values())[0]
+#     param_names = experiment.petab_problem.get_optimization_parameters()
+
+#     if axes is None:
+#         fig, axes = plt.subplots(1, len(param_names), figsize=(12, 4))
+
+#     # If only one parameter, make axes a list
+#     if len(param_names) == 1:
+#         axes = [axes]
+
+#     # Dictionary to hold data for each parameter
+#     param_data = {
+#         p_name: {"fA0": [], "median": [], "lower": [], "upper": []}
+#         for p_name in param_names
+#     }
+
+#     # Collect data for all fA0 values
+#     for (cond_id, curr_p_id), experiment in exp.items():
+#         # Skip if not the requested parameter set
+#         if curr_p_id != p_id:
+#             continue
+
+#         fA0_value = extract_fA0_value(cond_id)
+#         result = results[(cond_id, curr_p_id)]
+
+#         true_params = experiment.true_params.to_dict()
+#         sampling_result = SamplingResult(
+#             result,
+#             true_params=true_params,
+#             parameter_indices=experiment.petab_problem.x_free_indices,
+#         )
+
+#         alpha = 0.95
+#         intervals = sampling_result.get_credible_intervals(
+#             alpha_levels=(alpha,), burn_in=0
+#         )
+
+#         # Store values for each parameter
+#         for p_name in param_names:
+#             if p_name not in intervals:
+#                 print(f"Parameter {p_name} not found in intervals.")
+#                 continue
+
+#             lb, med, ub = intervals[p_name][alpha]
+#             # Convert to log scale
+#             lb, med, ub = np.log10(lb), np.log10(med), np.log10(ub)
+
+#             param_data[p_name]["fA0"].append(fA0_value)
+#             param_data[p_name]["median"].append(med)
+#             param_data[p_name]["lower"].append(lb)
+#             param_data[p_name]["upper"].append(ub)
+
+#     # Colors for each parameter
+#     colors = {"rA": "blue", "rB": "green"}
+
+#     # Plot data for each parameter
+#     for i, p_name in enumerate(param_names):
+#         data = param_data[p_name]
+
+#         # Sort all data by fA0 value (needed for fill_between)
+#         sorted_indices = np.argsort(data["fA0"])
+#         fA0_sorted = [data["fA0"][i] for i in sorted_indices]
+#         median_sorted = [data["median"][i] for i in sorted_indices]
+#         lower_sorted = [data["lower"][i] for i in sorted_indices]
+#         upper_sorted = [data["upper"][i] for i in sorted_indices]
+
+#         color = colors.get(
+#             p_name, f"C{i}"
+#         )  # Use predefined color or fallback to default
+
+#         # Plot median line with markers at actual data points
+#         axes[i].plot(fA0_sorted, median_sorted, "o-", color=color, label=p_name)
+
+#         # Add confidence interval as shaded area
+#         axes[i].fill_between(
+#             fA0_sorted,
+#             lower_sorted,
+#             upper_sorted,
+#             color=color,
+#             alpha=0.3,  # Semi-transparent
+#         )
+
+#         # Add true parameter value if available
+#         if true_params and p_name in true_params:
+#             true_value = np.log10(true_params[p_name])
+#             axes[i].axhline(true_value, color="red", linestyle="--", label="True Value")
+
+#         # Set labels and title
+#         axes[i].set_xlabel("fA0 Value")
+#         axes[i].set_ylabel(f"log10({p_name})")
+#         axes[i].set_title(f"Parameter {p_name} (Set {p_id})")
+#         axes[i].legend()
+#         axes[i].grid(True, alpha=0.3)
+#         axes[i].set_ylim([-2, 2])
+
+#     return axes
+
+
+# def plot_all_comparisons_1D_fill(study: Study) -> None:
+#     parameter_ids = study.get_parameter_ids()
+#     print(f"Plotting {len(parameter_ids)} comparisons...")
+
+#     for i, p_id in enumerate(parameter_ids):
+#         print(f"Plotting comparison for parameter set {i + 1}/{len(parameter_ids)}")
+
+#         # Create a new figure for each parameter set
+#         fig, axes = plt.subplots(
+#             1, 2, figsize=(12, 4)
+#         )  # Assuming 2 parameters (rA, rB)
+
+#         # Plot with confidence intervals
+#         ax = plot_comparisons_1D_fill(study, p_id, axes)
+
+#         # Save the figure
+#         comp_dir = (
+#             list(study.get_experiments(filter_p_id=p_id).values())[
+#                 0
+#             ].experiment.paths.base_dir.parent.absolute()
+#             / "comparison_plots"
+#         )
+#         comp_dir.mkdir(parents=True, exist_ok=True)
+#         fig_path = comp_dir / f"comparison_plot_CI_{p_id}.png"
+#         fig.tight_layout()
+#         fig.savefig(fig_path, bbox_inches="tight", dpi=300)
+#         plt.close(fig)
+
+
+def plot_comparisons_1D_fill(
+    study: Study, p_id: str, ax: Optional[Axes] = None
+) -> Axes:
+    exp = study.get_experiments(filter_p_id=p_id)
+    results = study.get_results(p_id)
+
+    # Get any experiment from exp
+    experiment = list(exp.values())[0]
+    param_names = experiment.petab_problem.get_optimization_parameters()
+
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 8))  # Square figure
+
+    # Dictionary to hold data for each parameter
+    param_data = {
+        p_name: {"fA0": [], "median": [], "lower": [], "upper": []}
+        for p_name in param_names
+    }
+
+    # Collect data for all fA0 values
+    for (cond_id, curr_p_id), experiment in exp.items():
+        # Skip if not the requested parameter set
+        if curr_p_id != p_id:
+            continue
+
+        fA0_value = extract_fA0_value(cond_id)
+        result = results[(cond_id, curr_p_id)]
+
+        true_params = experiment.true_params.to_dict()
+        sampling_result = SamplingResult(
+            result,
+            true_params=true_params,
+            parameter_indices=experiment.petab_problem.x_free_indices,
+        )
+
+        alpha = 0.95
+        intervals = sampling_result.get_credible_intervals(
+            alpha_levels=(alpha,), burn_in=0
+        )
+
+        # Store values for each parameter
+        for p_name in param_names:
+            if p_name not in intervals:
+                print(f"Parameter {p_name} not found in intervals.")
+                continue
+
+            lb, med, ub = intervals[p_name][alpha]
+
+            # Store raw values (not log10 transformed)
+            param_data[p_name]["fA0"].append(fA0_value)
+            param_data[p_name]["median"].append(med)
+            param_data[p_name]["lower"].append(lb)
+            param_data[p_name]["upper"].append(ub)
+
+    # Colors for each parameter
+    colors = {"rA": "#60A88D", "rB": "#2D69B2"}  # Professional colors
+    # Plot data for each parameter
+    for i, p_name in enumerate(param_names):
+        data = param_data[p_name]
+
+        # Sort all data by fA0 value (needed for fill_between)
+        sorted_indices = np.argsort(data["fA0"])
+        fA0_sorted = [data["fA0"][i] for i in sorted_indices]
+        median_sorted = [data["median"][i] for i in sorted_indices]
+        lower_sorted = [data["lower"][i] for i in sorted_indices]
+        upper_sorted = [data["upper"][i] for i in sorted_indices]
+
+        color = colors.get(p_name, f"C{i}")
+
+        # Plot median line with markers at actual data points
+        ax.plot(
+            fA0_sorted,
+            median_sorted,
+            "o-",
+            color=color,
+            label=p_name,
+            linewidth=2,
+            markersize=6,
+        )
+
+        # Add confidence interval as shaded area
+        ax.fill_between(
+            fA0_sorted,
+            lower_sorted,
+            upper_sorted,
+            color=color,
+            alpha=0.2,  # Subtle transparency
+        )
+
+        # Add true parameter value if available
+        if true_params and p_name in true_params:
+            true_value = true_params[p_name]
+            ax.axhline(
+                true_value, color=color, linestyle="--", alpha=0.7, linewidth=1.5
+            )
+
+    # Set up log scale for y-axis
+    ax.set_yscale("log")
+    ax.set_yticks([0.01, 0.1, 1, 10, 100])
+    ax.set_yticklabels(["0.01", "0.1", "1", "10", "100"])
+    ax.set_ylim([0.01, 100])
+    ax.set_xlim([0, 1])
+    ax.set_xticks([0, 0.25, 0.5, 0.75, 1])
+
+    # Clean up the plot for manuscript quality
+    # ax.spines["top"].set_visible(True)
+    # ax.spines["right"].set_visible(True)
+    # ax.tick_params(axis="both", which="major", labelsize=10)
+    ax.tick_params(
+        axis="both",       # Both x and y axes
+        which="major",     # Only major ticks
+        direction="in",    # Make ticks point inward
+        labelsize=10,      # Tick label font size
+        top=True,          # Show ticks on top x-axis
+        right=True,        # Show ticks on right y-axis
+        length=6           # Length of tick marks
+    )
+    # Add minor ticks and make them face inwards too
+    ax.tick_params(
+        axis="both",
+        which="minor",     # Minor ticks
+        direction="in",    # Make ticks point inward
+        top=True,          # Show minor ticks on top x-axis
+        right=True,        # Show minor ticks on right y-axis
+        length=3           # Shorter length for minor ticks
+)
+
+    # Set labels and title
+    ax.set_xlabel("Feed Fraction of A")
+    # ax.set_xlabel("$f_{A0}$ Value", fontsize=12)
+    # ax.set_ylabel("Parameter Value", fontsize=12)
+    # ax.set_title(f"Parameter Set {p_id}", fontsize=14)
+
+    # Add legend
+    # ax.legend(frameon=False, loc="upper right")
+
+    return ax
+
+
+def plot_all_comparisons_1D_fill(study: Study) -> None:
+    parameter_ids = study.get_parameter_ids()
+    print(f"Plotting {len(parameter_ids)} comparisons...")
+
+    for i, p_id in enumerate(parameter_ids):
+        print(f"Plotting comparison for parameter set {i + 1}/{len(parameter_ids)}")
+
+        # Create a new square figure for each parameter set
+        fig, ax = plt.subplots(1, 1, figsize=(3.5, 3.5), dpi=500)
+
+        # Plot with confidence intervals
+        plot_comparisons_1D_fill(study, p_id, ax)
+
+        # Save the figure
+        comp_dir = (
+            list(study.get_experiments(filter_p_id=p_id).values())[
+                0
+            ].experiment.paths.base_dir.parent.absolute()
+            / "comparison_plots"
+        )
+        comp_dir.mkdir(parents=True, exist_ok=True)
+        fig_path = comp_dir / f"comparison_plot_CI_{p_id}.png"
+        fig.tight_layout()
+        fig.savefig(fig_path, bbox_inches="tight", dpi=500)
+        plt.close(fig)
 
 
 def plot_all_comparisons_1D(study: Study) -> None:

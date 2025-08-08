@@ -11,7 +11,7 @@ from .irreversible_cpe import IrreversibleCPE
 
 
 class ReversibleCPE(ModelInterface):
-    """Irreversible Copolymerization Equation Model"""
+    """Reversible Copolymerization Equation Model"""
 
     name: str = "reversible_cpe"
 

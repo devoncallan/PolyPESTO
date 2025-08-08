@@ -3,10 +3,6 @@ import matplotlib.pyplot as plt
 from polypesto.core.experiment import Experiment, SimulatedExperiment
 from polypesto.core.results import Result
 from polypesto.core.study import Study
-from polypesto.core.pypesto import (
-    create_ensemble,
-    predict_with_ensemble,
-)
 from polypesto.visualization import (
     plot_optimization_scatter,
     plot_sampling_scatter,
@@ -59,7 +55,7 @@ def plot_all_results(
 
         exp = study.experiments[(cond_id, p_id)]
         true_params = exp.true_params.to_dict()
-        
+
         plot_results(exp, result)
 
 
@@ -68,10 +64,11 @@ def plot_all_ensemble_predictions(study: Study, test_study: Study):
     Plot all ensemble predictions for the given study and test study.
     """
 
+    from polypesto.core.pypesto import create_ensemble, predict_with_ensemble
+
     for (cond_id, p_id), result in study.results.items():
 
         exp = study.experiments[(cond_id, p_id)]
-        true_params = exp.true_params.to_dict()
 
         ensemble = create_ensemble(exp, result)
 

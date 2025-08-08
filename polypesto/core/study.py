@@ -91,7 +91,11 @@ class Study:
     ) -> None:
         """Run parameter estimation for all experiments in the study."""
 
-        from polypesto.visualization import plot_results, plot_all_comparisons_1D
+        from polypesto.visualization import (
+            plot_results,
+            plot_all_comparisons_1D,
+            plot_all_comparisons_1D_fill,
+        )
 
         print("Running parameter estimation for all experiments...")
         for (cond_id, p_id), experiment in self.experiments.items():
@@ -108,10 +112,11 @@ class Study:
                 print("Skipping parameter estimation.")
 
             print("Plotting results...")
-            plot_results(experiment, result)
+            # plot_results(experiment, result)
+            break
 
         print("Plotting all comparisons...")
-        plot_all_comparisons_1D(self)
+        plot_all_comparisons_1D_fill(self)
 
     @staticmethod
     def load(dir_path: str, model: Type[ModelInterface]) -> "Study":
@@ -139,7 +144,6 @@ class Study:
             if os.path.exists(paths.pypesto_results):
                 result = store.read_result(paths.pypesto_results)
                 results[(cond_id, p_id)] = result
-
 
         simulation_params = ParameterGroup("Loaded", simulation_params)
 
@@ -190,3 +194,25 @@ def create_study(
         simulation_params=simulation_params,
         experiments=experiments,
     )
+
+
+def get_all_ensemble_preds(study: Study, test_exp: SimulatedExperiment):
+    """
+    Get all ensemble predictions for the given study and test study.
+    """
+
+    from polypesto.core.pypesto import create_ensemble, predict_with_ensemble
+
+    ensemble_preds = {}
+
+    for (cond_id, p_id), result in study.results.items():
+        
+        if cond_id == "fA0_[0.7]_cM0_[1.0]" and p_id == "gradient_lg":
+
+            exp = study.experiments[(cond_id, p_id)]
+            ensemble = create_ensemble(exp, result)
+            ensemble_pred = predict_with_ensemble(ensemble, test_exp, output_type="y")
+            ensemble_preds[(cond_id, p_id)] = ensemble_pred
+        # break
+
+    return ensemble_preds

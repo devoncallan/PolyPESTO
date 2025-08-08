@@ -268,7 +268,8 @@ def get_plot_formatting(
     - Markers cycle through a predefined list of marker styles.
     - Linestyles are adjusted based on the provided plot style.
     """
-    markers = ["o", "s", "^", "v", "D", "*", "P", "X"]
+    # markers = ["^", "s", "^", "v", "D", "*", "P", "X"]
+    markers = ["^", "^", "^", "^", "^", "^", "^", "^"]
     colormap_names = ["Blues", "Reds", "Greens", "Purples", "Oranges", "Greys"]
 
     format_dict = {}
@@ -284,6 +285,7 @@ def get_plot_formatting(
         raise ValueError(f"Unknown plot_style: {plot_style}")
 
     # For each (obs, cond) pair, assign a color, marker, and linestyle
+    colors = ["#60A88D", "#2D69B2"]
     for i, obs in enumerate(observables):
         obs_colormap_name = colormap_names[i % len(colormap_names)]
         # Generate enough color shades for all conditions
@@ -295,6 +297,7 @@ def get_plot_formatting(
             obs_marker = (
                 markers[j % len(markers)] if plot_style in ["scatter", "both"] else None
             )
+            obs_color = colors[i]
             format_dict[(obs, cond)] = (obs_color, obs_marker, linestyle)
 
     return format_dict
