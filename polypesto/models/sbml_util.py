@@ -2,7 +2,6 @@ from typing import Dict, Tuple, Callable, List, TypeAlias, Optional
 import os
 import time
 import libsbml
-import SBMLDiagrams
 
 SBML_LEVEL = 3
 SBML_VERSION = 2
@@ -26,14 +25,6 @@ def write_model(model_def: ModelDefinition, model_dir: str) -> str:
     return model_filepath
 
 
-def visualize_model(model_filename: str, output_filename: str = "Model.jpg") -> None:
-
-    df = SBMLDiagrams.load(model_filename)
-
-    # df.autolayout()
-    df.draw(output_fileName=output_filename)
-
-
 def _save_sbml(document: Document, model_filepath: str):
     """Outputs the given model string to the given filename."""
     model_xml_string = libsbml.writeSBMLToString(document)
@@ -44,14 +35,6 @@ def _save_sbml(document: Document, model_filepath: str):
 
     with open(model_filepath, "w") as f:
         f.write(model_xml_string)
-
-
-def visualize_model(model_filename: str, output_filename: str = "Model.jpg") -> None:
-
-    df = SBMLDiagrams.load(model_filename)
-
-    # df.autolayout()
-    df.draw(output_fileName=output_filename)
 
 
 #####################################

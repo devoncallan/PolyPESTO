@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "polypesto"
+version = "0.1.0"
+description = "PolyPESTO: parameter estimation utilities"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{name = "Your Name"}]
+
+# core deps (mirrors your dockerfile, minus system packages)
+dependencies = [
+  "pypesto[amici,petab,fides]",
+  "python-libsbml>=5.17.0",
+  "h5py",
+  "SBMLDiagrams",
+  "plotly",
+  "pyswarm",
+  "streamlit",
+  "cmake",
+]
+
+[project.optional-dependencies]
+# pick and choose
+dev = ["jupyter", "ipykernel"]
+viz = ["matplotlib", "seaborn"]  # if you use them
+heavy = ["dlib"]                 # dlib often fails to build; keep optional
+full = [
+  "jupyter", "ipykernel",
+  "matplotlib", "seaborn",
+  "dlib",
+]
+
+[tool.setuptools]
+# install top-level module `sitecustomize.py` (shim below)
+py-modules = ["sitecustomize"]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["polypesto*"]

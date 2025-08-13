@@ -80,5 +80,6 @@ EXPOSE 8888
 
 # Set the working directory
 WORKDIR /mnt/PolyPESTO
+RUN pip install --no-cache-dir -e ./polypesto
 # Command to run when the container starts
 # CMD ["jupyter", "notebook"]
