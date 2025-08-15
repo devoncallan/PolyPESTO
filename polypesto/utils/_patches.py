@@ -1,4 +1,4 @@
-# polypesto/_patches.py
+# polypesto/utils/_patches.py
 from __future__ import annotations
 
 def _safe_log(msg: str):

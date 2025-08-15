@@ -1,5 +1,6 @@
 def main():
-    from polypesto._patches import apply as _apply_patches
+    from polypesto.utils._patches import apply as _apply_patches
+
     _apply_patches()
 
     import numpy as np
@@ -15,8 +16,6 @@ def main():
         plot_all_comparisons_1D,
     )
 
-    from util import get_test_study
-
     DATA_DIR, TEST_DIR = setup_data_dirs(__file__)
 
     simulation_params = ParameterGroup.create_parameter_grid(
@@ -29,7 +28,9 @@ def main():
 
     # Define fitting parameters
     fit_params = IrreversibleCPE.get_default_parameters()
-    obs_df = IrreversibleCPE.create_observables(observables={"fA": "fA"}, noise_value=0.02)
+    obs_df = IrreversibleCPE.create_observables(
+        observables={"fA": "fA"}, noise_value=0.02
+    )
 
     # Define experimental configurations
     t_eval = np.arange(0, 1, 0.05)
@@ -68,7 +69,6 @@ def main():
         ),
         overwrite=False,
     )
-
 
     plot_all_comparisons_1D(study)
     plot_all_results(study)

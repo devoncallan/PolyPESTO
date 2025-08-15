@@ -177,3 +177,4 @@ amici_models/
 polypesto/_models/*
 _experiments/
 experiments/**/data/
+polypesto/**/data/
