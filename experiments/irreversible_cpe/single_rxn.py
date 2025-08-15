@@ -62,9 +62,9 @@ def main():
     # Run parameter estimation
     study.run_parameter_estimation(
         config=dict(
-            optimize=dict(n_starts=100, method="Nelder-Mead"),
+            optimize=dict(n_starts=50, method="Nelder-Mead"),
             profile=dict(method="Nelder-Mead"),
-            sample=dict(n_samples=50000, n_chains=3),
+            sample=dict(n_samples=10000, n_chains=3),
         ),
         overwrite=False,
     )
@@ -72,9 +72,6 @@ def main():
 
     plot_all_comparisons_1D(study)
     plot_all_results(study)
-
-    test_study = get_test_study(study, TEST_DIR)
-    plot_all_ensemble_predictions(study, test_study)
 
 
 if __name__ == "__main__":

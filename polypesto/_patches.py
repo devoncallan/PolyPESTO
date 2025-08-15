@@ -16,170 +16,6 @@ def _patch_petab_from_yaml():
         from petab.v1.problem import Problem # type: ignore
 
         _orig = Problem.from_yaml
-
-        print("before _from_yaml")
-
-        # def _from_yaml(
-        #     yaml_config: dict | Path | str, base_path: str | Path = None
-        # ) -> Problem:
-        #     """
-        #     Factory method to load model and tables as specified by YAML file.
-
-        #     Arguments:
-        #         yaml_config: PEtab configuration as dictionary or YAML file name
-        #         base_path: Base directory or URL to resolve relative paths
-        #     """
-        #     from petab.v1 import yaml, parameters, core, measurements, conditions, observables, mapping
-        #     from petab.versions import get_major_version
-        #     from petab.v1.models import MODEL_TYPE_SBML
-        #     from petab.v1.C import FORMAT_VERSION, MODEL_FILES, MODEL_LOCATION, MODEL_LANGUAGE, EXTENSIONS, MAPPING_FILES
-        #     from warnings import warn
-
-        #     # path to the yaml file
-        #     filepath = None
-
-        #     if isinstance(yaml_config, Path):
-        #         yaml_config = str(yaml_config)
-
-        #     if isinstance(yaml_config, str):
-        #         filepath = yaml_config
-        #         if base_path is None:
-        #             base_path = get_path_prefix(yaml_config)
-        #         yaml_config = yaml.load_yaml(yaml_config)
-
-        #     def get_path(filename):
-        #         if base_path is None:
-        #             return filename
-        #         return f"{base_path}/{filename}"
-
-        #     if yaml.is_composite_problem(yaml_config):
-        #         raise ValueError(
-        #             "petab.Problem.from_yaml() can only be used for "
-        #             "yaml files comprising a single model. "
-        #             "Consider using "
-        #             "petab.CompositeProblem.from_yaml() instead."
-        #         )
-
-        #     major_version = get_major_version(yaml_config)
-        #     if major_version not in {1, 2}:
-        #         raise ValueError(
-        #             "Provided PEtab files are of unsupported version "
-        #             f"{yaml_config[FORMAT_VERSION]}."
-        #         )
-        #     if major_version == 2:
-        #         warn("Support for PEtab2.0 is experimental!", stacklevel=2)
-        #         warn(
-        #             "Using petab.v1.Problem with PEtab2.0 is deprecated. "
-        #             "Use petab.v2.Problem instead.",
-        #             DeprecationWarning,
-        #             stacklevel=2,
-        #         )
-        #     config = ProblemConfig(
-        #         **yaml_config, base_path=base_path, filepath=filepath
-        #     )
-        #     problem0 = config.problems[0]
-        #     # currently required for handling PEtab v2 in here
-        #     problem0_ = yaml_config["problems"][0]
-
-        #     if isinstance(config.parameter_file, list):
-        #         parameter_df = parameters.get_parameter_df(
-        #             [get_path(f) for f in config.parameter_file]
-        #         )
-        #     else:
-        #         parameter_df = (
-        #             parameters.get_parameter_df(get_path(config.parameter_file))
-        #             if config.parameter_file
-        #             else None
-        #         )
-        #     if major_version == 1:
-        #         if len(problem0.sbml_files) > 1:
-        #             # TODO https://github.com/PEtab-dev/libpetab-python/issues/6
-        #             raise NotImplementedError(
-        #                 "Support for multiple models is not yet implemented."
-        #             )
-
-        #         model = (
-        #             model_factory(
-        #                 get_path(problem0.sbml_files[0]),
-        #                 MODEL_TYPE_SBML,
-        #                 model_id=None,
-        #             )
-        #             if problem0.sbml_files
-        #             else None
-        #         )
-        #     else:
-        #         if len(problem0_[MODEL_FILES]) > 1:
-        #             # TODO https://github.com/PEtab-dev/libpetab-python/issues/6
-        #             raise NotImplementedError(
-        #                 "Support for multiple models is not yet implemented."
-        #             )
-        #         if not problem0_[MODEL_FILES]:
-        #             model = None
-        #         else:
-        #             model_id, model_info = next(
-        #                 iter(problem0_[MODEL_FILES].items())
-        #             )
-        #             model = model_factory(
-        #                 get_path(model_info[MODEL_LOCATION]),
-        #                 model_info[MODEL_LANGUAGE],
-        #                 model_id=model_id,
-        #             )
-
-        #     measurement_files = [get_path(f) for f in problem0.measurement_files]
-        #     # If there are multiple tables, we will merge them
-        #     measurement_df = (
-        #         core.concat_tables(
-        #             measurement_files, measurements.get_measurement_df
-        #         )
-        #         if measurement_files
-        #         else None
-        #     )
-
-        #     condition_files = [get_path(f) for f in problem0.condition_files]
-        #     # If there are multiple tables, we will merge them
-        #     condition_df = (
-        #         core.concat_tables(condition_files, conditions.get_condition_df)
-        #         if condition_files
-        #         else None
-        #     )
-
-        #     visualization_files = [
-        #         get_path(f) for f in problem0.visualization_files
-        #     ]
-        #     # If there are multiple tables, we will merge them
-        #     visualization_df = (
-        #         core.concat_tables(visualization_files, core.get_visualization_df)
-        #         if visualization_files
-        #         else None
-        #     )
-
-        #     observable_files = [get_path(f) for f in problem0.observable_files]
-        #     # If there are multiple tables, we will merge them
-        #     observable_df = (
-        #         core.concat_tables(observable_files, observables.get_observable_df)
-        #         if observable_files
-        #         else None
-        #     )
-
-        #     mapping_files = [get_path(f) for f in problem0_.get(MAPPING_FILES, [])]
-        #     # If there are multiple tables, we will merge them
-        #     mapping_df = (
-        #         core.concat_tables(mapping_files, mapping.get_mapping_df)
-        #         if mapping_files
-        #         else None
-        #     )
-
-        #     return Problem(
-        #         condition_df=condition_df,
-        #         measurement_df=measurement_df,
-        #         parameter_df=parameter_df,
-        #         observable_df=observable_df,
-        #         model=model,
-        #         visualization_df=visualization_df,
-        #         mapping_df=mapping_df,
-        #         extensions_config=yaml_config.get(EXTENSIONS, {}),
-        #         config=config,
-        #     )
         def _from_yaml(
             yaml_config: dict | Path | str, base_path: str | Path = None
             ) -> Problem:
@@ -344,9 +180,6 @@ def _patch_petab_from_yaml():
                 extensions_config=yaml_config.get(EXTENSIONS, {}),
             )
         
-
-        print("after _from_yaml")
-
         # install patch
         Problem.from_yaml = staticmethod(_from_yaml)  # type: ignore[attr-defined]
     except Exception as e:
@@ -512,7 +345,6 @@ def _patch_amici_species_guard():
         _safe_log(f"amici species guard patch skipped: {e!r}")
 
 def apply():
-    print("inside apply_patches")
     _patch_petab_from_yaml()
     _patch_pypesto_importer_from_yaml()
     _patch_pypesto_sampling_bounds()

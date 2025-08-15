@@ -71,8 +71,6 @@ def plot_confidence_intervals(
         return plt.subplots()
 
     kwargs.setdefault("alpha", [90, 95, 99])
-    kwargs.setdefault("show_bounds", True)
-
     # Plot confidence intervals
     ax = vis.sampling_parameter_cis(result=result, **kwargs)
     fig = plt.gcf()
