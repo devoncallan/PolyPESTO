@@ -1,1 +1,2 @@
-# polypesto/__init__.py
+from polypesto.utils import _patches
+_patches.apply()

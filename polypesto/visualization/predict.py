@@ -65,7 +65,7 @@ from pypesto.sample import calculate_ci_mcmc_sample
 from pypesto.visualize.misc import rgba2rgb
 
 cmap = matplotlib.cm.viridis
-logger = logging.getLogger(__name__)
+# logger = logging.getLogger(__name__)
 
 
 prediction_errorbar_settings = {

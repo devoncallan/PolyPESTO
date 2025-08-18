@@ -179,7 +179,7 @@ def _patch_petab_from_yaml():
                 mapping_df=mapping_df,
                 extensions_config=yaml_config.get(EXTENSIONS, {}),
             )
-        
+                
         # install patch
         Problem.from_yaml = staticmethod(_from_yaml)  # type: ignore[attr-defined]
     except Exception as e:

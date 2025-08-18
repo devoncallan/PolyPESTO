@@ -1,8 +1,6 @@
 def main():
     from polypesto.utils._patches import apply as _apply_patches
 
-    _apply_patches()
-
     import numpy as np
 
     from polypesto.core.params import ParameterGroup
