@@ -18,6 +18,17 @@ def find_experiment_paths(base_dir: str) -> Dict[Tuple[str, str], ExperimentPath
     return experiment_paths
 
 
+def _setup_data_dirs(data_dir: str, dir_name: str):
+
+    data_folder = os.path.join(data_dir, "data")
+    os.makedirs(data_folder, exist_ok=True)
+
+    exp_dir = os.path.join(data_folder, dir_name)
+    os.makedirs(exp_dir, exist_ok=True)
+
+    return data_folder, exp_dir
+
+
 def setup_data_dirs(script_path):
 
     script_dir = os.path.dirname(script_path)

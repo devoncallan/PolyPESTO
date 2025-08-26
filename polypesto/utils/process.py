@@ -1,3 +1,4 @@
+from time import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -6,6 +7,43 @@ from scipy.ndimage import gaussian_filter1d
 from typing import List, Tuple, Dict, Optional
 
 # Function(s) to merge simple csv data into one dataframe containing Time, Conversion A, Conversion B
+
+
+# # conditions = {
+# #     "fA0": fA0,
+# #     "cM0": cM0
+# # }
+# # ModelInterface
+
+
+# def df_to_obs_data(df: pd.DataFrame, fA0: float) -> Dict[str, np.ndarray]:
+
+#     time = df["Time [min]"].values
+#     xA = df["Conversion A [%]"].values
+#     xB = df["Conversion B [%]"].values
+#     x = fA0 * xA + (1 - fA0) * xB
+
+#     fA = 1 - xA
+#     fB = 1 - xB
+
+#     return {"obs_xA": xA, "obs_xB": xB, "obs_fA": fA, "obs_fB": fB}
+
+
+# def convert(df: pd.DataFrame, obs2data_map: Dict[str, str]) -> pd.DataFrame:
+
+#     if not df.columns.intersection(obs2data_map.values()).any():
+#         return df
+
+#     for key, value in obs2data_map.items():
+#         if not value in df.columns:
+#             continue
+#         df[key] = df[value]
+#     return df
+
+
+# df = pd.read_csv("path/to/data.csv")
+# df = convert(df, obs2data_map={"xA": "Conversion A [%]", "xB": "Conversion B [%]"})
+# # conds = ModelInterface.create_conditions(df, fA0)
 
 
 def process_data(monomer_A: str, monomer_B: str):
@@ -205,6 +243,56 @@ def create_meas(
 
     return df_conv
 
+
+"""
+Pass in time 
+
+dataset = merge(dataset1, dataset2, xkey="time")
+
+time, xA, xB
+
+-> time, xA, xB, fA, fB
+
+
+"""
+
+
+def __create(df: pd.DataFrame, fA0: float) -> pd.DataFrame:
+
+    # time = df["Time [min]"].values
+    # xA = df["Conversion A [%]"].values
+    # xB = df["Conversion B [%]"].values
+    t = df["Time [min]"].values
+    xA = df["xA"].values
+    xB = df["xB"].values
+    x = fA0 * xA + (1 - fA0) * xB
+    
+    
+    a = fA0 * (1 - xA)
+    b = (1 - fA0) * (1 - xB)
+    fA = a / (a + b)
+    fB = b / (a + b)
+    
+    df["fA"] = fA
+    df["fB"] = fB
+    
+    src = {
+        "xA": df["xA"].values,
+        "xB": df["xB"].values,
+        "fA": df["fA"].values,
+        "fB": df["fB"].values,
+    }
+
+    frames = []
+    for obs, data in src.items():
+        frames.append(pd.DataFrame(
+            {
+                "observableId": f"obs_{obs}",
+                "simulationConditionId": cond_id,
+                "time": x,
+                "measurement": data
+            }
+        ))
 
 def save_tsv(df: pd.DataFrame, output_file: str):
     df.to_csv(output_file, sep="\t", index=False)

@@ -76,6 +76,15 @@ class ParameterSet:
     def lazy_from_dict(
         data: Dict[ParameterID, Any], id: Optional[ParameterSetID] = "default_id"
     ) -> "ParameterSet":
+        """
+        ```
+        ps = ParameterSet.lazy_from_dict({
+            "k1": 0.1,
+            "k2": 0.2,
+        })
+        ```
+
+        """
         parameters = {
             param_id: Parameter(id=param_id, value=param_data)
             for param_id, param_data in data.items()
@@ -146,6 +155,31 @@ class ParameterGroup:
             for param_set_id, param_set_data in data["parameter_sets"].items()
         }
         return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
+
+    @staticmethod
+    def lazy_from_dict(
+        data: Dict[str, Any], id: ParameterSetID = "default_id"
+    ) -> "ParameterGroup":
+        """
+        ```
+        pg = ParameterGroup.lazy_from_dict({
+            "slow_kinetics": {
+                "k1": 0.1,
+                "k2": 0.2
+            },
+            "fast_kinetics": {
+                "k1": 1.1,
+                "k2": 1.6
+            }
+        })
+        ```
+
+        """
+        parameter_sets = {
+            param_set_id: ParameterSet.lazy_from_dict(param_set_data)
+            for param_set_id, param_set_data in data.items()
+        }
+        return ParameterGroup(id=id, parameter_sets=parameter_sets)
 
     def to_dict(self) -> dict:
         return asdict(self)

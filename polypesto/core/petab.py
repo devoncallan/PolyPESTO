@@ -1,5 +1,5 @@
 import os
-from typing import Dict, Tuple, Sequence, Callable, Optional
+from typing import Dict, Tuple, Sequence, Callable, Optional, TypeAlias
 from functools import wraps
 from dataclasses import dataclass
 
@@ -39,6 +39,8 @@ class PetabIO:
     """
     Namespace for reading and writing PEtab files.
     """
+    
+    _FormatFunc: TypeAlias = Callable[[pd.DataFrame], pd.DataFrame]
 
     ##########################
     ### Format PETab files ###
@@ -78,7 +80,7 @@ class PetabIO:
     ########################
 
     @staticmethod
-    def read_petab_df(filepath: str, format_func) -> pd.DataFrame:
+    def read_petab_df(filepath: str, format_func: _FormatFunc) -> pd.DataFrame:
         df = pd.read_csv(filepath, sep="\t")  # .reset_index(drop=True)
         return format_func(df)
 
@@ -196,9 +198,9 @@ def define_observables(
     return PetabIO.format_obs_df(df)
 
 
-def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFrame:
+def define_conditions(init_conds: Dict[str, Sequence[float]]) -> pd.DataFrame:
     # Ensure all sequences have the same length
-    lengths = [len(values) for values in init_conditions.values()]
+    lengths = [len(values) for values in init_conds.values()]
     assert all(
         length == lengths[0] for length in lengths
     ), "All sequences must have the same length"
@@ -208,7 +210,7 @@ def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFra
     condition_ids = [f"c_{i}" for i in range(num_conditions)]
 
     # Create the DataFrame
-    conditions = pd.DataFrame(init_conditions)
+    conditions = pd.DataFrame(init_conds)
     conditions[C.CONDITION_ID] = condition_ids
     conditions[C.CONDITION_NAME] = condition_ids
 
@@ -256,7 +258,6 @@ def define_empty_measurements(
     meas_df = pd.concat(meas_dfs)
     return PetabIO.format_meas_df(meas_df)
     # return PetabIO.format_meas_df(meas_df)
-
 
 def add_noise_to_measurements(
     measurements_df: pd.DataFrame,

@@ -29,8 +29,10 @@ def main():
     # Define fitting parameters
     fit_params = IrreversibleCPE.get_default_parameters()
     obs_df = IrreversibleCPE.create_observables(
-        observables={"fA": "fA"}, noise_value=0.02
+        observables={"fA": "fA", "fB": "fB", "xA": "xA", "xB": "xB"}, noise_value=0.02
     )
+    
+    
 
     # Define experimental configurations
     t_eval = np.arange(0, 1, 0.05)
@@ -49,6 +51,8 @@ def main():
             noise_level=[0.02] * ntrials,
         )
     )
+    
+    
 
     # Create the study - this will simulate all experiments
     study = create_study(
