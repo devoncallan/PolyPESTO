@@ -2,9 +2,9 @@ import os
 from pathlib import Path
 
 
-class ExperimentPaths:
+class ProblemPaths:
     """
-    Manages pathing for experiment data.
+    Manages pathing for parameter estimation problem.
     - Petab Data
     - PyPESTO Results
     - Figures
@@ -160,10 +160,10 @@ class ExperimentPaths:
         return yaml_path.parent.name
 
     @staticmethod
-    def from_yaml(results_path: str | Path) -> "ExperimentPaths":
-        """Create ExperimentPaths from a results.hdf5 file"""
+    def from_yaml(results_path: str | Path) -> "ProblemPaths":
+        """Create ProblemPaths object from a results.hdf5 file"""
         results_path = Path(results_path)
-        return ExperimentPaths(
-            base_dir=ExperimentPaths.get_base_dir_from_yaml(results_path),
-            exp_id=ExperimentPaths.get_exp_id_from_yaml(results_path),
+        return ProblemPaths(
+            base_dir=ProblemPaths.get_base_dir_from_yaml(results_path),
+            exp_id=ProblemPaths.get_exp_id_from_yaml(results_path),
         )

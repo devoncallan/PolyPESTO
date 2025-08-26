@@ -2,16 +2,14 @@ from typing import Optional
 from dataclasses import dataclass
 
 import pandas as pd
-from pypesto.problem import Problem as PypestoProblem
 from petab.v1 import Problem as PetabProblem
 
 from polypesto.models import ModelInterface
-
-from polypesto.core.experiment import ExperimentPaths
+from polypesto.core.problem import ProblemPaths, PypestoProblem
 
 
 @dataclass
-class Experiment:
+class Problem:
     """
     Represents experimental data for a
     single parameter estimation problem.
@@ -19,24 +17,24 @@ class Experiment:
 
     petab_problem: PetabProblem
     pypesto_problem: PypestoProblem
-    paths: Optional[ExperimentPaths] = None
+    paths: Optional[ProblemPaths] = None
 
     @staticmethod
-    def load(paths: ExperimentPaths, model: ModelInterface, **kwargs) -> "Experiment":
+    def load(paths: ProblemPaths, model: ModelInterface, **kwargs) -> "Problem":
         """
-        Load an experiment.
+        Load a parameter estimation problem.
 
         Parameters
         ----------
-        paths : ExperimentPaths
-            Paths object containing locations of experiment files
+        paths : ProblemPaths
+            Defines locations of parameter estimation problem files.
         model : ModelInterface
-            Model class to use for simulation
+            Model class to use for simulation.
 
         Returns
         -------
-        Experiment
-            Loaded experiment object
+        Problem
+            Loaded parameter estimation problem object
         """
         from polypesto.core.pypesto import load_pypesto_problem
 
@@ -44,11 +42,11 @@ class Experiment:
             yaml_path=paths.petab_yaml, model_name=model.name, **kwargs
         )
 
-        return Experiment(
+        return Problem(
             petab_problem=importer.petab_problem,
             pypesto_problem=problem,
             paths=paths,
         )
-        
+
     def get_conditions(self) -> pd.DataFrame:
         return self.petab_problem.condition_df

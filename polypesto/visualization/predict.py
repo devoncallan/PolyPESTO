@@ -8,7 +8,7 @@ from matplotlib.axes import Axes
 import pypesto.visualize as vis
 from pypesto.ensemble import EnsemblePrediction
 
-from polypesto.core.experiment import Experiment
+from polypesto.core.problem import Problem
 from .base import safe_plot
 
 ########################
@@ -18,10 +18,10 @@ from .base import safe_plot
 
 # @safe_plot
 def plot_ensemble_predictions(
-    ensemble_pred: EnsemblePrediction, exp: Experiment, levels=[90, 95, 99], **kwargs
+    ensemble_pred: EnsemblePrediction, prob: Problem, levels=[90, 95, 99], **kwargs
 ) -> Tuple[Figure, Axes]:
 
-    mdf = exp.petab_problem.measurement_df
+    mdf = prob.petab_problem.measurement_df
     mdf["conditionId"] = mdf["simulationConditionId"]
 
     axs = sampling_prediction_trajectories(

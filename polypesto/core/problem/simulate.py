@@ -13,10 +13,33 @@ from polypesto.core.petab import (
     add_noise_to_measurements,
 )
 
-from . import Experiment, ExperimentPaths
+from . import Problem, ProblemPaths
 
 
 ConditionsDict: TypeAlias = Dict[str, List[float]]
+
+
+"""
+Experiment -> Collection of simulated data at different conditions
+--> More like a collection of simulated datasets, each corresponding to a specific condition.
+--> Also weird that the fit parameters are here as well.
+--> Should have a collection of time points
+
+Ideal naming:
+Experiment -> One initial condition and associated data
+-> Multiple observables
+
+
+"""
+
+
+@dataclass
+class SimConditions:
+
+    name: str
+    t_eval: List[float]
+    conds: ParameterSet
+    # conds: Dict[str, float]
 
 
 @dataclass
@@ -80,30 +103,32 @@ class SimulatedExperiment:
         The true parameter values used for the simulation.
     """
 
-    experiment: Experiment
+    problem: Problem
     true_params: ParameterSet
 
     @property
     def petab_problem(self):
-        return self.experiment.petab_problem
+        return self.problem.petab_problem
 
     @property
     def pypesto_problem(self):
-        return self.experiment.pypesto_problem
+        return self.problem.pypesto_problem
 
     @property
     def paths(self):
-        return self.experiment.paths
+        return self.problem.paths
 
     @staticmethod
-    def load(paths: ExperimentPaths, model: ModelInterface, **kwargs) -> "SimulatedExperiment":
+    def load(
+        paths: ProblemPaths, model: ModelInterface, **kwargs
+    ) -> "SimulatedExperiment":
 
         paths.assert_parameters_exist()
 
-        experiment = Experiment.load(paths, model, **kwargs)
+        problem = Problem.load(paths, model, **kwargs)
         true_params = ParameterSet.load(paths.true_params)
         return SimulatedExperiment(
-            experiment=experiment,
+            problem=problem,
             true_params=true_params,
         )
 
@@ -112,7 +137,7 @@ def create_simulated_experiment(
     model: Type[ModelInterface],
     true_params: ParameterSet,
     data: PetabData,
-    paths: ExperimentPaths,
+    paths: ProblemPaths,
     force_compile: bool = False,
     noise_level: float = 0.0,
 ) -> SimulatedExperiment:
@@ -216,11 +241,11 @@ def simulate_experiment(
         meas_df=meas_df,
     )
 
-    # Create experiment directory name based on configuration
-    exp_dir = os.path.join(base_dir, conditions.name)
+    # Create problem directory name based on configuration
+    prob_dir = os.path.join(base_dir, conditions.name)
 
     # Create problem set with simulated data
-    paths = ExperimentPaths(exp_dir, true_params.id)
+    paths = ProblemPaths(prob_dir, true_params.id)
 
     return create_simulated_experiment(
         model=model,

@@ -5,9 +5,9 @@ This module provides classes for handling different types of parameter estimatio
 results (optimization, profile, sampling) with a consistent interface.
 """
 
-from typing import Dict, List, Optional, Tuple, Union, Any
-import numpy as np
+from typing import Optional
 
+import numpy as np
 from pypesto import Result, Problem
 
 

@@ -8,11 +8,11 @@ from polypesto.core.pypesto import (
 )
 
 from polypesto.core.results import has_results
-from . import Experiment
+from . import Problem
 
 
 def run_parameter_estimation(
-    exp: Experiment,
+    prob: Problem,
     config: dict = {},
     result: Optional[Result] = None,
     save: bool = True,
@@ -32,7 +32,7 @@ def run_parameter_estimation(
             return result
 
         print(f"\tRunning {fun.__name__} with {config[key]}")
-        result = fun(exp.pypesto_problem, result=result, **config[key])
+        result = fun(prob.pypesto_problem, result=result, **config[key])
         save_components[key] = True
         return result
 
@@ -41,11 +41,11 @@ def run_parameter_estimation(
     result = run_if_found("sample", sample_problem, result=result)
 
     if result and save:
-        print(f"\tSaving results to {exp.paths.pypesto_results}")
+        print(f"\tSaving results to {prob.paths.pypesto_results}")
 
         store.write_result(
             result=result,
-            filename=exp.paths.pypesto_results,
+            filename=prob.paths.pypesto_results,
             overwrite=True,
             **save_components,
         )

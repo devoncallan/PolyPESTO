@@ -8,7 +8,7 @@ import pandas as pd
 from matplotlib.axes import Axes
 from polypesto.models import ModelInterface
 from polypesto.core.params import ParameterGroup
-from polypesto.core.experiment import (
+from polypesto.core.problem import (
     SimulatedExperiment,
     SimulationConditions,
     run_parameter_estimation,

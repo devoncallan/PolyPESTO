@@ -7,7 +7,7 @@ def main():
 
     from polypesto.core.params import ParameterGroup
     from polypesto.core.study import Study, create_study
-    from polypesto.core.experiment import create_simulation_conditions
+    from polypesto.core.problem import create_simulation_conditions
     from polypesto.models.CRP2 import IrreversibleCPE
     from polypesto.utils.paths import setup_data_dirs
     from polypesto.visualization import (
