@@ -10,7 +10,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "Your Name"}]
 
-# core deps (mirrors your dockerfile, minus system packages)
 dependencies = [
   "pypesto[amici,petab,fides]",
   "python-libsbml>=5.17.0",
@@ -25,8 +24,8 @@ dependencies = [
 [project.optional-dependencies]
 # pick and choose
 dev = ["jupyter", "ipykernel"]
-viz = ["matplotlib", "seaborn"]  # if you use them
-heavy = ["dlib"]                 # dlib often fails to build; keep optional
+viz = ["matplotlib", "seaborn"] 
+heavy = ["dlib"]                 
 full = [
   "jupyter", "ipykernel",
   "matplotlib", "seaborn",
