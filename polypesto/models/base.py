@@ -1,50 +1,52 @@
-from typing import Protocol
+from typing import Dict, List, Optional
+from pathlib import Path
+from abc import ABC, abstractmethod
 
 import pandas as pd
 
+from polypesto.core import petab as pet
 from . import sbml
 
 
-class ModelInterface(Protocol):
+AMICI_MODEL_DIR = Path(__file__).parent.parent / "amici_models"
 
-    name: str
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
-        """Create and return SBML model"""
-        ...
+class ModelBase(ABC):
 
-    @staticmethod
-    def create_conditions(**kwargs) -> pd.DataFrame:
-        """Create conditions dataframe"""
-        ...
+    def __init__(
+        self,
+        observables: Optional[List[str]] = None,
+        obs_noise_level: float = 0.02,
+    ):
 
-    @staticmethod
-    def create_observables(**kwargs) -> pd.DataFrame:
-        """Create observables dataframe"""
-        ...
+        self.name = self.__class__.__name__
 
-    @staticmethod
-    def create_default_conditions() -> pd.DataFrame:
-        """Create default conditions dataframe"""
-        ...
+        self.observables = {o: o for o in (observables or self._default_obs())}
+        self.obs_noise_level = obs_noise_level
 
-    @staticmethod
-    def get_default_fit_params():
-        """Return default parameter settings"""
-        ...
+        self.fit_params = self._default_fit_params()
 
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        """Return default parameters dataframe"""
-        ...
+    @abstractmethod
+    def _default_obs(self) -> List[str]:
+        """Return default observables"""
+        pass
 
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        """Return default observables dataframe"""
-        ...
+    @abstractmethod
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
+        """Return default fit parameters"""
+        pass
 
-    @staticmethod
-    def get_simulation_parameters():
-        """Return simulation parameters"""
-        ...
+    @abstractmethod
+    def sbml_model_def(self) -> sbml.ModelDefinition:
+        """Return SBML model definition"""
+        pass
+
+    def get_param_df(self) -> pd.DataFrame:
+        """Get fit parameter dataframe"""
+        return pet.define_parameters(self.fit_params)
+
+    def get_obs_df(self) -> pd.DataFrame:
+        """Get observables dataframe"""
+        return pet.define_observables(
+            self.observables, noise_value=self.obs_noise_level
+        )

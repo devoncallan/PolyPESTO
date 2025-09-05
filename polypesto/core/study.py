@@ -8,15 +8,15 @@ import pandas as pd
 from matplotlib.axes import Axes
 from polypesto.models import ModelInterface
 from polypesto.core.params import ParameterGroup
-from polypesto.core.experiment import (
-    SimulatedExperiment,
-    SimulationConditions,
+from polypesto.core.problem import (
+    # SimulatedExperiment,
+    # SimulationConditions,
     run_parameter_estimation,
-    simulate_experiment,
+    # simulate_experiment,
 )
-from polypesto.utils.paths import find_experiment_paths
+# from polypesto.utils.paths import find_experiment_paths
 
-SimulatedExperimentDict: TypeAlias = Dict[Tuple[str, str], SimulatedExperiment]
+# SimulatedExperimentDict: TypeAlias = Dict[Tuple[str, str], SimulatedExperiment]
 ResultsDict: TypeAlias = Dict[Tuple[str, str], Result]
 
 

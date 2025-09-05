@@ -1,12 +1,19 @@
 import os
-from typing import Dict, Tuple, Sequence, Callable, Optional
-from functools import wraps
+from typing import Dict, List, Optional, Tuple, Callable, TypeAlias
 from dataclasses import dataclass
 
+
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
-import petab
 import petab.v1.C as C
+from petab.v1 import (
+    write_observable_df,
+    write_condition_df,
+    write_measurement_df,
+    write_parameter_df,
+    Problem as PetabProblem,
+)
 
 
 @dataclass
@@ -34,11 +41,29 @@ class FitParameter:
     nominal_value: float
     estimate: bool
 
+    def set(
+        self,
+        scale: Optional[str] = None,
+        bounds: Optional[Tuple[float, float]] = None,
+        nominal_value: Optional[float] = None,
+        estimate: Optional[bool] = None,
+    ):
+        if scale is not None:
+            self.scale = scale
+        if bounds is not None:
+            self.bounds = bounds
+        if nominal_value is not None:
+            self.nominal_value = nominal_value
+        if estimate is not None:
+            self.estimate = estimate
+
 
 class PetabIO:
     """
     Namespace for reading and writing PEtab files.
     """
+
+    _FormatFunc: TypeAlias = Callable[[pd.DataFrame], pd.DataFrame]
 
     ##########################
     ### Format PETab files ###
@@ -78,7 +103,7 @@ class PetabIO:
     ########################
 
     @staticmethod
-    def read_petab_df(filepath: str, format_func) -> pd.DataFrame:
+    def read_petab_df(filepath: str, format_func: _FormatFunc) -> pd.DataFrame:
         df = pd.read_csv(filepath, sep="\t")  # .reset_index(drop=True)
         return format_func(df)
 
@@ -112,25 +137,25 @@ class PetabIO:
     def write_obs_df(
         df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_observable_df, dir, filename)
+        return PetabIO.write_df(df, write_observable_df, dir, filename)
 
     @staticmethod
     def write_cond_df(
         df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_condition_df, dir, filename)
+        return PetabIO.write_df(df, write_condition_df, dir, filename)
 
     @staticmethod
     def write_meas_df(
         df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_measurement_df, dir, filename)
+        return PetabIO.write_df(df, write_measurement_df, dir, filename)
 
     @staticmethod
     def write_param_df(
         df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_parameter_df, dir, filename)
+        return PetabIO.write_df(df, write_parameter_df, dir, filename)
 
     @staticmethod
     def write_yaml(
@@ -142,7 +167,10 @@ class PetabIO:
         param_filepath: str,
     ) -> str:
 
-        petab.v1.yaml.create_problem_yaml(
+        from petab.v1.yaml import create_problem_yaml
+        from petab.v1.lint import lint_problem
+
+        create_problem_yaml(
             sbml_files=sbml_filepath,
             condition_files=cond_filepath,
             measurement_files=meas_filepath,
@@ -151,8 +179,8 @@ class PetabIO:
             yaml_file=yaml_filepath,
             relative_paths=False,
         )
-        problem = petab.v1.Problem.from_yaml(yaml_filepath, base_path="")
-        petab.v1.lint.lint_problem(problem)
+        problem = PetabProblem.from_yaml(yaml_filepath, base_path="")
+        lint_problem(problem)
 
         return yaml_filepath
 
@@ -196,66 +224,63 @@ def define_observables(
     return PetabIO.format_obs_df(df)
 
 
-def define_conditions(init_conditions: Dict[str, Sequence[float]]) -> pd.DataFrame:
-    # Ensure all sequences have the same length
-    lengths = [len(values) for values in init_conditions.values()]
-    assert all(
-        length == lengths[0] for length in lengths
-    ), "All sequences must have the same length"
+def define_conditions(
+    conds: List[Dict[str, float]], exp_ids: List[str] = None
+) -> pd.DataFrame:
 
-    # Create condition IDs
-    num_conditions = lengths[0]
-    condition_ids = [f"c_{i}" for i in range(num_conditions)]
+    if exp_ids is None:
+        exp_ids = [f"exp_{i}" for i in range(len(conds))]
+    elif len(exp_ids) != len(conds):
+        raise ValueError(
+            f"Number of provided exp_ids ({len(exp_ids)}) must match number of conditions ({len(conds)})."
+        )
 
-    # Create the DataFrame
-    conditions = pd.DataFrame(init_conditions)
-    conditions[C.CONDITION_ID] = condition_ids
-    conditions[C.CONDITION_NAME] = condition_ids
+    if len({frozenset(c.keys()) for c in conds}) != 1:
+        raise ValueError("All condition dictionaries must have the same keys")
 
-    return PetabIO.format_cond_df(conditions)
+    df = pd.DataFrame(conds)
+    df[C.CONDITION_ID] = exp_ids
+    df[C.CONDITION_NAME] = exp_ids
+
+    return PetabIO.format_cond_df(df)
+
+
+def define_measurements(
+    data_dict: Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]],
+):
+    """Define measurements DataFrame from a data dictionary.
+
+    Args:
+        data_dict (Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]]): Mapping from (observable_id, exp_id) to (timepoints, measurements)
+
+    Returns:
+        pd.DataFrame: Formatted measurements DataFrame
+    """
+
+    meas_dfs = []
+    for (obs_id, cond_id), (t, y) in data_dict.items():
+        df = pd.DataFrame(
+            {
+                C.OBSERVABLE_ID: [obs_id] * len(t),
+                C.SIMULATION_CONDITION_ID: [cond_id] * len(t),
+                C.TIME: t,
+                C.MEASUREMENT: y,
+            }
+        )
+        meas_dfs.append(df)
+    meas_df = pd.concat(meas_dfs)
+    return PetabIO.format_meas_df(meas_df)
 
 
 def define_empty_measurements(
-    observables_df: pd.DataFrame,
-    conditions_df: pd.DataFrame,
-    timepoints: Sequence[float] | Sequence[Sequence[float]] = None,
+    data_dict: Dict[Tuple[str, str], ArrayLike],
 ) -> pd.DataFrame:
-    """Create empty measurements DataFrame with specified timepoints.
 
-    Args:
-        observables_df: DataFrame with observable definitions
-        conditions_df: DataFrame with condition definitions
-        timepoints: Either:
-            - Sequence[float]: Same timepoints used for all conditions
-            - Sequence[Sequence[float]]: Different timepoints per condition
-            - None: Defaults to [0] for all conditions
-    """
-    if timepoints is None:
-        timepoints = [0]
-
-    # If single sequence provided, use for all conditions
-    if not isinstance(timepoints[0], (list, tuple)):
-        timepoints = [timepoints] * len(conditions_df)
-
-    meas_dfs = []
-    for (cond_id, _), cond_times in zip(conditions_df.iterrows(), timepoints):
-        cond_meas_dfs = []
-        for obs_id, _ in observables_df.iterrows():
-            df = pd.DataFrame(
-                {
-                    C.OBSERVABLE_ID: [obs_id] * len(cond_times),
-                    C.SIMULATION_CONDITION_ID: [cond_id] * len(cond_times),
-                    C.TIME: cond_times,
-                    C.MEASUREMENT: [0] * len(cond_times),
-                }
-            )
-            cond_meas_dfs.append(df)
-        meas_df = pd.concat(cond_meas_dfs)
-        meas_dfs.append(meas_df)
-
-    meas_df = pd.concat(meas_dfs)
-    return PetabIO.format_meas_df(meas_df)
-    # return PetabIO.format_meas_df(meas_df)
+    data_dict = {
+        (obs_id, cond_id): (t, np.zeros_like(t))
+        for (obs_id, cond_id), t in data_dict.items()
+    }
+    return define_measurements(data_dict)
 
 
 def add_noise_to_measurements(

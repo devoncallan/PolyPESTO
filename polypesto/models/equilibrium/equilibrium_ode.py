@@ -1,40 +1,23 @@
-from typing import Dict
-
-import pandas as pd
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup
-from polypesto.models import sbml, ModelInterface
+from polypesto.models import sbml, ModelBase
 
 
 #############################
 ### Binary Reaction Model ###
 #############################
 
+
 # A -k1-> B
 # B -k2-> A
-
-
-class EquilibriumODE(ModelInterface):
+class EquilibriumODE(ModelBase):
     """Equilibrium ODE (Reaction) Model"""
 
-    name: str = "equilibrium_ode"
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
-        return equilibrium_ode
-
-    @staticmethod
-    def create_conditions(A, B) -> pd.DataFrame:
-        return pet.define_conditions(
-            {
-                "A": A,
-                "B": B,
-            }
-        )
-
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
         bounds = (1e-3, 1e3)
         return {
             "k1": pet.FitParameter(
@@ -53,22 +36,14 @@ class EquilibriumODE(ModelInterface):
             ),
         }
 
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        return pet.define_parameters(EquilibriumODE.default_fit_params())
+    def sbml_model_def(self) -> sbml.ModelDefinition:
 
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        return pet.define_observables({"A": "A", "B": "B"}, noise_value=0.02)
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        return EquilibriumODE.create_conditions([1], [1])
+        return equilibrium_ode
 
 
 def equilibrium_ode() -> sbml.ModelDefinition:
 
-    name = EquilibriumODE.name
+    name = "equilibrium_ode"
     print(f"Creating SBML model ({name}).")
     document, model = sbml.create_model(name)
 

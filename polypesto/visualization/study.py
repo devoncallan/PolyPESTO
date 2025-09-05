@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from polypesto.core.experiment import Experiment, SimulatedExperiment
+from polypesto.core.problem import Problem, SimulatedExperiment
 from polypesto.core.results import Result
 from polypesto.core.study import Study
 from polypesto.visualization import (
@@ -16,33 +16,33 @@ from polypesto.visualization import (
 )
 
 
-def plot_results(exp: Experiment | SimulatedExperiment, result: Result):
+def plot_results(prob: Problem | SimulatedExperiment, result: Result):
 
     true_params = None
-    if isinstance(exp, SimulatedExperiment):
-        true_params = exp.true_params.to_dict()
-        exp = exp.experiment
+    if isinstance(prob, SimulatedExperiment):
+        true_params = prob.true_params.to_dict()
+        prob = prob.experiment
 
-    axs = plot_all_measurements(exp.petab_problem.measurement_df)
-    plt.gcf().savefig(exp.paths.measurements_data_plot, dpi=300)
+    axs = plot_all_measurements(prob.petab_problem.measurement_df)
+    plt.gcf().savefig(prob.paths.measurements_data_plot, dpi=300)
 
     fig, ax = plot_optimization_scatter(result, true_params)
-    plt.gcf().savefig(exp.paths.optimization_scatter_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.optimization_scatter_plot, dpi=300)
 
     fig, ax = plot_waterfall(result)
-    plt.gcf().savefig(exp.paths.waterfall_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.waterfall_plot, dpi=300)
 
     fig, ax = plot_sampling_scatter(result, true_params)
-    plt.gcf().savefig(exp.paths.sampling_scatter_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.sampling_scatter_plot, dpi=300)
 
     fig, ax = plot_parameter_traces(result, true_params)
-    plt.gcf().savefig(exp.paths.sampling_trace_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.sampling_trace_plot, dpi=300)
 
     fig, ax = plot_profiles(result, true_params)
-    plt.gcf().savefig(exp.paths.profile_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.profile_plot, dpi=300)
 
     fig, ax = plot_confidence_intervals(result, true_params)
-    plt.gcf().savefig(exp.paths.confidence_intervals_plot, dpi=300)
+    plt.gcf().savefig(prob.paths.confidence_intervals_plot, dpi=300)
 
     plt.close("all")
 

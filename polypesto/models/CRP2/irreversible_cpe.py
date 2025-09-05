@@ -1,67 +1,16 @@
-from typing import Dict, Tuple
-import pandas as pd
-from numpy.typing import ArrayLike
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
-
-from polypesto.models import sbml, ModelInterface
+from polypesto.models import sbml, ModelBase
 from .common import define_irreversible_k
 
 
-class IrreversibleCPE(ModelInterface):
-    """Irreversible Copolymerization Equation Model"""
+class IrreversibleCPE(ModelBase):
 
-    name: str = "irreversible_cpe"
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
-        return irreversible_ode
-
-    @staticmethod
-    def create_conditions(fA0: ArrayLike, cM0: ArrayLike, **kwargs) -> pd.DataFrame:
-        """
-        Create conditions dataframe for the model.
-
-        Parameters
-        ----------
-        fA0 : ArrayLike
-            Feed fraction of monomer A
-        cM0 : ArrayLike
-            Total monomer concentration
-
-        Returns
-        -------
-        pd.DataFrame
-            Dataframe with initial conditions
-        """
-        import numpy as np
-
-        # Convert to numpy arrays for element-wise multiplication
-        fA0_array = np.array(fA0)
-        cM0_array = np.array(cM0)
-
-        return pet.define_conditions(
-            {
-                "A0": fA0_array * cM0_array,
-                "B0": (1 - fA0_array) * cM0_array,
-            }
-        )
-
-    @staticmethod
-    def create_observables(**kwargs) -> pd.DataFrame:
-        return pet.define_observables(**kwargs)
-
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
-        """
-        Get default fit parameters for the model.
-
-        Returns
-        -------
-        Dict[str, pet.FitParameter]
-            Dictionary of fit parameters
-        """
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
         return {
             "rA": pet.FitParameter(
                 id="rA",
@@ -86,48 +35,14 @@ class IrreversibleCPE(ModelInterface):
             ),
         }
 
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        """
-        Get default parameter dataframe for fitting.
+    def sbml_model_def(self) -> sbml.ModelDefinition:
 
-        Returns
-        -------
-        pd.DataFrame
-            Parameter dataframe for PEtab
-        """
-        return pet.define_parameters(IrreversibleCPE.get_default_fit_params())
-
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        """
-        Get default observables dataframe.
-
-        Returns
-        -------
-        pd.DataFrame
-            Observables dataframe for PEtab
-        """
-        return pet.define_observables(
-            {"fA": "fA", "fB": "fB", "xA": "xA", "xB": "xB"}, noise_value=0.02
-        )
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        """
-        Get default conditions dataframe.
-
-        Returns
-        -------
-        pd.DataFrame
-            Conditions dataframe for PEtab
-        """
-        return IrreversibleCPE.create_conditions(fA0=[0.5], cM0=[1.0])
+        return irreversible_cpe
 
 
-def irreversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
+def irreversible_cpe() -> sbml.ModelDefinition:
 
-    name = IrreversibleCPE.name
+    name = "irreversible_cpe"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)
@@ -168,7 +83,7 @@ def irreversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
     return document, model
 
 
-def irreversible_ode() -> Tuple[sbml.Document, sbml.Model]:
+def irreversible_ode() -> sbml.ModelDefinition:
 
     name = IrreversibleCPE.name
     print(f"Creating SBML model: {name}")

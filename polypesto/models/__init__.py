@@ -1,4 +1,4 @@
-from . import sbml_util as sbml
-from .base import ModelInterface
+from . import sbml
+from .base import ModelBase
 
-__all__ = ["sbml", "ModelInterface"]
+__all__ = ["sbml", "ModelInterface", "ModelBase"]

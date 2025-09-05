@@ -1,74 +1,40 @@
-from typing import Dict, Tuple
-import pandas as pd
-import numpy as np
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup, ParameterSet, Parameter, ParameterID
-
-from polypesto.models import sbml, ModelInterface
+from polypesto.models import sbml, ModelBase
 from .common import define_reversible_k
-from .irreversible_cpe import IrreversibleCPE
 
 
-class ReversibleCPE(ModelInterface):
-    """Reversible Copolymerization Equation Model"""
+class ReversibleCPE(ModelBase):
 
-    name: str = "reversible_cpe"
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
-        return reversible_ode
-
-    @staticmethod
-    def create_conditions(fA0, cM0) -> pd.DataFrame:
-
-        fA0 = np.array(fA0)
-        cM0 = np.array(cM0)
-
-        A0 = fA0 * cM0
-        B0 = (1 - fA0) * cM0
-
-        return pet.define_conditions(
-            {
-                "A0": A0,
-                "B0": B0,
-            }
-        )
-
-    @staticmethod
-    def create_observables(**kwargs) -> pd.DataFrame:
-        return pet.define_observables(**kwargs)
-
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
         return {
             "rA": pet.FitParameter(
                 id="rA",
                 scale=pet.C.LOG10,
-                bounds=(1e-2, 1e2),
+                bounds=(1e-3, 1e2),
                 nominal_value=1.0,
                 estimate=True,
             ),
             "rB": pet.FitParameter(
                 id="rB",
                 scale=pet.C.LOG10,
-                bounds=(1e-2, 1e2),
+                bounds=(1e-3, 1e2),
                 nominal_value=1.0,
                 estimate=True,
             ),
             "rX": pet.FitParameter(
                 id="rX",
                 scale=pet.C.LOG10,
-                bounds=(1e-3, 1e3),
+                bounds=(1e-2, 1e2),
                 nominal_value=1.0,
                 estimate=False,
             ),
             "KAA": pet.FitParameter(
                 id="KAA",
-                # scale=pet.C.LIN,
-                # bounds=(0, 1),
-                # nominal_value=0.0,
-                # estimate=True,
                 scale=pet.C.LOG10,
                 bounds=(1e-2, 1e2),
                 nominal_value=1.0,
@@ -97,22 +63,14 @@ class ReversibleCPE(ModelInterface):
             ),
         }
 
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        return pet.define_parameters(ReversibleCPE.get_default_fit_params())
+    def sbml_model_def(self) -> sbml.ModelDefinition:
 
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        return IrreversibleCPE.get_default_observables()
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        return IrreversibleCPE.create_conditions([1], [1])
+        return reversible_cpe
 
 
-def reversible_ode() -> Tuple[sbml.Document, sbml.Model]:
+def reversible_ode() -> sbml.ModelDefinition:
 
-    name = ReversibleCPE.name
+    name = "reversible_cpe (ode)"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)
@@ -238,9 +196,9 @@ def reversible_ode() -> Tuple[sbml.Document, sbml.Model]:
     return document, model
 
 
-def reversible_cpe() -> Tuple[sbml.Document, sbml.Model]:
+def reversible_cpe() -> sbml.ModelDefinition:
 
-    name = ReversibleCPE.name
+    name = "reversible_cpe (cpe)"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)

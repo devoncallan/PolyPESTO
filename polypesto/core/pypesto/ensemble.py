@@ -1,20 +1,17 @@
 import numpy as np
-from pypesto import Result
+
 import pypesto
-
+from pypesto import Result
 from pypesto.ensemble import Ensemble, EnsemblePrediction
-from pypesto.C import EnsembleType
 from pypesto.objective import AmiciObjective
-from pypesto.C import AMICI_STATUS, AMICI_T, AMICI_X, AMICI_Y
+from pypesto.C import EnsembleType, AMICI_STATUS, AMICI_T, AMICI_X, AMICI_Y
 from pypesto.predict import AmiciPredictor
+from pypesto.problem import Problem as PypestoProblem
 
-from polypesto.core.experiment import Experiment
 
+def create_ensemble(prob: PypestoProblem, result: Result) -> Ensemble:
 
-def create_ensemble(exp: Experiment, result: Result) -> Ensemble:
-
-    problem = exp.pypesto_problem
-    x_names = problem.get_reduced_vector(problem.x_names)
+    x_names = prob.get_reduced_vector(prob.x_names)
 
     ensemble = Ensemble.from_sample(
         result=result,
@@ -29,9 +26,9 @@ def create_ensemble(exp: Experiment, result: Result) -> Ensemble:
     return ensemble
 
 
-def create_predictor(exp: Experiment, output_type: str) -> AmiciPredictor:
+def create_predictor(prob: PypestoProblem, output_type: str) -> AmiciPredictor:
 
-    obj: AmiciObjective = exp.pypesto_problem.objective
+    obj: AmiciObjective = prob.objective
 
     if output_type == AMICI_Y:
         output_ids = obj.amici_model.getObservableIds()
@@ -72,12 +69,12 @@ def create_predictor(exp: Experiment, output_type: str) -> AmiciPredictor:
 
 def predict_with_ensemble(
     ensemble: Ensemble,
-    test_exp: Experiment,
+    pred_prob: PypestoProblem,
     output_type: str = AMICI_Y,
     **kwargs,
 ) -> EnsemblePrediction:
 
-    predictor = create_predictor(test_exp, output_type)
+    predictor = create_predictor(pred_prob, output_type)
 
     engine = pypesto.engine.MultiProcessEngine(**kwargs)
     ensemble_pred = ensemble.predict(

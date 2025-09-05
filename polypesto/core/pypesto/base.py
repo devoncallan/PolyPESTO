@@ -1,15 +1,17 @@
-import pypesto.optimize
-from pypesto.problem import Problem
-from pypesto import Result
 import pypesto
+import pypesto.optimize
+from pypesto.problem import Problem as PypestoProblem
+from pypesto import Result
 
 
-def optimize_problem(problem: Problem, method: str = "Nelder-Mead", **kwargs) -> Result:
+def optimize_problem(
+    problem: PypestoProblem, method: str = "Nelder-Mead", **kwargs
+) -> Result:
     """Run optimization to find optimal parameter values.
 
     Parameters
     ----------
-    problem : Problem
+    problem : PypestoProblem
         Parameter estimation problem to solve
     n_starts : int, optional
         Number of optimization starts with different initial values, by default 100
@@ -37,7 +39,7 @@ def optimize_problem(problem: Problem, method: str = "Nelder-Mead", **kwargs) ->
 
 
 def profile_problem(
-    problem: Problem,
+    problem: PypestoProblem,
     method: str = "Nelder-Mead",
     **kwargs,
 ) -> Result:
@@ -45,7 +47,7 @@ def profile_problem(
 
     Parameters
     ----------
-    problem : Problem
+    problem : PypestoProblem
         Parameter estimation problem
     method : str, optional
         Optimization method for profiling, by default "Nelder-Mead"
@@ -65,7 +67,7 @@ def profile_problem(
 
 
 def sample_problem(
-    problem: Problem,
+    problem: PypestoProblem,
     n_samples: int = 10000,
     n_chains: int = 3,
     **kwargs,
@@ -74,7 +76,7 @@ def sample_problem(
 
     Parameters
     ----------
-    problem : Problem
+    problem : PypestoProblem
         Parameter estimation problem
     n_samples : int, optional
         Number of samples to generate, by default 10000

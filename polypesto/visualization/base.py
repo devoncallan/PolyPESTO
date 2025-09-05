@@ -1,11 +1,15 @@
 import functools
+from typing import Callable, Tuple, Any, TypeAlias
+
 import matplotlib.pyplot as plt
-from typing import Callable, Tuple, Any
 from matplotlib.figure import Figure
-from matplotlib.axes import Axes
+from pypesto.result import Result
 
 
-def safe_plot(func: Callable) -> Callable:
+plot_func: TypeAlias = Callable[[Result, Any], Tuple[Figure, Any]]
+
+
+def safe_plot(func: plot_func) -> plot_func:
     """
     Decorator that catches any exceptions in plotting functions
     and returns an empty figure and axes if an error occurs.

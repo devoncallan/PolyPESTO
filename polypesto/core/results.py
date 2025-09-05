@@ -5,9 +5,9 @@ This module provides classes for handling different types of parameter estimatio
 results (optimization, profile, sampling) with a consistent interface.
 """
 
-from typing import Dict, List, Optional, Tuple, Union, Any
-import numpy as np
+from typing import Optional
 
+import numpy as np
 from pypesto import Result, Problem
 
 
@@ -20,20 +20,21 @@ def has_profile_results(result: Result) -> bool:
 
 
 def has_sampling_results(result: Result) -> bool:
-    # print("Checking for sampling results...")
-    # print(f"Result: {result}")
-    # attributes = dir(result.sample_result)
-    # print(f"Attributes:", attributes)
-    # # print(f"Result:", getattr(attributes))
     return hasattr(result, "sample_result") and result.sample_result is not None
 
 
-def has_results(result: Optional[Result], key: str) -> bool:
+def has_results(result: Optional[Result], key: Optional[str] = None) -> bool:
 
     if result is None:
         return False
 
-    if key == "optimize":
+    if key is None:
+        return (
+            has_optimization_results(result)
+            or has_profile_results(result)
+            or has_sampling_results(result)
+        )
+    elif key == "optimize":
         return has_optimization_results(result)
     elif key == "profile":
         return has_profile_results(result)

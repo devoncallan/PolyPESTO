@@ -1,10 +1,11 @@
 from typing import Tuple
 from amici.amici import Solver, Model
 from pypesto.petab import PetabImporter
-from pypesto.problem import Problem
+from pypesto.problem import Problem as PypestoProblem
+from pypesto.objective import AmiciObjective
 
 
-def set_amici_solver_params(problem: Problem) -> Problem:
+def set_amici_solver_params(problem: PypestoProblem) -> PypestoProblem:
 
     solver: Solver = problem.objective.amici_solver
 
@@ -33,14 +34,15 @@ def solver_settings(solver: Solver, **kwargs) -> Solver:
 
 def load_pypesto_problem(
     yaml_path: str, model_name: str, **kwargs
-) -> Tuple[PetabImporter, Problem]:
+) -> Tuple[PetabImporter, PypestoProblem]:
 
-    importer = PetabImporter.from_yaml(
+    importer: PetabImporter = PetabImporter.from_yaml(
         yaml_path,
         model_name=model_name,
         base_path="",  # Use absolute paths
     )
-    problem = importer.create_problem(**kwargs)
+    problem: PypestoProblem = importer.create_problem(**kwargs)
+    assert isinstance(problem.objective, AmiciObjective)
 
     problem.objective.amici_solver.setNewtonMaxSteps(10000)
     problem.objective.amici_solver.setNewtonDampingFactorMode(1)

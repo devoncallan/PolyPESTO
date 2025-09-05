@@ -1,55 +1,49 @@
-from typing import Dict
-
-import pandas as pd
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup
-from polypesto.models import sbml, ModelInterface
-
-from .equilibrium_ode import EquilibriumODE
+from polypesto.models import sbml, ModelBase
 
 
 #############################
 ### Binary Reaction Model ###
 #############################
 
+
 # A -k1-> B
 # B -k2-> A
-
-
-class EquilibriumRxn(ModelInterface):
+class EquilibriumRxn(ModelBase):
     """Equilibrium Rxn (Reaction) Model"""
-    
-    name: str = "equilibrium_rxn"
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
+
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
+        bounds = (1e-3, 1e3)
+        return {
+            "k1": pet.FitParameter(
+                id="k1",
+                scale=pet.C.LOG10,
+                bounds=bounds,
+                nominal_value=0.5,
+                estimate=True,
+            ),
+            "k2": pet.FitParameter(
+                id="k2",
+                scale=pet.C.LOG10,
+                bounds=bounds,
+                nominal_value=0.5,
+                estimate=True,
+            ),
+        }
+
+    def sbml_model_def(self) -> sbml.ModelDefinition:
+
         return equilibrium_rxn
-
-    @staticmethod
-    def create_conditions(A, B) -> pd.DataFrame:
-        return EquilibriumODE.create_conditions(A, B)
-
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
-        return EquilibriumODE.get_default_fit_params()
-
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        return EquilibriumRxn.get_default_parameters()
-
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        return EquilibriumODE.get_default_observables()
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        return EquilibriumODE.get_default_conditions()
 
 
 def equilibrium_rxn() -> sbml.ModelDefinition:
-    
-    name = EquilibriumRxn.name
+
+    name = "equilibrium_rxn"
     print(f"Creating SBML model ({name}).")
     document, model = sbml.create_model(name)
 

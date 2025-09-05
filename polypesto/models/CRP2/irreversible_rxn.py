@@ -1,64 +1,48 @@
-from typing import Dict, Tuple
-import numpy as np
-import pandas as pd
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup
-from polypesto.models import sbml, ModelInterface
-
+from polypesto.models import sbml, ModelBase
 from .common import define_irreversible_k
-from .irreversible_cpe import IrreversibleCPE
 
 
-class IrreversibleRxn(ModelInterface):
-    """Irreversible Copolymerization ODE (Reaction) Model"""
+class IrreversibleRxn(ModelBase):
 
-    name: str = "irreversible_rxn"
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
+        return {
+            "rA": pet.FitParameter(
+                id="rA",
+                scale=pet.C.LOG10,
+                bounds=(1e-3, 1e2),
+                nominal_value=1.0,
+                estimate=True,
+            ),
+            "rB": pet.FitParameter(
+                id="rB",
+                scale=pet.C.LOG10,
+                bounds=(1e-3, 1e2),
+                nominal_value=1.0,
+                estimate=True,
+            ),
+            "rX": pet.FitParameter(
+                id="rX",
+                scale=pet.C.LOG10,
+                bounds=(1e-2, 1e2),
+                nominal_value=1.0,
+                estimate=False,
+            ),
+        }
+
+    def sbml_model_def(self) -> sbml.ModelDefinition:
+
         return irreversible_rxn
 
-    @staticmethod
-    def create_conditions(fA0, cM0) -> pd.DataFrame:
 
-        fA0 = np.array(fA0)
-        cM0 = np.array(cM0)
+def irreversible_rxn() -> sbml.ModelDefinition:
 
-        A0 = fA0 * cM0
-        B0 = (1 - fA0) * cM0
-
-        return pet.define_conditions(
-            {
-                "A0": A0,
-                "B0": B0,
-            }
-        )
-
-    @staticmethod
-    def create_observables(**kwargs) -> pd.DataFrame:
-        return pet.define_observables(**kwargs)
-
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
-        return IrreversibleCPE.get_default_fit_params()
-
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        return IrreversibleCPE.get_default_parameters()
-
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        return IrreversibleCPE.get_default_observables()
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        return IrreversibleCPE.get_default_conditions()
-
-
-def irreversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
-
-    name = IrreversibleRxn.name
+    name = "irreversible_rxn"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)
