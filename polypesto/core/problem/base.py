@@ -81,7 +81,10 @@ class Problem:
 
         from pypesto import store
 
-        return store.read_result(self.paths.pypesto_results)
+        try:
+            return store.read_result(self.paths.pypesto_results)
+        except:
+            return None
 
 
 def write_petab(

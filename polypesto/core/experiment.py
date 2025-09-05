@@ -19,7 +19,7 @@ class Dataset:
         `data` (pd.DataFrame): DataFrame containing the experimental data.
         `tkey` (str): Column name in `data` representing time points (or independent variable).
         `obs_map` (Dict[str, str]): Mapping from DataFrame column names to model observable IDs.
-            e.g., {"Conversion A": "xA", "Conversion B": "xB"}
+            e.g., {"xA": "Conversion A", "xB": "Conversion B"}
     """
 
     id: str
@@ -137,64 +137,3 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
         experiments.append(exp)
 
     return experiments
-
-
-def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
-
-    # Convert tkey in data to conversion
-    # Add fA and fB to obs
-
-    new_exps = []
-    for exp in experiments:
-
-        datasets = exp.data
-        cond = exp.conds.values.to_dict()
-
-        A0 = B0 = None
-        if "A0" in cond and "B0" in cond:
-            A0 = cond["A0"]
-            B0 = cond["B0"]
-        elif "fA0" in cond and "cM0" in cond:
-            fA0 = cond["fA0"]
-            cM0 = cond["cM0"]
-            A0 = fA0 * cM0
-            B0 = (1 - fA0) * cM0
-        else:
-            raise ValueError(
-                f'Conditions must include either ("A0", "B0") or ("fA0", "cM0"). Actual: {list(cond.keys())}'
-            )
-
-        assert A0 is not None and B0 is not None
-        assert A0 != 0 and B0 != 0
-
-        fA0 = A0 / (A0 + B0)
-        fB0 = B0 / (A0 + B0)
-
-        new_datasets = []
-        for ds in datasets:
-
-            assert ds.tkey in ds.data.columns
-            assert "xA" in ds.obs_map and "xB" in ds.obs_map
-
-            ds.data[ds.tkey] = (
-                fA0 * ds.data[ds.obs_map["xA"]] + fB0 * ds.data[ds.obs_map["xB"]]
-            )
-
-            mon_A = fA0 * (1 - ds.data[ds.obs_map["xA"]])
-            mon_B = fB0 * (1 - ds.data[ds.obs_map["xB"]])
-            ds.data["fA"] = mon_A / (mon_A + mon_B)
-            ds.data["fB"] = mon_B / (mon_A + mon_B)
-
-            ds.obs_map["fA"] = "fA"
-            ds.obs_map["fB"] = "fB"
-
-            new_datasets.append(ds)
-
-        exp = Experiment(
-            id=exp.id,
-            conds=exp.conds,
-            data=new_datasets,
-        )
-        new_exps.append(exp)
-
-    return new_exps
