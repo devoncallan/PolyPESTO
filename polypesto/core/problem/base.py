@@ -1,14 +1,18 @@
-from typing import Generic, List, Optional
+from typing import List, Optional
 from dataclasses import dataclass
 
-import pandas as pd
 from petab.v1 import Problem as PetabProblem
 
-from polypesto.core.experiment import Experiment
-from polypesto.core.petab import PetabData
-from polypesto.models import ModelBase
+from polypesto.core.experiment import (
+    Experiment,
+    petab_to_experiments,
+    experiments_to_petab,
+)
+from polypesto.core.petab import PetabData, PetabIO
+from polypesto.models import ModelBase, sbml
 from polypesto.core.problem import ProblemPaths, PypestoProblem
 from polypesto.core.params import ParameterSet
+from polypesto.core.pypesto import load_pypesto_problem
 
 
 @dataclass
@@ -38,13 +42,11 @@ class Problem:
         Problem
             Loaded parameter estimation problem object
         """
-        from polypesto.core.pypesto import load_pypesto_problem
-        from polypesto.core.experiment import create_experiments_from_petab
 
         importer, problem = load_pypesto_problem(
             yaml_path=paths.petab_yaml, model_name=model.name, **kwargs
         )
-        experiments = create_experiments_from_petab(importer.petab_problem)
+        experiments = petab_to_experiments(importer.petab_problem)
 
         return Problem(
             model=model,
@@ -61,26 +63,25 @@ class Problem:
         experiments: List[Experiment],
         problem_id: Optional[str] = None,
     ) -> "Problem":
-
-        from polypesto.core.experiment import create_petab_from_experiments
-
         print("Creating problem from experiments...")
         print(f"Data directory: {data_dir}")
         paths = ProblemPaths(data_dir, problem_id)
 
         # Create PEtab problem from experiments
-        cond_df, meas_df = create_petab_from_experiments(experiments)
+        cond_df, meas_df = experiments_to_petab(experiments)
+        obs_df = model.get_obs_df()
+        param_df = model.get_param_df()
         petab_data = PetabData(
-            obs_df=model.get_obs_df(),
+            obs_df=obs_df,
             cond_df=cond_df,
-            param_df=model.get_param_df(),
+            param_df=param_df,
             meas_df=meas_df,
             name=problem_id,
         )
 
-        problem = write_and_load_problem(model, paths, petab_data)
+        write_petab(model, paths, petab_data)
 
-        return problem
+        return Problem.load(model, paths)
 
     def get_results(self):
 
@@ -89,15 +90,12 @@ class Problem:
         return store.read_result(self.paths.pypesto_results)
 
 
-def write_and_load_problem(
+def write_petab(
     model: ModelBase,
     paths: ProblemPaths,
     petab_data: PetabData,
     true_params: Optional[ParameterSet] = None,
-) -> Problem:
-
-    from polypesto.models import sbml
-    from polypesto.core.petab import PetabIO
+):
 
     sbml_filepath = sbml.write_model(
         model_def=model.sbml_model_def(), model_dir=paths.model
@@ -120,5 +118,3 @@ def write_and_load_problem(
         obs_filepath=paths.observables,
         param_filepath=paths.fit_parameters,
     )
-
-    return Problem.load(model, paths)

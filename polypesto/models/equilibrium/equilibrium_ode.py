@@ -43,7 +43,7 @@ class EquilibriumODE(ModelBase):
 
 def equilibrium_ode() -> sbml.ModelDefinition:
 
-    name = EquilibriumODE.name
+    name = "equilibrium_ode"
     print(f"Creating SBML model ({name}).")
     document, model = sbml.create_model(name)
 

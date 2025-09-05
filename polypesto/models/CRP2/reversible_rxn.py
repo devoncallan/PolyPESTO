@@ -70,7 +70,7 @@ class ReversibleRxn(ModelBase):
 
 def reversible_rxn() -> sbml.ModelDefinition:
 
-    name = ReversibleRxn.name
+    name = "reversible_rxn"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)

@@ -1,13 +1,9 @@
 import numpy as np
 
 from polypesto.core.problem import Problem
-from polypesto.core.experiment import (
-    Experiment,
-    Dataset,
-    create_sim_conditions,
-    modify_experiments,
-)
-from polypesto.models.base import IrreversibleCPE
+from polypesto.core.conditions import create_sim_conditions
+from polypesto.core.experiment import Experiment, Dataset, modify_experiments
+from polypesto.models.CRP2 import IrreversibleCPE
 from polypesto.core.problem import run_parameter_estimation
 from polypesto.visualization.results import plot_results
 from polypesto.utils._patches import apply
@@ -108,8 +104,8 @@ def sim_workflow():
 def main():
     apply()
 
-    # exp_workflow()
-    sim_workflow()
+    exp_workflow()
+    # sim_workflow()
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Union, Callable
+from typing import Dict, Optional, Callable
 
 from pypesto import Result, store
 from polypesto.core.pypesto import (

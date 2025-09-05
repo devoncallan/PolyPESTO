@@ -43,7 +43,7 @@ class EquilibriumRxn(ModelBase):
 
 def equilibrium_rxn() -> sbml.ModelDefinition:
 
-    name = EquilibriumRxn.name
+    name = "equilibrium_rxn"
     print(f"Creating SBML model ({name}).")
     document, model = sbml.create_model(name)
 

@@ -42,7 +42,7 @@ class IrreversibleRxn(ModelBase):
 
 def irreversible_rxn() -> sbml.ModelDefinition:
 
-    name = IrreversibleRxn.name
+    name = "irreversible_rxn"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)

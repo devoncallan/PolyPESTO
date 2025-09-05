@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Tuple, Sequence, Callable, TypeAlias
+from typing import Dict, List, Optional, Tuple, Callable, TypeAlias
 from dataclasses import dataclass
 
 
@@ -162,7 +162,11 @@ class PetabIO:
         param_filepath: str,
     ) -> str:
 
-        petab.v1.yaml.create_problem_yaml(
+        from petab.v1.yaml import create_problem_yaml
+        from petab.v1.lint import lint_problem
+        from petab.v1 import Problem as PetabProblem
+
+        create_problem_yaml(
             sbml_files=sbml_filepath,
             condition_files=cond_filepath,
             measurement_files=meas_filepath,
@@ -171,8 +175,8 @@ class PetabIO:
             yaml_file=yaml_filepath,
             relative_paths=False,
         )
-        problem = petab.v1.Problem.from_yaml(yaml_filepath, base_path="")
-        petab.v1.lint.lint_problem(problem)
+        problem = PetabProblem.from_yaml(yaml_filepath, base_path="")
+        lint_problem(problem)
 
         return yaml_filepath
 

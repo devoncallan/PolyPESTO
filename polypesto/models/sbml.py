@@ -380,43 +380,6 @@ def add_conversion_snapshot_events(model: Model, x_thresholds: List[float]):
         create_event_assignment(model, event_id, fb_snap_id, "fB")
 
 
-###############################################
-### SBML logical operators helper functions ###
-###############################################
-
-
-def _and(a: str, b: str) -> str:
-    return f"({a} * {b})"
-
-
-def _or(a: str, b: str) -> str:
-    return f"min(1, ({a} + {b}))"
-
-
-def _not(a: str) -> str:
-    return f"(1 - {a})"
-
-
-def _lt(a: str, b: str) -> str:
-    """
-    Boolean-like function returning 1 if a < b, else 0
-    Uses ceiling(b - a):
-      - If b - a > 0, ceiling(...) >= 1 --> we clamp it to exactly 1
-      - If b - a <= 0, ceiling(...) = 0 --> result is 0
-    """
-    return f"min(1, max(0, ceiling({b} - {a})))"
-
-
-def _gt(a: str, b: str) -> str:
-    """
-    Boolean-like function returning 1 if a > b, else 0
-    Uses ceiling(a - b):
-      - If a - b > 0, ceiling(...) >= 1 --> we clamp it to exactly 1
-      - If a - b <= 0, ceiling(...) = 0 --> result is 0
-    """
-    return f"min(1, max(0, ceiling({a} - {b})))"
-
-
 ######################
 ### SBML Validator ###
 ######################

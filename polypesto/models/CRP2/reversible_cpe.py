@@ -70,7 +70,7 @@ class ReversibleCPE(ModelBase):
 
 def reversible_ode() -> sbml.ModelDefinition:
 
-    name = ReversibleCPE.name
+    name = "reversible_cpe (ode)"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)
@@ -198,7 +198,7 @@ def reversible_ode() -> sbml.ModelDefinition:
 
 def reversible_cpe() -> sbml.ModelDefinition:
 
-    name = ReversibleCPE.name
+    name = "reversible_cpe (cpe)"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)

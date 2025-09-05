@@ -42,7 +42,7 @@ class IrreversibleCPE(ModelBase):
 
 def irreversible_cpe() -> sbml.ModelDefinition:
 
-    name = IrreversibleCPE.name
+    name = "irreversible_cpe"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)
