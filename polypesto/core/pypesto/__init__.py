@@ -1,4 +1,4 @@
-from polypesto.core.pypesto.setup import load_pypesto_problem
+from polypesto.core.pypesto.setup import load_pypesto_problem, PypestoProblem
 from polypesto.core.pypesto.base import (
     optimize_problem,
     profile_problem,
@@ -13,6 +13,7 @@ from polypesto.core.pypesto.ensemble import (
 
 __all__ = [
     "load_pypesto_problem",
+    "PypestoProblem",
     "optimize_problem",
     "profile_problem",
     "sample_problem",

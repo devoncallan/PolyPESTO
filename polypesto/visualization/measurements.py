@@ -285,7 +285,8 @@ def get_plot_formatting(
         raise ValueError(f"Unknown plot_style: {plot_style}")
 
     # For each (obs, cond) pair, assign a color, marker, and linestyle
-    colors = ["#60A88D", "#2D69B2"]
+    # colors = ["#60A88D", "#2D69B2"]
+    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
     for i, obs in enumerate(observables):
         obs_colormap_name = colormap_names[i % len(colormap_names)]
         # Generate enough color shades for all conditions

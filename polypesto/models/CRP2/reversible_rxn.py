@@ -1,48 +1,74 @@
-# Define Object
-
-# Define SBML model
-from typing import Dict, Tuple
-import pandas as pd
+from typing import Dict, List
 
 from polypesto.core import petab as pet
-from polypesto.core.params import ParameterGroup
-
-from polypesto.models import sbml, ModelInterface
+from polypesto.models import sbml, ModelBase
 from .common import define_reversible_k
-from . import ReversibleCPE, IrreversibleRxn
 
 
-class ReversibleRxn(ModelInterface):
-    """Reversible Copolymerization ODE (Reaction) Model"""
+class ReversibleRxn(ModelBase):
 
-    name: str = "reversible_rxn"
+    def _default_obs(self) -> List[str]:
+        return ["xA", "xB"]
 
-    @staticmethod
-    def sbml_model_def() -> sbml.ModelDefinition:
+    def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
+        return {
+            "rA": pet.FitParameter(
+                id="rA",
+                scale=pet.C.LOG10,
+                bounds=(1e-3, 1e2),
+                nominal_value=1.0,
+                estimate=True,
+            ),
+            "rB": pet.FitParameter(
+                id="rB",
+                scale=pet.C.LOG10,
+                bounds=(1e-3, 1e2),
+                nominal_value=1.0,
+                estimate=True,
+            ),
+            "rX": pet.FitParameter(
+                id="rX",
+                scale=pet.C.LOG10,
+                bounds=(1e-2, 1e2),
+                nominal_value=1.0,
+                estimate=False,
+            ),
+            "KAA": pet.FitParameter(
+                id="KAA",
+                scale=pet.C.LOG10,
+                bounds=(1e-2, 1e2),
+                nominal_value=1.0,
+                estimate=True,
+            ),
+            "KAB": pet.FitParameter(
+                id="KAB",
+                scale=pet.C.LIN,
+                bounds=(0, 1),
+                nominal_value=0.0,
+                estimate=False,
+            ),
+            "KBA": pet.FitParameter(
+                id="KBA",
+                scale=pet.C.LIN,
+                bounds=(0, 1),
+                nominal_value=0.0,
+                estimate=False,
+            ),
+            "KBB": pet.FitParameter(
+                id="KBB",
+                scale=pet.C.LIN,
+                bounds=(0, 1),
+                nominal_value=0.0,
+                estimate=False,
+            ),
+        }
+
+    def sbml_model_def(self) -> sbml.ModelDefinition:
+
         return reversible_rxn
 
-    @staticmethod
-    def create_conditions(fA0s, cM0s) -> pd.DataFrame:
-        return IrreversibleRxn.create_conditions(fA0s, cM0s)
 
-    @staticmethod
-    def get_default_fit_params() -> Dict[str, pet.FitParameter]:
-        return ReversibleCPE.get_default_fit_params()
-
-    @staticmethod
-    def get_default_parameters() -> pd.DataFrame:
-        return pet.define_parameters(ReversibleCPE.default_fit_params())
-
-    @staticmethod
-    def get_default_observables() -> pd.DataFrame:
-        return ReversibleCPE.get_default_observables()
-
-    @staticmethod
-    def get_default_conditions() -> pd.DataFrame:
-        return ReversibleCPE.create_conditions([1], [1])
-
-
-def reversible_rxn() -> Tuple[sbml.Document, sbml.Model]:
+def reversible_rxn() -> sbml.ModelDefinition:
 
     name = ReversibleRxn.name
     print(f"Creating SBML model: {name}")
