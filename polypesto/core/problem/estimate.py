@@ -29,7 +29,7 @@ def run_parameter_estimation(
         if key not in config:
             return _result
 
-        if has_results(_result, key):
+        if not overwrite and has_results(_result, key):
             print(f"\tUsing existing {key} results - skipping")
             return _result
 

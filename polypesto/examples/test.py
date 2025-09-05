@@ -1,3 +1,5 @@
+from pathlib import Path    
+
 import numpy as np
 
 from polypesto.visualization import plot_results
@@ -10,13 +12,14 @@ from polypesto.models.CRP2 import IrreversibleCPE
 
 from polypesto.core.experiment import modify_experiments
 
-DATA_DIR = "/Users/devoncallan/Documents/GitHub/PolyPESTO/polypesto/examples/data"
+# DATA_DIR = "/Users/devoncallan/Documents/GitHub/PolyPESTO/polypesto/examples/data"
+RAW_DATA_DIR = Path(__file__).parent / "raw"
+DATA_DIR = Path(__file__).parent / "data"
 
 
 def exp_workflow():
 
     model = IrreversibleCPE(
-        "path/to/data",
         observables=["xA", "xB", "fA", "fB"],
     )
 
@@ -25,7 +28,7 @@ def exp_workflow():
         conds={"A0": 0.30, "B0": 0.70},
         data=[
             Dataset.load(
-                path="/Users/devoncallan/Documents/GitHub/PolyPESTO/polypesto/examples/raw/data_3060.csv",
+                path=RAW_DATA_DIR / "data_3060.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
             )
@@ -37,7 +40,7 @@ def exp_workflow():
         conds={"A0": 0.50, "B0": 0.50},
         data=[
             Dataset.load(
-                path="/Users/devoncallan/Documents/GitHub/PolyPESTO/polypesto/examples/raw/data_5050.csv",
+                path=RAW_DATA_DIR / "data_5050.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
             )
@@ -59,7 +62,7 @@ def exp_workflow():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10000, n_chains=3),
         ),
-        overwrite=False,
+        overwrite=True,
     )
     plot_results(result, problem)
 
@@ -69,7 +72,6 @@ def sim_workflow():
     from polypesto.core.simulate import simulate_experiments
 
     model = IrreversibleCPE(
-        "path/to/data",
         observables=["xA", "xB", "fA", "fB"],
     )
 
@@ -80,7 +82,7 @@ def sim_workflow():
             A0=[0.30, 0.50],
             B0=[0.70, 0.50],
         ),
-        exp_ids=["exp1", "exp2"],
+        # exp_ids=["exp1", "exp2"],
         t_evals=[np.linspace(0, 0.95, 20)] * 2,
         noise_levels=0.02,
     )
@@ -97,7 +99,7 @@ def sim_workflow():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10000, n_chains=3),
         ),
-        overwrite=False,
+        overwrite=True,
     )
     plot_results(result, problem, true_params)
 
@@ -106,7 +108,7 @@ def main():
     apply()
 
     exp_workflow()
-    # sim_workflow()
+    sim_workflow()
 
 
 if __name__ == "__main__":

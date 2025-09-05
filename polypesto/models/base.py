@@ -15,13 +15,11 @@ class ModelBase(ABC):
 
     def __init__(
         self,
-        data_dir: str,
         observables: Optional[List[str]] = None,
         obs_noise_level: float = 0.02,
     ):
 
         self.name = self.__class__.__name__
-        self.data_dir = data_dir
 
         self.observables = {o: o for o in (observables or self._default_obs())}
         self.obs_noise_level = obs_noise_level
