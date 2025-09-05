@@ -1,13 +1,9 @@
 from typing import Dict, Optional, Callable
 
 from pypesto import Result, store
-from polypesto.core.pypesto import (
-    optimize_problem,
-    profile_problem,
-    sample_problem,
-)
 
-from polypesto.core.results import has_results
+from ..pypesto import optimize_problem, profile_problem, sample_problem
+from ..results import has_results
 from . import Problem
 
 

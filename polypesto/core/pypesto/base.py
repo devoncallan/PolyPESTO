@@ -1,7 +1,7 @@
+import pypesto
 import pypesto.optimize
 from pypesto.problem import Problem as PypestoProblem
 from pypesto import Result
-import pypesto
 
 
 def optimize_problem(

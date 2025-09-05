@@ -5,8 +5,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 
-from polypesto.core import petab as pet
-from polypesto.core.params import ParameterSet
+from . import petab as pet
+from .params import ParameterSet
 
 
 @dataclass
@@ -106,7 +106,7 @@ def create_sim_conditions(
     return sim_conditions
 
 
-def define_cond_df(conds: List[Conditions]) -> pd.DataFrame:
+def conditions_to_df(conds: List[Conditions]) -> pd.DataFrame:
     """Define a PEtab conditions dataframe from a list of Conditions."""
 
     return pet.define_conditions(

@@ -1,13 +1,14 @@
 import numpy as np
 
-from polypesto.core.problem import Problem
-from polypesto.core.conditions import create_sim_conditions
-from polypesto.core.experiment import Experiment, Dataset, modify_experiments
-from polypesto.models.CRP2 import IrreversibleCPE
-from polypesto.core.problem import run_parameter_estimation
-from polypesto.visualization.results import plot_results
+from polypesto.visualization import plot_results
 from polypesto.utils._patches import apply
 
+
+from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
+from polypesto.core import create_sim_conditions
+from polypesto.models.CRP2 import IrreversibleCPE
+
+from polypesto.core.experiment import modify_experiments
 
 DATA_DIR = "/Users/devoncallan/Documents/GitHub/PolyPESTO/polypesto/examples/data"
 

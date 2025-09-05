@@ -1,9 +1,8 @@
 from typing import Optional
+
 import matplotlib.pyplot as plt
 
-from polypesto.core.results import Result
-from polypesto.core.problem import Problem
-
+from polypesto.core import Result, Problem
 from polypesto.visualization import (
     plot_optimization_scatter,
     plot_sampling_scatter,
@@ -24,16 +23,19 @@ def plot_results(result: Result, problem: Problem, true_params: Optional[dict] =
     has_optimize_results = (
         len(result.optimize_result.list) > 0 if result.optimize_result else False
     )
-    has_sample_results = result.sample_result 
+    has_sample_results = result.sample_result
+    has_profile_results = (
+        len(result.profile_result.list) > 0 if result.profile_result else False
+    )
 
-    if result.optimize_result.list:
+    if has_optimize_results:
         plot_optimization_scatter(result, true_params)
         plt.gcf().savefig(problem.paths.optimization_scatter_fig, dpi=300)
 
         plot_waterfall(result)
         plt.gcf().savefig(problem.paths.waterfall_fig, dpi=300)
 
-    if result.sample_result:
+    if has_sample_results:
         plot_sampling_scatter(result, true_params)
         plt.gcf().savefig(problem.paths.sampling_scatter_fig, dpi=300)
 
@@ -43,7 +45,7 @@ def plot_results(result: Result, problem: Problem, true_params: Optional[dict] =
         plot_parameter_traces(result, true_params)
         plt.gcf().savefig(problem.paths.sampling_trace_fig, dpi=300)
 
-    if result.profile_result:
+    if has_profile_results:
         print("Plotting profiles...")
         print(result.profile_result)
         plot_profiles(result, true_params)

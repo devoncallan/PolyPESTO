@@ -3,29 +3,6 @@ from pathlib import Path
 from typing import Optional
 
 
-"""      
-base_dir/
-    problem_id/
-        petab/
-            conditions.tsv
-            observables.tsv
-            parameters.tsv
-            measurements.tsv
-            model.yaml
-            model.xml
-        pypesto/
-            results.hdf5
-        figures/
-            measurements.png
-            waterfall.png
-            profile.png
-            sampling_trace.png
-            confidence_intervals.png
-            sampling_scatter.png
-            optimization_scatter.png
-            ensemble_predictions.png
-"""
-
 class ProblemPaths:
 
     def __init__(self, base_dir: str | Path, id: Optional[str] = None):
@@ -122,3 +99,27 @@ class ProblemPaths:
     @property
     def ensemble_predictions_fig(self) -> str:
         return f"{self.figures_dir}/ensemble_predictions.png"
+
+
+"""      
+base_dir/
+    problem_id/
+        petab/
+            conditions.tsv
+            observables.tsv
+            parameters.tsv
+            measurements.tsv
+            model.yaml
+            model.xml
+        pypesto/
+            results.hdf5
+        figures/
+            measurements.png
+            waterfall.png
+            profile.png
+            sampling_trace.png
+            confidence_intervals.png
+            sampling_scatter.png
+            optimization_scatter.png
+            ensemble_predictions.png
+"""

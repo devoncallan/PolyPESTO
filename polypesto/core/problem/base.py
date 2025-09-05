@@ -1,18 +1,12 @@
 from typing import List, Optional
 from dataclasses import dataclass
 
-from petab.v1 import Problem as PetabProblem
-
-from polypesto.core.experiment import (
-    Experiment,
-    petab_to_experiments,
-    experiments_to_petab,
-)
-from polypesto.core.petab import PetabData, PetabIO
-from polypesto.models import ModelBase, sbml
-from polypesto.core.problem import ProblemPaths, PypestoProblem
-from polypesto.core.params import ParameterSet
-from polypesto.core.pypesto import load_pypesto_problem
+from ..petab import PetabData, PetabIO, PetabProblem
+from ...models import sbml, ModelBase
+from ..params import ParameterSet
+from ..pypesto import PypestoProblem, load_pypesto_problem
+from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
+from ..problem import ProblemPaths
 
 
 @dataclass

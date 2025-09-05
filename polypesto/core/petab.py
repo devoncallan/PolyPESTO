@@ -6,9 +6,14 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
-import petab
 import petab.v1.C as C
-from petab.v1 import Problem as PetabProblem
+from petab.v1 import (
+    write_observable_df,
+    write_condition_df,
+    write_measurement_df,
+    write_parameter_df,
+    Problem as PetabProblem,
+)
 
 
 @dataclass
@@ -132,25 +137,25 @@ class PetabIO:
     def write_obs_df(
         df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_observable_df, dir, filename)
+        return PetabIO.write_df(df, write_observable_df, dir, filename)
 
     @staticmethod
     def write_cond_df(
         df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_condition_df, dir, filename)
+        return PetabIO.write_df(df, write_condition_df, dir, filename)
 
     @staticmethod
     def write_meas_df(
         df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_measurement_df, dir, filename)
+        return PetabIO.write_df(df, write_measurement_df, dir, filename)
 
     @staticmethod
     def write_param_df(
         df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
     ):
-        return PetabIO.write_df(df, petab.v1.write_parameter_df, dir, filename)
+        return PetabIO.write_df(df, write_parameter_df, dir, filename)
 
     @staticmethod
     def write_yaml(
@@ -164,7 +169,6 @@ class PetabIO:
 
         from petab.v1.yaml import create_problem_yaml
         from petab.v1.lint import lint_problem
-        from petab.v1 import Problem as PetabProblem
 
         create_problem_yaml(
             sbml_files=sbml_filepath,

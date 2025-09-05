@@ -1,13 +1,13 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import numpy as np
 from numpy.typing import ArrayLike
 import pandas as pd
 
-from polypesto.core import petab as pet
-from polypesto.core.params import ParameterSet
-from polypesto.core.conditions import Conditions, SimConditions
+from .params import ParameterSet
+from .conditions import Conditions, SimConditions
+from . import petab as pet
 
 
 @dataclass
@@ -89,7 +89,7 @@ def experiments_to_petab(experiments: List[Experiment]):
     return cond_df, meas_df
 
 
-def meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
+def _meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
 
     obs_ids = meas_df[pet.C.OBSERVABLE_ID].unique()
     obs_map = {obs_id: obs_id for obs_id in obs_ids}
@@ -132,7 +132,7 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
         conds = cond_df[cond_df.index == exp_id].to_dict()
         exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == exp_id]
 
-        data = meas_df_to_datasets(exp_meas_df)
+        data = _meas_df_to_datasets(exp_meas_df)
         exp = Experiment.load(id=exp_id, conds=conds, data=data)
         experiments.append(exp)
 

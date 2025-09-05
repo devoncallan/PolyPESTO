@@ -4,16 +4,16 @@ Visualization package for PolyPESTO results.
 This package provides functions for visualizing parameter estimation results.
 """
 
-from polypesto.visualization.optimize import plot_waterfall, plot_optimization_scatter
-from polypesto.visualization.profile import plot_profiles
-from polypesto.visualization.sample import (
+from .optimize import plot_waterfall, plot_optimization_scatter
+from .profile import plot_profiles
+from .sample import (
     plot_sampling_scatter,
     plot_parameter_traces,
     plot_confidence_intervals,
 )
-from polypesto.visualization.predict import plot_ensemble_predictions
+from .predict import plot_ensemble_predictions
 
-from polypesto.visualization.measurements import (
+from .measurements import (
     plot_measurements,
     plot_all_measurements,
 )
@@ -31,11 +31,7 @@ from polypesto.visualization.measurements import (
 #     plot_all_results,
 #     plot_all_ensemble_predictions,
 # )
-from polypesto.visualization.results import plot_results
-
-from polypesto.visualization.predict import (
-    plot_ensemble_predictions
-)
+from .results import plot_results
 
 __all__ = [
     "plot_waterfall",

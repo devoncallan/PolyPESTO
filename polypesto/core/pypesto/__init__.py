@@ -1,11 +1,11 @@
-from polypesto.core.pypesto.setup import load_pypesto_problem, PypestoProblem
-from polypesto.core.pypesto.base import (
+from .setup import load_pypesto_problem, PypestoProblem
+from .base import (
     optimize_problem,
     profile_problem,
     sample_problem,
     save_result,
 )
-from polypesto.core.pypesto.ensemble import (
+from .ensemble import (
     create_ensemble,
     create_predictor,
     predict_with_ensemble,
