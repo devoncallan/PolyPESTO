@@ -140,7 +140,7 @@ def sim_workflow():
             B0=[0.70, 0.50],
         ),
         # exp_ids=["exp1", "exp2"],
-        t_evals=[np.linspace(0, 0.95, 20)] * 2,
+        t_evals=np.linspace(0, 0.95, 20),
         noise_levels=0.02,
     )
 

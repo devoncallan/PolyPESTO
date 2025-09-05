@@ -19,7 +19,7 @@ class Dataset:
         `data` (pd.DataFrame): DataFrame containing the experimental data.
         `tkey` (str): Column name in `data` representing time points (or independent variable).
         `obs_map` (Dict[str, str]): Mapping from DataFrame column names to model observable IDs.
-            e.g., {"Conversion A": "xA", "Conversion B": "xB"}
+            e.g., {"xA": "Conversion A", "xB": "Conversion B"}
     """
 
     id: str
