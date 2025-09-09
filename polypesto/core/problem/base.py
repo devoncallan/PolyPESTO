@@ -95,7 +95,7 @@ def write_petab(
 ):
 
     sbml_filepath = sbml.write_model(
-        model_def=model.sbml_model_def(), model_dir=paths.model
+        model_def=model.sbml_model_def(), model_filepath=paths.model
     )
 
     PetabIO.write_obs_df(petab_data.obs_df, filename=paths.observables)

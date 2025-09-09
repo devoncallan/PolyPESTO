@@ -20,6 +20,15 @@ def plot_results(result: Result, problem: Problem, true_params: Optional[dict] =
     plot_all_measurements(problem.petab_problem.measurement_df)
     plt.gcf().savefig(problem.paths.measurements_fig, dpi=300)
 
+    from pypesto.visualize import model_fit
+
+    ax = model_fit.visualize_optimized_model_fit(
+        petab_problem=problem.petab_problem,
+        result=result,
+        pypesto_problem=problem.pypesto_problem,
+    )
+    plt.gcf().savefig(problem.paths.model_fit_fig, dpi=300)
+
     has_optimize_results = (
         len(result.optimize_result.list) > 0 if result.optimize_result else False
     )

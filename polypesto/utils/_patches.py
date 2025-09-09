@@ -1,24 +1,28 @@
 # polypesto/utils/_patches.py
 from __future__ import annotations
 
+
 def _safe_log(msg: str):
     try:
         import warnings
+
         warnings.warn(f"[polypesto patches] {msg}")
     except Exception:
         pass
+
 
 def _patch_petab_from_yaml():
     try:
         from pathlib import Path
         from typing import Union
         import petab
-        from petab.v1.problem import Problem # type: ignore
+        from petab.v1.problem import Problem  # type: ignore
 
         _orig = Problem.from_yaml
+
         def _from_yaml(
             yaml_config: dict | Path | str, base_path: str | Path = None
-            ) -> Problem:
+        ) -> Problem:
             """
             Factory method to load model and tables as specified by YAML file.
 
@@ -27,11 +31,33 @@ def _patch_petab_from_yaml():
                 base_path: Base directory or URL to resolve relative paths
             """
 
-            from petab.v1 import yaml, parameters, core, measurements, conditions, observables, mapping, format_version
+            from petab.v1 import (
+                yaml,
+                parameters,
+                core,
+                measurements,
+                conditions,
+                observables,
+                mapping,
+                format_version,
+            )
             from petab.versions import get_major_version
             from petab.v1.models import MODEL_TYPE_SBML
             from petab.v1.models.model import model_factory
-            from petab.v1.C import FORMAT_VERSION, MODEL_FILES, MODEL_LOCATION, MODEL_LANGUAGE, EXTENSIONS, MAPPING_FILES, PARAMETER_FILE, CONDITION_FILES, MEASUREMENT_FILES, OBSERVABLE_FILES, VISUALIZATION_FILES, SBML_FILES
+            from petab.v1.C import (
+                FORMAT_VERSION,
+                MODEL_FILES,
+                MODEL_LOCATION,
+                MODEL_LANGUAGE,
+                EXTENSIONS,
+                MAPPING_FILES,
+                PARAMETER_FILE,
+                CONDITION_FILES,
+                MEASUREMENT_FILES,
+                OBSERVABLE_FILES,
+                VISUALIZATION_FILES,
+                SBML_FILES,
+            )
             from warnings import warn
 
             if isinstance(yaml_config, Path):
@@ -78,9 +104,7 @@ def _patch_petab_from_yaml():
                 )
             else:
                 parameter_df = (
-                    parameters.get_parameter_df(
-                        get_path(yaml_config[PARAMETER_FILE])
-                    )
+                    parameters.get_parameter_df(get_path(yaml_config[PARAMETER_FILE]))
                     if yaml_config[PARAMETER_FILE]
                     else None
                 )
@@ -110,9 +134,7 @@ def _patch_petab_from_yaml():
                 if not problem0[MODEL_FILES]:
                     model = None
                 else:
-                    model_id, model_info = next(
-                        iter(problem0[MODEL_FILES].items())
-                    )
+                    model_id, model_info = next(iter(problem0[MODEL_FILES].items()))
                     model = model_factory(
                         get_path(model_info[MODEL_LOCATION]),
                         model_info[MODEL_LANGUAGE],
@@ -124,16 +146,12 @@ def _patch_petab_from_yaml():
             ]
             # If there are multiple tables, we will merge them
             measurement_df = (
-                core.concat_tables(
-                    measurement_files, measurements.get_measurement_df
-                )
+                core.concat_tables(measurement_files, measurements.get_measurement_df)
                 if measurement_files
                 else None
             )
 
-            condition_files = [
-                get_path(f) for f in problem0.get(CONDITION_FILES, [])
-            ]
+            condition_files = [get_path(f) for f in problem0.get(CONDITION_FILES, [])]
             # If there are multiple tables, we will merge them
             condition_df = (
                 core.concat_tables(condition_files, conditions.get_condition_df)
@@ -151,9 +169,7 @@ def _patch_petab_from_yaml():
                 else None
             )
 
-            observable_files = [
-                get_path(f) for f in problem0.get(OBSERVABLE_FILES, [])
-            ]
+            observable_files = [get_path(f) for f in problem0.get(OBSERVABLE_FILES, [])]
             # If there are multiple tables, we will merge them
             observable_df = (
                 core.concat_tables(observable_files, observables.get_observable_df)
@@ -179,11 +195,12 @@ def _patch_petab_from_yaml():
                 mapping_df=mapping_df,
                 extensions_config=yaml_config.get(EXTENSIONS, {}),
             )
-        
+
         # install patch
         Problem.from_yaml = staticmethod(_from_yaml)  # type: ignore[attr-defined]
     except Exception as e:
         _safe_log(f"petab from_yaml patch skipped: {e!r}")
+
 
 def _patch_pypesto_importer_from_yaml():
     try:
@@ -221,6 +238,7 @@ def _patch_pypesto_importer_from_yaml():
     except Exception as e:
         _safe_log(f"pypesto PetabImporter.from_yaml patch skipped: {e!r}")
 
+
 def _patch_pypesto_sampling_bounds():
     """
     find the sampling function with docstring 'Plot MCMC-based parameter credibility intervals.'
@@ -240,7 +258,9 @@ def _patch_pypesto_sampling_bounds():
                     break
 
         if target is None:
-            _safe_log("could not locate the credibility-intervals plotter; bounds toggle not applied.")
+            _safe_log(
+                "could not locate the credibility-intervals plotter; bounds toggle not applied."
+            )
             return
 
         original = target
@@ -257,6 +277,7 @@ def _patch_pypesto_sampling_bounds():
                     ub = getattr(result.problem, "ub", None)
                     if lb is not None and ub is not None:
                         from math import inf
+
                         _min = min([v for v in lb if v is not None and v != -inf])
                         _max = max([v for v in ub if v is not None and v != inf])
                         (ax or out_ax).set_xlim(_min, _max)
@@ -265,10 +286,13 @@ def _patch_pypesto_sampling_bounds():
             return out_ax
 
         _wrapped.__name__ = target.__name__
-        _wrapped.__doc__ = (target.__doc__ or "") + "\n\nPatched: adds `show_bounds: bool` (default False)."
+        _wrapped.__doc__ = (
+            target.__doc__ or ""
+        ) + "\n\nPatched: adds `show_bounds: bool` (default False)."
         setattr(sampling, target.__name__, _wrapped)
     except Exception as e:
         _safe_log(f"pypesto sampling bounds patch skipped: {e!r}")
+
 
 def _patch_amici_species_guard():
     """
@@ -278,7 +302,10 @@ def _patch_amici_species_guard():
     """
     try:
         import inspect
-        from amici.sbml_import import SbmlImporter, SymbolId  # <- your version exports these
+        from amici.sbml_import import (
+            SbmlImporter,
+            SymbolId,
+        )  # <- your version exports these
 
         importer_cls = SbmlImporter
 
@@ -299,7 +326,9 @@ def _patch_amici_species_guard():
                 candidates.append((name, obj, src))
 
         if not candidates:
-            _safe_log("amici: no method mentioning 'Species' found on SbmlImporter; species guard not applied.")
+            _safe_log(
+                "amici: no method mentioning 'Species' found on SbmlImporter; species guard not applied."
+            )
             return
 
         # take the first reasonable candidate (works for 0.34.0); you can hard-pick later if needed
@@ -322,7 +351,10 @@ def _patch_amici_species_guard():
                 species_key = SymbolId.SPECIES if SymbolId in symtab else None
                 if species_key is None:
                     for k in symtab.keys():
-                        if str(k).upper().endswith("SPECIES") or str(k).upper() == "SPECIES":
+                        if (
+                            str(k).upper().endswith("SPECIES")
+                            or str(k).upper() == "SPECIES"
+                        ):
                             species_key = k
                             break
                 if species_key is None:
@@ -344,7 +376,50 @@ def _patch_amici_species_guard():
     except Exception as e:
         _safe_log(f"amici species guard patch skipped: {e!r}")
 
+
+def _patch_amici_logging():
+    """Reduce AMICI swig_wrappers logging noise during optimization."""
+    try:
+        import logging
+
+        # Try multiple approaches to silence AMICI logging
+        loggers_to_patch = [
+            "amici.swig_wrappers",
+            "amici", 
+            "amici.amici",
+            "amici.swig_wrappers.amici"
+        ]
+        
+        patched_count = 0
+        for logger_name in loggers_to_patch:
+            try:
+                logger = logging.getLogger(logger_name)
+                logger.setLevel(logging.ERROR)  # Only show ERROR and above
+                logger.propagate = False  # Don't propagate to parent loggers
+                patched_count += 1
+            except:
+                continue
+                
+        # Also try to set root amici logger
+        try:
+            root_amici = logging.getLogger("amici")
+            root_amici.setLevel(logging.ERROR)
+            patched_count += 1
+        except:
+            pass
+            
+        # Print current loggers for debugging (comment out after testing)
+        current_loggers = [name for name in logging.Logger.manager.loggerDict]
+        amici_loggers = [name for name in current_loggers if 'amici' in name.lower()]
+        _safe_log(f"Found {len(amici_loggers)} amici-related loggers: {amici_loggers}")
+        _safe_log(f"Patched {patched_count} AMICI loggers")
+        
+    except Exception as e:
+        _safe_log(f"amici logging patch skipped: {e!r}")
+
+
 def apply():
+    
     _patch_petab_from_yaml()
     _patch_pypesto_importer_from_yaml()
     _patch_pypesto_sampling_bounds()

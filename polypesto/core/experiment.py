@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Dict, List
+from uuid import uuid4
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -28,9 +29,17 @@ class Dataset:
     obs_map: Dict[str, str]
 
     @staticmethod
-    def load(path: str, tkey: str, obs_map: Dict[str, str], **kwargs) -> "Dataset":
-        data = pd.read_csv(path, **kwargs)
-        return Dataset(id=path, data=data, tkey=tkey, obs_map=obs_map)
+    def load(
+        path_or_data: str | pd.DataFrame, tkey: str, obs_map: Dict[str, str], **kwargs
+    ) -> "Dataset":
+        if isinstance(path_or_data, pd.DataFrame):
+            id = str(uuid4())
+            data = path_or_data
+        else:
+            id = str(path_or_data)
+            data = pd.read_csv(path_or_data, **kwargs)
+
+        return Dataset(id=id, data=data, tkey=tkey, obs_map=obs_map)
 
 
 @dataclass
@@ -95,7 +104,7 @@ def _meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
     obs_map = {obs_id: obs_id for obs_id in obs_ids}
 
     wide = (
-        meas_df.pivot(
+        meas_df.pivot_table(
             index=pet.C.TIME,
             columns=pet.C.OBSERVABLE_ID,
             values=pet.C.MEASUREMENT,

@@ -38,7 +38,7 @@ class ReversibleCPE(ModelBase):
                 scale=pet.C.LOG10,
                 bounds=(1e-2, 1e2),
                 nominal_value=1.0,
-                estimate=True,
+                estimate=False,
             ),
             "KAB": pet.FitParameter(
                 id="KAB",
@@ -65,7 +65,7 @@ class ReversibleCPE(ModelBase):
 
     def sbml_model_def(self) -> sbml.ModelDefinition:
 
-        return reversible_cpe
+        return reversible_ode
 
 
 def reversible_ode() -> sbml.ModelDefinition:

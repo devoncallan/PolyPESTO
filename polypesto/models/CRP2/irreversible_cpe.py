@@ -37,8 +37,7 @@ class IrreversibleCPE(ModelBase):
 
     def sbml_model_def(self) -> sbml.ModelDefinition:
 
-        return irreversible_cpe
-
+        return irreversible_ode
 
 def irreversible_cpe() -> sbml.ModelDefinition:
 
@@ -85,7 +84,7 @@ def irreversible_cpe() -> sbml.ModelDefinition:
 
 def irreversible_ode() -> sbml.ModelDefinition:
 
-    name = IrreversibleCPE.name
+    name = "irreversible_cpe (ODE)"
     print(f"Creating SBML model: {name}")
 
     document, model = sbml.create_model(name)

@@ -37,11 +37,17 @@ class Parameter:
     """
 
     id: ParameterID
-    value: Any
+    value: float
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "Parameter":
         return Parameter(**data)
+
+    @staticmethod
+    def lazy_from_dict(
+        data: Dict[str, float], id: ParameterID = "default_id"
+    ) -> "Parameter":
+        return Parameter(id=id, value=data[id])
 
 
 @dataclass
@@ -99,7 +105,7 @@ class ParameterSet:
     def write(self, filepath: str, **kwargs):
         file.write_json(filepath, asdict(self))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, float]:
         return {param.id: param.value for param in self.parameters.values()}
 
     def by_id(self, parameter_id: ParameterID) -> Parameter:

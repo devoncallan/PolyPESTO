@@ -100,6 +100,10 @@ class ProblemPaths:
     def ensemble_predictions_fig(self) -> str:
         return f"{self.figures_dir}/ensemble_predictions.png"
 
+    @property
+    def model_fit_fig(self) -> str:
+        return f"{self.figures_dir}/model_fit.png"
+
 
 """      
 base_dir/

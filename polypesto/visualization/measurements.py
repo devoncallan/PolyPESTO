@@ -35,7 +35,7 @@ def plot_all_measurements(
     group_by: str = C.SIMULATION_CONDITION_ID,
     axes: List[Axes] = None,
     format_axes_kwargs: Dict[str, Any] = {},
-    plot_style: str = "lines",
+    plot_style: str = "scatter",
     dpi=150,
     **kwargs,
 ) -> List[Axes]:

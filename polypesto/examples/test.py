@@ -52,17 +52,20 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
             assert ds.tkey in ds.data.columns
             assert "xA" in ds.obs_map and "xB" in ds.obs_map
 
-            ds.data[ds.tkey] = (
+            new_data = ds.data.copy()
+            new_data[ds.tkey] = (
                 fA0 * ds.data[ds.obs_map["xA"]] + fB0 * ds.data[ds.obs_map["xB"]]
             )
 
-            mon_A = fA0 * (1 - ds.data[ds.obs_map["xA"]])
-            mon_B = fB0 * (1 - ds.data[ds.obs_map["xB"]])
-            ds.data["fA"] = mon_A / (mon_A + mon_B)
-            ds.data["fB"] = mon_B / (mon_A + mon_B)
+            mon_A = fA0 * (1 - new_data[ds.obs_map["xA"]])
+            mon_B = fB0 * (1 - new_data[ds.obs_map["xB"]])
+            new_data["fA"] = mon_A / (mon_A + mon_B)
+            new_data["fB"] = mon_B / (mon_A + mon_B)
 
             ds.obs_map["fA"] = "fA"
             ds.obs_map["fB"] = "fB"
+
+            ds.data = new_data
 
             new_datasets.append(ds)
 
