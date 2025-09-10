@@ -1,4 +1,5 @@
 from typing import List
+from pathlib import Path
 
 from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
 from pypesto.objective import AmiciObjective
@@ -55,7 +56,7 @@ def _simulate_from_empty_problem(
 
 
 def simulate_experiments(
-    data_dir: str,
+    data_dir: str | Path,
     model: ModelBase,
     conds: List[SimConditions],
 ) -> Problem:

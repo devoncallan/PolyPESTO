@@ -178,3 +178,6 @@ polypesto/_models/*
 _experiments/
 experiments/**/data/
 polypesto/**/data/
+Parker/
+polypesto/examples/**/*/
+*.DS_Store

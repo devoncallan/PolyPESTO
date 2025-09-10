@@ -1,32 +1,17 @@
+from pathlib import Path
 from typing import Type, TypeAlias, Dict, List, Optional, Tuple, Any, TypeVar, Union
-from dataclasses import dataclass
-import os
 
-from pypesto import Result, store
-
-import pandas as pd
-from matplotlib.axes import Axes
-from polypesto.models import ModelInterface
-from polypesto.core.params import ParameterGroup
-from polypesto.core.problem import (
-    # SimulatedExperiment,
-    # SimulationConditions,
-    run_parameter_estimation,
-    # simulate_experiment,
-)
-
-"""
-WORK IN PROGRESS - NOT FUNCTIONAL ATM
-
-"""
-
+import numpy as np
 from numpy.typing import ArrayLike
 
 from ..models import ModelBase
-from .problem import Problem
+from .problem import Problem, ProblemPaths
+from .results import Result
 from .conditions import SimConditions, create_sim_conditions
+from .params import ParameterGroup, ParameterSet
 from .simulate import simulate_experiments
-
+from ..utils.file import read_json, write_json
+from pypesto import store
 
 ProbParamKey: TypeAlias = Tuple[str, str]
 T = TypeVar("T")
@@ -35,347 +20,322 @@ ProbParamDict: TypeAlias = Dict[ProbParamKey, T]
 ProblemDict: TypeAlias = ProbParamDict[Problem]
 ResultsDict: TypeAlias = ProbParamDict[Result]
 ConditionsDict: TypeAlias = ProbParamDict[List[SimConditions]]
-
-
-def _filter_dict(
-    prob_param_dict: ProbParamDict[T],
-    filter_prob_id: Optional[str],
-    filter_p_id: Optional[str],
-) -> ProbParamDict[T]:
-
-    filtered_dict = {}
-    for (prob_id, p_id), value in prob_param_dict.items():
-        if (filter_prob_id is None or prob_id == filter_prob_id) and (
-            filter_p_id is None or p_id == filter_p_id
-        ):
-            filtered_dict[(prob_id, p_id)] = value
-    return filtered_dict
+PathsDict: TypeAlias = ProbParamDict[ProblemPaths]
 
 
 class Study:
 
-    model: ModelBase
-    sim_params: ParameterGroup
-    problems: ProblemDict
-    results: ResultsDict
-    # experiments:
+    def __init__(
+        self,
+        model: ModelBase,
+        true_params: ParameterGroup,
+        sim_params: ConditionsDict,
+        problems: ProblemDict,
+        results: ResultsDict,
+    ):
+        self.model = model
+        self.true_params = true_params
+        self.sim_params = sim_params
+        self.problems = problems
+        self.results = results
 
-    def __init__(self):
-        pass
+        self._param_ids = sorted(
+            list(set(param_id for _, param_id in self.problems.keys()))
+        )
+        self._prob_ids = sorted(
+            list(set(prob_id for prob_id, _ in self.problems.keys()))
+        )
 
     @staticmethod
-    def load(data_dir: str, model: ModelBase) -> "Study":
-        pass
+    def create(
+        study_dir: str,
+        model: ModelBase,
+        true_params: ParameterGroup,
+        sim_conds: ConditionsDict,
+        overwrite: bool = False,
+    ) -> "Study":
 
-    def get_problems(
-        self, filter_prob_id: Optional[str] = None, filter_p_id: Optional[str] = None
-    ) -> ProblemDict:
+        if not overwrite:
+            try:
+                study = Study.load(study_dir, model)
+                print(
+                    f"Found existing study in {study_dir}. Set overwrite=True to recreate."
+                )
+                return study
+            except FileNotFoundError:
+                pass
+        return create_study(study_dir, model, true_params, sim_conds)
 
-        return _filter_dict(self.problems, filter_prob_id, filter_p_id)
-
-    def get_results(
-        self, filter_prob_id: Optional[str] = None, filter_p_id: Optional[str] = None
-    ) -> ResultsDict:
-
-        return _filter_dict(self.results, filter_prob_id, filter_p_id)
+    @staticmethod
+    def load(study_dir: str | Path, model: ModelBase) -> "Study":
+        return load_study(study_dir, model)
 
     def get_prob_ids(self) -> List[str]:
-        keys = [prob_id for prob_id, _ in self.problems.keys()]
-        return sorted(list(set(keys)))
+        """Get all unique problem IDs in the study."""
+        return self._prob_ids
 
     def get_param_ids(self) -> List[str]:
-        keys = [p_id for _, p_id in self.problems.keys()]
-        return sorted(list(set(keys)))
+        """Get all unique parameter IDs in the study."""
+        return self._param_ids
+
+    def get_problems(
+        self,
+        filter_prob_id: Optional[str] = None,
+        filter_param_id: Optional[str] = None,
+    ) -> ProblemDict:
+        """Get filtered problems."""
+        return _filter_dict(self.problems, filter_prob_id, filter_param_id)
+
+    def get_results(
+        self,
+        filter_prob_id: Optional[str] = None,
+        filter_param_id: Optional[str] = None,
+    ) -> ResultsDict:
+        """Get filtered results."""
+        return _filter_dict(self.results, filter_prob_id, filter_param_id)
 
     def run_parameter_estimation(
         self,
         config: Dict[str, Any],
         overwrite: bool = False,
     ) -> ResultsDict:
+        """Run parameter estimation for all problems in the study."""
+        from .problem.estimate import run_parameter_estimation
 
-        for (prob_id, p_id), problem in self.problems.items():
-            key: ProbParamKey = (prob_id, p_id)
+        for (prob_id, param_id), problem in self.problems.items():
+            key = (prob_id, param_id)
 
             result = self.results.get(key, None)
 
             if overwrite or result is None:
-                print(f"Running parameter estimation for {prob_id}, {p_id}...")
+                print(f"Running parameter estimation for {prob_id}, {param_id}...")
                 result = run_parameter_estimation(problem, config, result)
                 self.results[key] = result
-                print("Done running parameter estimation.")
+                print("Done.")
             else:
-                print(f"Found existing result for {prob_id}, {p_id}.")
-                print("Skipping parameter estimation.")
+                print(f"Found existing result for {prob_id}, {param_id}.")
 
         return self.results
 
 
+def _filter_dict(
+    prob_param_dict: ProbParamDict[T],
+    filter_prob_id: Optional[str],
+    filter_param_id: Optional[str],
+) -> ProbParamDict[T]:
+    """Filter a problem-parameter dictionary by prob_id and/or param_id."""
+    filtered_dict = {}
+    for (prob_id, param_id), value in prob_param_dict.items():
+        if (filter_prob_id is None or prob_id == filter_prob_id) and (
+            filter_param_id is None or param_id == filter_param_id
+        ):
+            filtered_dict[(prob_id, param_id)] = value
+    return filtered_dict
+
+
+"""
+# Inner list: correspond to conditions for multiple experiments
+# Outer list: correspond to experiments for a single problem
+conds = {
+    "A0": [[0.25, 0.50], [0.50, 0.75], [0.25, 0.75]],
+    "B0": [[0.75, 0.50], [0.50, 0.25], [0.75, 0.25]],
+}
+
+conds_list = [
+    {"A0": [0.25, 0.50], "B0": [0.75, 0.50]},
+    {"A0": [0.50, 0.75], "B0": [0.50, 0.25]},
+    {"A0": [0.25, 0.75], "B0": [0.75, 0.25]},
+]
+
+t_evals: ArrayLike = np.linspace(0, 1, 100)
+
+
+
+"""
+
+
+def _transpose_study_conditions(
+    conds: Dict[str, List[ArrayLike]],
+) -> List[Dict[str, np.ndarray]]:
+    """Transpose study conditions from `dict of lists` to `list of dicts`.
+
+    conds = {
+        "A0": [[0.25, 0.50], [0.50, 0.75], [0.25, 0.75]],
+        "B0": [[0.75, 0.50], [0.50, 0.25], [0.75, 0.25]],
+    }
+
+    conds_list = [
+        {"A0": [0.25, 0.50], "B0": [0.75, 0.50]},
+        {"A0": [0.50, 0.75], "B0": [0.50, 0.25]},
+        {"A0": [0.25, 0.75], "B0": [0.75, 0.25]},
+    ]
+
+    """
+
+    if not conds:
+        return []
+
+    conds_list: List[Dict[str, ArrayLike]] = []
+
+    num_exps_dict = {k: len(v) for k, v in conds.items()}
+    num_exps_list = list(num_exps_dict.values())
+    assert all(
+        n == num_exps_list[0] for n in num_exps_list
+    ), f"All condition lists must have the same length. Actual lengths: {num_exps_dict}"
+
+    num_exps = num_exps_list[0]
+    for i in range(num_exps):
+        exp_conds = {k: np.array(v[i]) for k, v in conds.items()}
+
+        assert (
+            len(set(len(cond) for cond in exp_conds.values())) == 1
+        ), f"All conditions in a single experiment {i} must have the same length. Actual lengths: {[len(cond) for cond in exp_conds.values()]}"
+
+        conds_list.append(exp_conds)
+
+    return conds_list
+
+
 def create_study_conditions(
-    true_params: ParameterGroup | Dict[str, Dict[str, float]],
-    conds: Dict[str, ArrayLike] | Dict[str, List[ArrayLike]],
-    t_evals: ArrayLike | List[ArrayLike] | List[List[ArrayLike]],
+    conds: Dict[str, List[ArrayLike]],
+    t_evals: ArrayLike | List[ArrayLike],
     noise_levels: float | List[float] = 0.0,
-    prob_ids: Optional[List[str]] = None,
-) -> ConditionsDict:
+) -> Dict[str, List[SimConditions]]:
 
-    if isinstance(true_params, dict):
-        true_params = ParameterGroup.lazy_from_dict(true_params)
-    elif not isinstance(true_params, ParameterGroup):
-        raise ValueError("true_params must be a ParameterGroup or a dict.")
+    sim_conds: Dict[str, List[SimConditions]] = {}
 
-    sim_conds = []
-    param_sets = true_params.to_dict()
-    for p_id, ps in param_sets.items():
+    conds_list = _transpose_study_conditions(conds)
+    prob_ids = [f"prob_{i}" for i in range(len(conds_list))]
+    raw_conds_dict = dict(zip(prob_ids, conds_list))
 
-        # sim_conds.extend(
-        sim_cond = create_sim_conditions(
-            true_params=ps,
-            conds=conds,
+    # Create simulation conditions for each parameter set
+    for prob_id, raw_conds in raw_conds_dict.items():
+
+        sim_conds[prob_id] = create_sim_conditions(
+            true_params=ParameterSet.empty(),
+            conds=raw_conds,
             t_evals=t_evals,
             noise_levels=noise_levels,
         )
-        sim_conds[()]
 
     return sim_conds
 
 
-# def create_study(
-#     data_dir: str,
-#     model: ModelBase,
-#     simulation_params: ParameterGroup,
-#     conditions: List[SimConditions],
-#     base_dir: str = "data",
-#     overwrite: bool = False,
-# ) -> Study:
+def create_study(
+    study_dir: str,
+    model: ModelBase,
+    true_params: ParameterGroup,
+    sim_conds: Dict[str, List[SimConditions]],
+) -> Study:
 
-#     # Try to load the study if it already exists (no overwrite)
-#     if not overwrite:
-#         try:
-#             study = Study.load(base_dir, model)
-#             print("Study already exists.")
-#             print("Loading existing study.")
-#             return study
-#         except FileNotFoundError:
-#             print("Study does not exist.")
+    problems = {}
+    metadata = {
+        "model_name": model.name,
+        "problem_dirs": {},
+        "param_ids": true_params.get_ids(),
+        "cond_ids": list(sim_conds.keys()),
+    }
 
-#     obs_df = model.get_obs_df()
-#     for cond in conditions:
-#         problem = simulate_experiments(data_dir=data_dir, model=model, conds=[cond])
+    conds_dict = {k: [cond.to_dict() for cond in v] for k, v in sim_conds.items()}
 
-#     print("Creating new study.")
-#     experiments = {}
-#     for condition in conditions:
-#         for p_id in simulation_params.get_ids():
+    for param_id in metadata["param_ids"]:
+        param_set = true_params.by_id(param_id)
 
-#             experiment = simulate_experiment(
-#                 model=model,
-#                 true_params=simulation_params.by_id(p_id),
-#                 conditions=condition,
-#                 obs_df=obs_df,
-#                 base_dir=base_dir,
-#             )
-#             experiments[(condition.name, p_id)] = experiment
+        for prob_id in metadata["cond_ids"]:
+            key = (prob_id, param_id)
+            key_str = f"{prob_id} | {param_id}"
 
-#     return Study(
-#         model=model,
-#         simulation_params=simulation_params,
-#         experiments=experiments,
-#     )
+            prob_dir = Path(study_dir) / f"{param_id}" / f"{prob_id}"
+            metadata["problem_dirs"][key_str] = str(prob_dir)
+
+            sim_conds_list = sim_conds[prob_id]
+            for sim_cond in sim_conds_list:
+                sim_cond.true_params = param_set
+
+            problem = simulate_experiments(prob_dir, model, sim_conds_list)
+            problems[key] = problem
+
+    write_json(f"{study_dir}/metadata.json", metadata)
+    write_json(f"{study_dir}/true_params.json", true_params.to_dict())
+    write_json(f"{study_dir}/sim_conds.json", conds_dict)
+
+    return Study(model, true_params, sim_conds, problems, {})
 
 
-# class _Study:
-
-#     def __init__(
-#         self,
-#         model: Type[ModelInterface],
-#         simulation_params: ParameterGroup,
-#         experiments: SimulatedExperimentDict,
-#         results: Optional[ResultsDict] = None,
-#     ):
-#         self.model = model
-#         self.simulation_params = simulation_params
-#         self.experiments = experiments
-#         self.results = results if results is not None else {}
-
-#     def get_experiments(
-#         self, filter_cond_id: Optional[str] = None, filter_p_id: Optional[str] = None
-#     ) -> SimulatedExperimentDict:
-#         filtered_experiments: SimulatedExperimentDict = {}
-
-#         print("Filtering experiments...")
-#         print(f"Filter condition ID: {filter_cond_id}")
-#         print(f"Filter parameter ID: {filter_p_id}")
-
-#         for (cond_id, p_id), experiment in self.experiments.items():
-
-#             if (filter_cond_id is None or cond_id == filter_cond_id) and (
-#                 filter_p_id is None or p_id == filter_p_id
-#             ):
-#                 filtered_experiments[(cond_id, p_id)] = experiment
-#             # else:
-#             #     print(
-#             #         f"Skipping experiment {cond_id}, {p_id} as it does not match the filter."
-#             #     )
-
-#         return filtered_experiments
-
-#     def get_results(
-#         self, cond_id: Optional[str] = None, p_id: Optional[str] = None
-#     ) -> ResultsDict:
-#         filtered_results: ResultsDict = {}
-
-#         for (cond_id, p_id), result in self.results.items():
-#             if (cond_id is None or cond_id == cond_id) and (
-#                 p_id is None or p_id == p_id
-#             ):
-#                 filtered_results[(cond_id, p_id)] = result
-
-#         return filtered_results
-
-#     def get_parameter_ids(self) -> List[str]:
-#         """Get all parameter IDs from the simulation parameters."""
-
-#         keys = [p_id for (cond_id, p_id) in self.experiments.keys()]
-#         unique_keys = sorted(list(set(keys)))
-#         return unique_keys
-
-#     def get_parameter_values(self) -> Dict[str, Dict[str, float]]:
-#         return
-
-#     def get_condition_ids(self) -> List[str]:
-#         """Get all condition IDs from the simulation parameters."""
-
-#         keys = [cond_id for (cond_id, p_id) in self.experiments.keys()]
-#         unique_keys = sorted(list(set(keys)))
-#         return unique_keys
-
-#     def run_parameter_estimation(
-#         self, config: Dict[str, Any], overwrite: bool = False
-#     ) -> None:
-#         """Run parameter estimation for all experiments in the study."""
-
-#         from polypesto.visualization import (
-#             plot_results,
-#             plot_all_comparisons_1D,
-#             plot_all_comparisons_1D_fill,
-#         )
-
-#         print("Running parameter estimation for all experiments...")
-#         for (cond_id, p_id), experiment in self.experiments.items():
-
-#             result = self.results.get((cond_id, p_id), None)
-
-#             if overwrite or result is None:
-#                 print(f"Running parameter estimation for {cond_id}, {p_id}...")
-#                 result = run_parameter_estimation(experiment, config, result)
-#                 self.results[(cond_id, p_id)] = result
-#                 print("Done running parameter estimation.")
-#             else:
-#                 print(f"Found existing result for {cond_id}, {p_id}.")
-#                 print("Skipping parameter estimation.")
-
-#             print("Plotting results...")
-#             # plot_results(experiment, result)
-#             break
-
-#         print("Plotting all comparisons...")
-#         plot_all_comparisons_1D_fill(self)
-
-#     @staticmethod
-#     def load(dir_path: str, model: Type[ModelInterface]) -> "Study":
-
-#         if not os.path.exists(dir_path):
-#             raise FileNotFoundError(f"Directory {dir_path} does not exist.")
-
-#         experiments = {}
-#         simulation_params = {}
-#         results = {}
-#         experiment_paths = find_experiment_paths(dir_path)
-
-#         if len(experiment_paths) == 0:
-#             raise FileNotFoundError(
-#                 f"No experiment paths found in directory {dir_path}."
-#             )
-
-#         for (cond_id, p_id), paths in experiment_paths.items():
-
-#             print(f"Loading experiment {cond_id}, {p_id}...")
-#             experiment = SimulatedExperiment.load(paths, model)
-#             experiments[(cond_id, p_id)] = experiment
-#             simulation_params[p_id] = experiment.true_params
-
-#             if os.path.exists(paths.pypesto_results):
-#                 result = store.read_result(paths.pypesto_results)
-#                 results[(cond_id, p_id)] = result
-
-#         simulation_params = ParameterGroup("Loaded", simulation_params)
-
-#         print("Done loading experiments.")
-#         return Study(
-#             model=model,
-#             simulation_params=simulation_params,
-#             experiments=experiments,
-#             results=results,
-#         )
+########################
+# LOAD STUDY FUNCTIONS #
+########################
 
 
-# def _create_study(
-#     model: Type[ModelInterface],
-#     simulation_params: ParameterGroup,
-#     conditions: List[SimulationConditions],
-#     obs_df: Optional[pd.DataFrame] = None,
-#     base_dir: str = "data",
-#     overwrite: bool = False,
-# ) -> Study:
+def study_conditions_from_json(
+    sim_conds: Dict[str, Any],
+    true_params: ParameterGroup,
+) -> ConditionsDict:
+    """Convert study conditions from JSON format to internal representation."""
 
-#     # Try to load the study if it already exists (no overwrite)
-#     if not overwrite:
-#         try:
-#             study = Study.load(base_dir, model)
-#             print("Study already exists.")
-#             print("Loading existing study.")
-#             return study
-#         except FileNotFoundError:
-#             print("Study does not exist.")
+    conditions_dict: ConditionsDict = {}
+    param_ids = true_params.get_ids()
+    for param_id in param_ids:
+        param_set = true_params.by_id(param_id)
+        for prob_id, cond_list in sim_conds.items():
+            key = (prob_id, param_id)
+            conditions_dict[key] = []
+            for i in range(len(cond_list)):
+                cond_list[i]["true_params"] = param_set.to_dict()
+                conditions_dict[key].append(SimConditions.from_dict(cond_list[i]))
 
-#     print("Creating new study.")
-#     experiments = {}
-#     for condition in conditions:
-#         for p_id in simulation_params.get_ids():
-
-#             experiment = simulate_experiment(
-#                 model=model,
-#                 true_params=simulation_params.by_id(p_id),
-#                 conditions=condition,
-#                 obs_df=obs_df,
-#                 base_dir=base_dir,
-#             )
-#             experiments[(condition.name, p_id)] = experiment
-
-#     return Study(
-#         model=model,
-#         simulation_params=simulation_params,
-#         experiments=experiments,
-#     )
+    return conditions_dict
 
 
-# def get_all_ensemble_preds(study: Study, test_exp: SimulatedExperiment):
-#     """
-#     Get all ensemble predictions for the given study and test study.
-#     """
+def load_data_from_metadata(
+    model: ModelBase,
+    metadata: Dict[str, Any],
+) -> Tuple[ProblemDict, ResultsDict]:
 
-#     from polypesto.core.pypesto import create_ensemble, predict_with_ensemble
+    problems = {}
+    results = {}
+    for key_str, prob_dir in metadata["problem_dirs"].items():
+        prob_id, param_id = key_str.split(" | ")
+        key = (prob_id, param_id)
 
-#     ensemble_preds = {}
+        paths = ProblemPaths(prob_dir)
+        problems[key] = Problem.load(model=model, paths=paths)
 
-#     for (cond_id, p_id), result in study.results.items():
+        if Path(paths.pypesto_results).exists():
+            results[key] = store.read_result(paths.pypesto_results)
 
-#         if cond_id == "fA0_[0.7]_cM0_[1.0]" and p_id == "gradient_lg":
+    return problems, results
 
-#             exp = study.experiments[(cond_id, p_id)]
-#             ensemble = create_ensemble(exp, result)
-#             ensemble_pred = predict_with_ensemble(ensemble, test_exp, output_type="y")
-#             ensemble_preds[(cond_id, p_id)] = ensemble_pred
-#         # break
 
-#     return ensemble_preds
+def load_study(study_dir: str | Path, model: ModelBase) -> Study:
+
+    study_dir = Path(study_dir)
+    if not study_dir.exists():
+        raise ValueError(f"Study directory {study_dir} does not exist.")
+
+    try:
+        metadata = read_json(study_dir / "metadata.json")
+        true_params = read_json(study_dir / "true_params.json")
+        sim_conds = read_json(study_dir / "sim_conds.json")
+    except FileNotFoundError as e:
+        raise FileNotFoundError(f"Could not find metadata files in {study_dir}.") from e
+
+    required_keys = ["model_name", "problem_dirs", "param_ids", "cond_ids"]
+    for key in required_keys:
+        if key not in metadata:
+            raise ValueError(f"Metadata is missing required key: {key}")
+    assert (
+        metadata["model_name"] == model.name
+    ), f"Model name in metadata ({metadata['model_name']}) does not match provided model name ({model.name})."
+
+    true_params = ParameterGroup.lazy_from_dict(true_params)
+    sim_params = study_conditions_from_json(sim_conds, true_params)
+    problems, results = load_data_from_metadata(model, metadata)
+
+    return Study(
+        model=model,
+        true_params=true_params,
+        sim_params=sim_params,
+        problems=problems,
+        results=results,
+    )

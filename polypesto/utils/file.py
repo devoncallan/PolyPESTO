@@ -8,6 +8,8 @@ Directory: TypeAlias = str
 
 
 def read_json(filepath: Filepath, **kwargs) -> dict:
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
     with open(filepath, "r", **kwargs) as file:
         data = json.load(file)
     return data

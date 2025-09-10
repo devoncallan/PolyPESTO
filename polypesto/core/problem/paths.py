@@ -5,9 +5,8 @@ from typing import Optional
 
 class ProblemPaths:
 
-    def __init__(self, base_dir: str | Path, id: Optional[str] = None):
+    def __init__(self, base_dir: str | Path):
         self.base_dir = Path(base_dir)
-        self.id = id
         self.make_dirs()
 
     def make_dirs(self) -> None:
@@ -17,12 +16,17 @@ class ProblemPaths:
         os.makedirs(self.pypesto_dir, exist_ok=True)
         os.makedirs(self.figures_dir, exist_ok=True)
 
+    @staticmethod
+    def from_yaml(yaml_path: str | Path) -> "ProblemPaths":
+        yaml_path = Path(yaml_path)
+
+        data_dir = yaml_path.parent.parent
+        base_dir = data_dir.parent
+        return ProblemPaths(base_dir)
+
     @property
     def _data_dir(self) -> str:
-        if self.id is None:
-            return self.base_dir
-        else:
-            return f"{self.base_dir}/{self.id}"
+        return f"{self.base_dir}"
 
     @property
     def petab_dir(self) -> str:
@@ -103,6 +107,22 @@ class ProblemPaths:
     @property
     def model_fit_fig(self) -> str:
         return f"{self.figures_dir}/model_fit.png"
+
+
+def find_problem_dirs(base_dir: str | Path):
+
+    base_dir = Path(base_dir)
+
+    experiment_paths = {}
+    for yaml_path in sorted(base_dir.glob("petab.yaml")):
+
+        paths = ProblemPaths.from_yaml(yaml_path)
+
+        # problem_id
+        problem_id = yaml_path.parent.name
+        experiment_paths[problem_id] = paths
+
+    return experiment_paths
 
 
 """      

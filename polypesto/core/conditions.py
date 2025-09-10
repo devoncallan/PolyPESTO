@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -16,6 +16,19 @@ class Conditions:
     exp_id: str
     values: ParameterSet
 
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "exp_id": self.exp_id,
+            "values": self.values.to_dict(),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "Conditions":
+        return Conditions(
+            exp_id=d["exp_id"],
+            values=ParameterSet.lazy_from_dict(d["values"]),
+        )
+
 
 @dataclass
 class SimConditions(Conditions):
@@ -24,6 +37,27 @@ class SimConditions(Conditions):
     true_params: ParameterSet
     t_eval: ArrayLike
     noise_level: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        base_dict = super().to_dict()
+        base_dict.update(
+            {
+                "true_params": self.true_params.to_dict(),
+                "t_eval": list(self.t_eval),
+                "noise_level": self.noise_level,
+            }
+        )
+        return base_dict
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "SimConditions":
+        return SimConditions(
+            exp_id=d["exp_id"],
+            values=ParameterSet.lazy_from_dict(d["values"]),
+            true_params=ParameterSet.lazy_from_dict(d["true_params"]),
+            t_eval=np.array(d["t_eval"]),
+            noise_level=d.get("noise_level", 0.0),
+        )
 
 
 def create_conditions(

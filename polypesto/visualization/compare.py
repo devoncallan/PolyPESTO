@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Optional
 
 from pypesto.sample import calculate_ci_mcmc_sample
 
-from polypesto.core.study import SimulatedExperimentDict, ResultsDict, Study
+from polypesto.core._study import SimulatedExperimentDict, ResultsDict, Study
 
 
 def extract_fA0_value(cond_id: str, num_values: int = 1) -> float:

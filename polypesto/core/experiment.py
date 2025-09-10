@@ -134,11 +134,15 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
     assert cond_df is not None and meas_df is not None
 
     experiments = []
+    print(cond_df)
     exp_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
+
+    cond_dict = cond_df.drop(columns=pet.C.CONDITION_NAME).to_dict(orient="index")
 
     for exp_id in exp_ids:
 
-        conds = cond_df[cond_df.index == exp_id].to_dict()
+        conds = cond_dict[exp_id]
+
         exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == exp_id]
 
         data = _meas_df_to_datasets(exp_meas_df)

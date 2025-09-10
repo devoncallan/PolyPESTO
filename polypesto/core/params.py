@@ -70,6 +70,14 @@ class ParameterSet:
     id: ParameterSetID
     parameters: Dict[ParameterID, Parameter]
 
+    def __repr__(self) -> str:
+        param_str = ", ".join(f"{p.id}: {p.value}" for p in self.parameters.values())
+        return f"ParameterSet(id='{self.id}', parameters={{ {param_str} }})"
+
+    @staticmethod
+    def empty() -> "ParameterSet":
+        return ParameterSet(id="", parameters={})
+
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "ParameterSet":
         parameters = {
@@ -106,7 +114,7 @@ class ParameterSet:
         file.write_json(filepath, asdict(self))
 
     def to_dict(self) -> Dict[str, float]:
-        return {param.id: param.value for param in self.parameters.values()}
+        return {param.id: float(param.value) for param in self.parameters.values()}
 
     def by_id(self, parameter_id: ParameterID) -> Parameter:
         if parameter_id not in self.parameters:
@@ -187,8 +195,11 @@ class ParameterGroup:
         }
         return ParameterGroup(id=id, parameter_sets=parameter_sets)
 
-    def to_dict(self) -> dict:
-        return asdict(self)
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            param_set.id: param_set.to_dict()
+            for param_set in self.parameter_sets.values()
+        }
 
     def add(self, parameter_set: ParameterSet):
         if not self.parameter_sets:

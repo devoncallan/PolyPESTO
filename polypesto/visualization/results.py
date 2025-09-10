@@ -59,3 +59,5 @@ def plot_results(result: Result, problem: Problem, true_params: Optional[dict] =
         print(result.profile_result)
         plot_profiles(result, true_params)
         plt.gcf().savefig(problem.paths.profile_fig, dpi=300)
+
+    plt.close("all")
