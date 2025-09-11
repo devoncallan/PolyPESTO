@@ -39,6 +39,7 @@ class IrreversibleCPE(ModelBase):
 
         return irreversible_ode
 
+
 def irreversible_cpe() -> sbml.ModelDefinition:
 
     name = "irreversible_cpe"
