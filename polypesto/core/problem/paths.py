@@ -74,8 +74,8 @@ class ProblemPaths:
         return f"{self.petab_dir}/parameters.tsv"
 
     @property
-    def model(self) -> str:
-        return f"{self.petab_dir}/model.xml"
+    def sbml_model(self) -> str:
+        return f"{self.petab_dir}/sbml_model.xml"
 
     @property
     def petab_yaml(self) -> str:

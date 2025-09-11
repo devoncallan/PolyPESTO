@@ -106,9 +106,8 @@ def write_petab(
 
     paths = ProblemPaths(data_dir)
 
-    sbml_filepath = sbml.write_model(
-        model_def=model.sbml_model_def(), model_filepath=paths.model
-    )
+    sbml_model = model.sbml_model
+    sbml.write_model(sbml_model, paths.sbml_model)
 
     PetabIO.write_obs_df(petab_data.obs_df, filename=paths.observables)
     PetabIO.write_cond_df(petab_data.cond_df, filename=paths.conditions)
@@ -121,7 +120,7 @@ def write_petab(
     print("Writing PEtab files...")
     PetabIO.write_yaml(
         yaml_filepath=paths.petab_yaml,
-        sbml_filepath=sbml_filepath,
+        sbml_filepath=paths.sbml_model,
         cond_filepath=paths.conditions,
         meas_filepath=paths.measurements,
         obs_filepath=paths.observables,

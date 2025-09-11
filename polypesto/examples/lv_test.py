@@ -9,14 +9,14 @@ from polypesto.utils._patches import apply
 
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
 from polypesto.core import create_sim_conditions, simulate_experiments
-from polypesto.models.example.lotka_volterra_ode import LotkaVolterraODE
+from polypesto.models.example.lotka_volterra import LotkaVolterra
 
 DATA_DIR = Path(__file__).parent / "data/lv_test"
 
 
 def sim_workflow():
 
-    model = LotkaVolterraODE()
+    model = LotkaVolterra()
 
     true_params = {"a": 1.1, "b": 0.4, "c": 0.4, "d": 0.1}
     sim_conds = create_sim_conditions(

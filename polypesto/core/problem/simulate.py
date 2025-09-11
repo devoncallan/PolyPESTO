@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 from polypesto.models import ModelBase
-from . import petab as pet
+from .. import petab as pet
 from ..params import ParameterSet
 from ..conditions import SimConditions, conditions_to_df
 from ..problem import PypestoProblem, Problem, write_petab

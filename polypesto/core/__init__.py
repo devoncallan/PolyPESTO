@@ -8,7 +8,13 @@ from .conditions import (
 from .experiment import Experiment, Dataset, experiments_to_petab, petab_to_experiments
 from .params import Parameter, ParameterSet, ParameterGroup
 from . import petab as pet
-from .problem import Problem, ProblemPaths, run_parameter_estimation, write_petab
+from .problem import (
+    Problem,
+    ProblemPaths,
+    run_parameter_estimation,
+    write_petab,
+    simulate_experiments,
+)
 from .pypesto import (
     PypestoProblem,
     load_pypesto_problem,

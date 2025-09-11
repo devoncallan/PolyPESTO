@@ -17,6 +17,7 @@ class ModelBase(ABC):
         self,
         observables: Optional[List[str]] = None,
         obs_noise_level: float = 0.02,
+        sbml_model: Optional[sbml.ModelDefinition] = None,
     ):
 
         self.name = self.__class__.__name__
@@ -25,6 +26,7 @@ class ModelBase(ABC):
         self.obs_noise_level = obs_noise_level
 
         self.fit_params = self._default_fit_params()
+        self.sbml_model = sbml_model if sbml_model else self._default_sbml_model()
 
     @abstractmethod
     def _default_obs(self) -> List[str]:
@@ -37,8 +39,8 @@ class ModelBase(ABC):
         pass
 
     @abstractmethod
-    def sbml_model_def(self) -> sbml.ModelDefinition:
-        """Return SBML model definition"""
+    def _default_sbml_model(self) -> sbml.ModelDefinition:
+        """Return default sbml model."""
         pass
 
     def get_param_df(self) -> pd.DataFrame:

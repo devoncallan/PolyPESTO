@@ -4,7 +4,7 @@ from .paths import ProblemPaths
 from .base import Problem, write_petab
 from .estimate import run_parameter_estimation
 from .simulate import simulate_experiments
-from .results import (
+from ..pypesto.results import (
     Result,
     has_results,
     ParameterResult,

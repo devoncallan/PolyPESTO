@@ -6,9 +6,12 @@ import numpy as np
 from polypesto.visualization import plot_results
 from polypesto.utils._patches import apply
 
-
-from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
-from polypesto.core import create_sim_conditions, simulate_experiments, pet
+from polypesto.core import (
+    run_parameter_estimation,
+    create_sim_conditions,
+    simulate_experiments,
+    pet,
+)
 from polypesto.models.CRP2 import ReversibleCPE
 
 DATA_DIR = Path(__file__).parent / "polypesto/rev_test"

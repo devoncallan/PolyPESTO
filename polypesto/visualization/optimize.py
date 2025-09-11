@@ -8,7 +8,7 @@ import seaborn as sns
 import pypesto.visualize as vis
 from pypesto.result import Result
 
-from polypesto.core.results import OptimizationResult
+from polypesto.core.problem import OptimizationResult, has_results
 from .true import plot_true_params_on_pairgrid
 from .base import safe_plot
 
@@ -20,7 +20,7 @@ from .base import safe_plot
 @safe_plot
 def plot_waterfall(result: Result, **kwargs) -> Tuple[Figure, Axes]:
 
-    if not hasattr(result, "optimize_result") or result.optimize_result is None:
+    if not has_results(result, "optimize"):
         return plt.subplots()
 
     axes = vis.waterfall(results=result, **kwargs)
@@ -36,7 +36,7 @@ def plot_optimization_scatter(
 ) -> Tuple[Figure, sns.PairGrid]:
 
     # Return empty figure if no optimization results
-    if not hasattr(result, "optimize_result") or result.optimize_result is None:
+    if not has_results(result, "optimize"):
         return plt.subplots()
 
     # Create the scatter plot

@@ -3,7 +3,7 @@ from typing import Dict, Optional, Callable, Any
 from pypesto import Result, store
 
 from ..pypesto import optimize_problem, profile_problem, sample_problem
-from .results import has_results
+from ..pypesto.results import has_results
 from . import Problem
 
 

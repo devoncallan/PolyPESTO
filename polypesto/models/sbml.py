@@ -1,38 +1,27 @@
+from pathlib import Path
 from typing import Dict, Tuple, Callable, List, TypeAlias, Optional
 import os
 import time
+
 import libsbml
+from petab.v1.models.sbml_model import SbmlModel as ModelDefinition
 
 SBML_LEVEL = 3
 SBML_VERSION = 2
 
 Document: TypeAlias = libsbml.SBMLDocument
 Model: TypeAlias = libsbml.Model
-ModelDefinition: TypeAlias = Callable[[], Tuple[Document, Model]]
 
 
-def write_model(model_def: ModelDefinition, model_filepath: str) -> str:
+def write_model(model_def: ModelDefinition, model_filepath: str) -> None:
     """Writes an SBML model from the given file path."""
-    document, model = model_def()
 
-    _save_sbml(document, model_filepath)
+    print(f"Writing SBML model ({model_def.model_id}) to {model_filepath}")
+    model_path = Path(model_filepath)
+    os.makedirs(model_path.parent, exist_ok=True)
+    model_def.to_file(model_path)
 
-    validator = validateSBML(ucheck=False)
-    validator.validate(model_filepath)
-
-    return model_filepath
-
-
-def _save_sbml(document: Document, model_filepath: str):
-    """Outputs the given model string to the given filename."""
-    model_xml_string = libsbml.writeSBMLToString(document)
-
-    model_dir = os.path.dirname(model_filepath)
-    if model_dir and not os.path.exists(model_dir):
-        os.makedirs(model_dir)
-
-    with open(model_filepath, "w") as f:
-        f.write(model_xml_string)
+    validateSBML().validate(model_path)
 
 
 #####################################
@@ -40,7 +29,7 @@ def _save_sbml(document: Document, model_filepath: str):
 #####################################
 
 
-def _check(value, message):
+def _check(value, message: str):
     """If 'value' is None, prints an error message constructed using
     'message' and then exits with status code 1.  If 'value' is an integer,
     it assumes it is a libSBML return status code.  If the code value is
@@ -69,7 +58,7 @@ def _check(value, message):
         return
 
 
-def create_model(name: str) -> Tuple[Document, Model]:
+def init_model(name: str) -> Tuple[Document, Model]:
 
     try:
         document = Document(SBML_LEVEL, SBML_VERSION)
@@ -77,18 +66,18 @@ def create_model(name: str) -> Tuple[Document, Model]:
         raise SystemExit("Could not create SBMLDocumention object")
 
     model: Model = document.createModel()
-
     _check(model, "create model")
+    _check(model.setId(name), "set model id")
     _check(model.setName(name), "set model name")
     _check(model.setTimeUnits("second"), "set model-wide time units")
     _check(model.setExtentUnits("mole"), "set model units of extent")
     _check(model.setSubstanceUnits("mole"), "set model substance units")
 
-    per_second = model.createUnitDefinition()
+    per_second: libsbml.UnitDefinition = model.createUnitDefinition()
     _check(per_second, "create unit definition")
     _check(per_second.setId("per_second"), "set unit definition id")
 
-    unit = per_second.createUnit()
+    unit: libsbml.Unit = per_second.createUnit()
     _check(unit, "create unit on per_second")
     _check(unit.setId("per_second"), "set unit id")
     _check(unit.setKind(libsbml.UNIT_KIND_SECOND), "set unit kind")
@@ -99,6 +88,13 @@ def create_model(name: str) -> Tuple[Document, Model]:
     return document, model
 
 
+def create_model(model: Model, document: Document) -> ModelDefinition:
+
+    return ModelDefinition(
+        sbml_model=model, sbml_document=document, model_id=model.getId()
+    )
+
+
 def create_compartment(
     model: Model,
     id: str,
@@ -107,13 +103,15 @@ def create_compartment(
     units: str = "litre",
     isConstant=True,
 ) -> libsbml.Compartment:
-    c = model.createCompartment()
+
+    c: libsbml.Compartment = model.createCompartment()
     _check(c, "create compartment")
     _check(c.setId(id), "set compartment id")
     _check(c.setConstant(isConstant), 'set compartment "constant"')
     _check(c.setSize(size), 'set compartment "size"')
     _check(c.setSpatialDimensions(spatialDimensions), "set compartment dimensions")
     _check(c.setUnits(units), "set compartment size units")
+
     return c
 
 
@@ -138,6 +136,7 @@ def create_species(
     _check(s1.setSubstanceUnits(units), "set substance units for s1")
     _check(s1.setBoundaryCondition(boundaryCondition), 'set "boundaryCondition" on s1')
     _check(s1.setHasOnlySubstanceUnits(False), 'set "hasOnlySubstanceUnits" on s1')
+
     return s1
 
 
@@ -148,15 +147,14 @@ def create_parameter(
     constant: bool = False,
     units: str = "dimensionless",
 ) -> libsbml.Parameter:
+
     k: libsbml.Parameter = model.createParameter()
 
-    # assert UnitKind_isValidUnitKindString(units, level=3, version=2), f'Invalid unit: {units}'
     _check(k, "create parameter k")
     _check(k.setId(id), "set parameter k id")
     _check(k.setConstant(constant), 'set parameter k "constant"')
     _check(k.setValue(value), "set parameter k value")
     _check(k.setUnits(units), "set parameter k units")
-    # assert(k.getId() == id)
 
     return k
 
@@ -175,12 +173,12 @@ def create_initial_assignment(
     Returns:
     - InitialAssignment: The created initial assignment object.
     """
-    initial_assignment = model.createInitialAssignment()
+
+    initial_assignment: libsbml.InitialAssignment = model.createInitialAssignment()
+
     _check(initial_assignment, "create initial assignment")
     _check(initial_assignment.setSymbol(variable_id), "set initial assignment variable")
-
-    # Convert the formula string into an ASTNode and assign it to the initial assignment
-    math_ast = libsbml.parseL3Formula(formula)
+    math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for initial assignment formula")
     _check(initial_assignment.setMath(math_ast), "set math on initial assignment")
 
@@ -222,50 +220,49 @@ def create_reaction(
     c1: libsbml.Compartment = model.getCompartment(0)
 
     kineticLaw = f"{kineticLaw} * {c1.getId()}"
-
-    math_ast: libsbml.ASTNode = libsbml.parseL3Formula(kineticLaw)
-    _check(math_ast, "create AST for rate expression")
-
     kin_law: libsbml.KineticLaw = r.createKineticLaw()
+    math_ast: libsbml.ASTNode = libsbml.parseL3Formula(kineticLaw)
+
+    _check(math_ast, "create AST for rate expression")
     _check(kin_law, "create kinetic law")
     _check(kin_law.setMath(math_ast), "set math on kinetic law")
 
     return r
 
 
-def create_rule(model: Model, var, formula: str = "") -> libsbml.AssignmentRule:
+def create_rule(model: Model, var_id: str, formula: str = "") -> libsbml.AssignmentRule:
 
     rule: libsbml.AssignmentRule = model.createAssignmentRule()
-    _check(rule.setVariable(var.getId()), "set variable")
+    _check(rule.setVariable(var_id), "set variable")
 
     # math_ast: ASTNode = parseL3Formula(f'{species1.getId()} + {species2.getId()} + 1e-10')
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rule.setMath(math_ast), "set math on kinetic law")
+    
     return rule
 
 
-def create_rate_rule(model: Model, var, formula: str = "") -> libsbml.RateRule:
+def create_rate_rule(model: Model, var_id: str, formula: str = "") -> libsbml.RateRule:
 
     rate_rule: libsbml.RateRule = model.createRateRule()
-    _check(rate_rule.setVariable(var.getId()), "set variable")
+    _check(rate_rule.setVariable(var_id), "set variable")
 
     # math_ast: ASTNode = parseL3Formula(f'{species1.getId()} + {species2.getId()} + 1e-10')
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rate_rule.setMath(math_ast), "set math on kinetic law")
+    
     return rate_rule
 
 
 def create_algebraic_rule(model: Model, formula: str = "") -> libsbml.AlgebraicRule:
 
     rule: libsbml.AlgebraicRule = model.createAlgebraicRule()
-    # _check(rule.setVariable(var.getId()), 'set variable')
-
-    # math_ast: ASTNode = parseL3Formula(f'{species1.getId()} + {species2.getId()} + 1e-10')
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rule.setMath(math_ast), "set math on kinetic law")
+    
     return rule
 
 
@@ -292,9 +289,8 @@ def add_termination_event(model: Model, formula: str = "") -> libsbml.Event:
     _check(trigger.setInitialValue(True), "set trigger initial value")
 
     # Define the action for the event: stop the simulation
-    termination_event.setUseValuesFromTriggerTime(
-        True
-    )  # Stop immediately when the condition is met
+    # Stop immediately when the condition is met
+    termination_event.setUseValuesFromTriggerTime(True)
 
     return termination_event
 
@@ -318,64 +314,16 @@ def create_event_assignment(
     if not event:
         raise ValueError(f"Event with ID '{event_id}' not found in the model.")
 
-    assignment = event.createEventAssignment()
+    assignment: libsbml.EventAssignment = event.createEventAssignment()
     _check(assignment, "create event assignment")
     _check(assignment.setVariable(variable_id), "set event assignment variable")
 
     # Convert the formula string into an ASTNode and assign it to the event assignment
-    math_ast = libsbml.parseL3Formula(formula)
+    math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for event assignment formula")
     _check(assignment.setMath(math_ast), "set math on event assignment")
 
     return assignment
-
-
-def add_conversion_snapshot_events(model: Model, x_thresholds: List[float]):
-    """
-    For each x threshold, adds snapshot species for xA and xB and an event to assign their values
-    when x crosses the threshold.
-
-    Parameters
-    ----------
-    model : libsbml.Model
-        Your SBML model.
-    x_thresholds : list of float
-        The values of `x` at which to snapshot.
-    """
-
-    for x_val in x_thresholds:
-
-        x_str = f"{int(round(x_val * 100)):02d}"
-        # print(x_str)
-        xa_snap_id = f"xA_at_x_{x_str}"
-        xb_snap_id = f"xB_at_x_{x_str}"
-        fa_snap_id = f"fA_at_x_{x_str}"
-        fb_snap_id = f"fB_at_x_{x_str}"
-        event_id = f"snapshot_event_{x_str}"
-        print(event_id)
-
-        # Create snapshot species (dimensionless, not boundary)
-        create_parameter(model, xa_snap_id)
-        create_parameter(model, xb_snap_id)
-        create_parameter(model, fa_snap_id)
-        create_parameter(model, fb_snap_id)
-
-        # Create event
-        event = model.createEvent()
-        event.setId(event_id)
-        event.setUseValuesFromTriggerTime(True)
-
-        # Trigger when x > x_val
-        trigger = event.createTrigger()
-        trigger.setMath(libsbml.parseL3Formula(f"x > {x_val}"))
-        trigger.setPersistent(True)
-        trigger.setInitialValue(True)
-
-        # Assign snapshot species
-        create_event_assignment(model, event_id, xa_snap_id, "xA")
-        create_event_assignment(model, event_id, xb_snap_id, "xB")
-        create_event_assignment(model, event_id, fa_snap_id, "fA")
-        create_event_assignment(model, event_id, fb_snap_id, "fB")
 
 
 ######################
@@ -384,19 +332,19 @@ def add_conversion_snapshot_events(model: Model, x_thresholds: List[float]):
 
 
 class validateSBML:
-    def __init__(self, ucheck):
+    def __init__(self, ucheck: bool = False):
         self.reader = libsbml.SBMLReader()
         self.ucheck = ucheck
         self.numinvalid = 0
 
-    def validate(self, file):
+    def validate(self, file: str | Path):
         if not os.path.exists(file):
             print("[Error] %s : No such file." % file)
             self.numinvalid += 1
             return
 
         start = time.time()
-        sbmlDoc = libsbml.readSBML(file)
+        sbmlDoc: libsbml.SBMLDocument = libsbml.readSBML(file)
         stop = time.time()
         timeRead = (stop - start) * 1000
         errors = sbmlDoc.getNumErrors()
@@ -409,7 +357,8 @@ class validateSBML:
 
         if errors > 0:
             for i in range(errors):
-                severity = sbmlDoc.getError(i).getSeverity()
+                error: libsbml.SBMLError = sbmlDoc.getError(i)
+                severity = error.getSeverity()
                 if (severity == libsbml.LIBSBML_SEV_ERROR) or (
                     severity == libsbml.LIBSBML_SEV_FATAL
                 ):
@@ -418,7 +367,8 @@ class validateSBML:
                 else:
                     numReadWarn += 1
 
-                errMsgRead = sbmlDoc.getErrorLog().toString()
+                error_msg: libsbml.SBMLErrorLog = sbmlDoc.getErrorLog()
+                errMsgRead = error_msg.toString()
 
         # If serious errors are encountered while reading an SBML document, it
         # does not make sense to go on and do full consistency checking because
@@ -447,7 +397,8 @@ class validateSBML:
 
                 isinvalid = False
                 for i in range(failures):
-                    severity = sbmlDoc.getError(i).getSeverity()
+                    error: libsbml.SBMLError = sbmlDoc.getError(i)
+                    severity = error.getSeverity()
                     if (severity == libsbml.LIBSBML_SEV_ERROR) or (
                         severity == libsbml.LIBSBML_SEV_FATAL
                     ):
@@ -459,7 +410,8 @@ class validateSBML:
                 if isinvalid:
                     self.numinvalid += 1
 
-                errMsgCC = sbmlDoc.getErrorLog().toString()
+                error_msg: libsbml.SBMLErrorLog = sbmlDoc.getErrorLog()
+                errMsgCC = error_msg.toString()
 
         print("                 filename : %s" % file)
         print("         file size (byte) : %d" % (os.path.getsize(file)))

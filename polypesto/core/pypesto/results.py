@@ -44,6 +44,57 @@ def has_results(result: Optional[Result], key: Optional[str] = None) -> bool:
         raise ValueError(f"Unknown result type: {key}")
 
 
+# def get_scaled_value(self, param_id: str, value):
+#     """
+#     Get correctly scaled parameter value based on problem definition.
+
+#     Parameters
+#     ----------
+#     param_id : str
+#         Parameter identifier
+#     value : float
+#         Original parameter value
+
+#     Returns
+#     -------
+#     float
+#         Parameter value in the correct scale (log10 or linear)
+#     """
+#     if (
+#         not hasattr(self.result.problem, "x_names")
+#         or param_id not in self.result.problem.x_names
+#     ):
+#         return value
+
+#     idx = self.result.problem.x_names.index(param_id)
+#     if (
+#         hasattr(self.result.problem, "x_scales")
+#         and idx < len(self.result.problem.x_scales)
+#         and self.result.problem.x_scales[idx] == "log10"
+#     ):
+#         return np.log10(value)
+#     return value
+
+
+def get_true_param_values(
+    result: Result, true_params: dict = {}, scaled: bool = False
+) -> Result:
+
+    if true_params == {}:
+        return true_params
+
+    problem: Problem = result.problem
+    param_names = [problem.x_names[i] for i in problem.x_free_indices]
+    for name in param_names:
+        if name in true_params:
+            value = true_params[name]
+            if scaled:
+                value = get_scaled_value(name, value)
+            result[name] = value
+
+    return result
+
+
 class ParameterResult:
     """
     Base class for parameter estimation results with common functionality.
