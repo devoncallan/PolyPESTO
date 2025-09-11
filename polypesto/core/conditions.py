@@ -63,6 +63,17 @@ class SimConditions(Conditions):
 def create_conditions(
     conds: Dict[str, ArrayLike], exp_ids: Optional[List[str]] = None
 ) -> List[Conditions]:
+    """Create a list of Conditions from a dictionary of condition values.
+
+    Args:
+        conds (Dict[str, ArrayLike]): Dictionary of condition values.
+            e.g., `conds = {"A0": [0.25, 0.6], "B0": [0.75, 0.4]}`
+        exp_ids (Optional[List[str]]): List of experiment IDs. Defaults to None.
+            e.g., `exp_ids = ["c_0", "c_1"]`. If None, will be auto-generated.
+
+    Returns:
+        List[Conditions]: List of Conditions objects.
+    """
 
     cond_labels = list(conds.keys())
     len_conds = {k: len(v) for k, v in conds.items()}
@@ -100,6 +111,23 @@ def create_sim_conditions(
     noise_levels: float | List[float] = 0.0,
     exp_ids: Optional[List[str]] = None,
 ) -> List[SimConditions]:
+    """Create a list of SimConditions from the provided parameters.
+
+    Args:
+        true_params (ParameterSet | Dict[str, float]): True parameter values.
+            e.g., `true_params = {"rA": 0.25, "rB": 0.75}`
+        conds (Dict[str, ArrayLike]): Dictionary of condition values.
+            e.g., `conds = {"A0": [0.25, 0.6], "B0": [0.75, 0.4]}`
+        t_evals (ArrayLike | List[ArrayLike]): Time evaluation points.
+            e.g., `t_evals = np.linspace(0, 10, 100)` or `t_evals = [np.linspace(0, 10, 100), np.linspace(0, 5, 50)]`
+        noise_levels (float | List[float]): Noise levels for the simulations. Defaults to 0.0.
+            e.g., `noise_levels = 0.1` or `noise_levels = [0.1, 0.2]`
+        exp_ids (Optional[List[str]]): List of experiment IDs. Defaults to None.
+            e.g., `exp_ids = ["c_0", "c_1"]`. If None, will be auto-generated.
+
+    Returns:
+        List[SimConditions]: List of simulation conditions.
+    """
 
     if isinstance(true_params, dict):
         true_params = ParameterSet.lazy_from_dict(true_params)
@@ -141,7 +169,14 @@ def create_sim_conditions(
 
 
 def conditions_to_df(conds: List[Conditions]) -> pd.DataFrame:
-    """Define a PEtab conditions dataframe from a list of Conditions."""
+    """Convert a list of Conditions to a PEtab conditions dataframe.
+
+    Args:
+        conds (List[Conditions]): List of Conditions objects.
+
+    Returns:
+        pd.DataFrame: PEtab conditions dataframe.
+    """
 
     return pet.define_conditions(
         [cond.values.to_dict() for cond in conds],

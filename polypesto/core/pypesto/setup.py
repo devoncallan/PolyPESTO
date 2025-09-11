@@ -44,6 +44,30 @@ def load_pypesto_problem(
     problem: PypestoProblem = importer.create_problem(**kwargs)
     assert isinstance(problem.objective, AmiciObjective)
 
+    # DAE
+    # problem.objective.amici_solver.setLinearMultistepMethod(2)
+    # problem.objective.amici_solver.setNonlinearSolverIteration(2)
+    # problem.objective.amici_solver.setSensitivityMethod(0)
+    # # problem.objective.amici_solver.setReturnDataReportingMode(0)
+    # problem.objective.amici_solver.setStabilityLimitFlag(False)
+    # problem.objective.amici_solver.setNewtonDampingFactorMode(1)
+    # problem.objective.amici_solver.setMaxSteps(10_000)
+    # problem.objective.amici_solver.setNewtonMaxSteps(10000)
+    # problem.objective.amici_solver.setLinearSolver(1)
+
+    problem.objective.amici_solver.setNewtonMaxSteps(10_000)
+    problem.objective.amici_solver.setNewtonDampingFactorMode(1)
+    problem.objective.amici_solver.setAbsoluteTolerance(1e-10)
+    problem.objective.amici_solver.setRelativeTolerance(1e-6)
+    problem.objective.amici_solver.setMaxSteps(10_000)
+    problem.objective.amici_solver.setMaxConvFails(1_000)
+    problem.objective.amici_solver.setMaxNonlinIters(10_000)
+    problem.objective.amici_solver.setLinearSolver(9)
+    problem.objective.amici_solver.setStabilityLimitFlag(True)
+    problem.objective.amici_solver.setReturnDataReportingMode(0)
+    problem.objective.amici_solver.setLinearMultistepMethod(2)
+    # problem.objective.amici_solver.set
+
     # problem.objective.amici_solver.setNewtonMaxSteps(10000)
     # problem.objective.amici_solver.setNewtonDampingFactorMode(1)
     # problem.objective.amici_solver.setAbsoluteTolerance(1e-10)
@@ -56,12 +80,12 @@ def load_pypesto_problem(
     # problem.objective.amici_solver.setReturnDataReportingMode(0)
     # problem.objective.amici_solver.setLinearMultistepMethod(2)
 
-    problem.objective.amici_solver.setNewtonMaxSteps(10000)
-    problem.objective.amici_solver.setNewtonDampingFactorMode(2)
-    problem.objective.amici_solver.setAbsoluteTolerance(1e-8)
-    problem.objective.amici_solver.setRelativeTolerance(1e-6)
-    # problem.objective.amici_solver.setStabilityLimitFlag(True)
-    problem.objective.amici_solver.setMaxSteps(100000)
-    problem.objective.amici_solver.setLinearSolver(6)
+    # problem.objective.amici_solver.setNewtonMaxSteps(10000)
+    # problem.objective.amici_solver.setNewtonDampingFactorMode(2)
+    # problem.objective.amici_solver.setAbsoluteTolerance(1e-8)
+    # problem.objective.amici_solver.setRelativeTolerance(1e-6)
+    # # problem.objective.amici_solver.setStabilityLimitFlag(True)
+    # problem.objective.amici_solver.setMaxSteps(100000)
+    # problem.objective.amici_solver.setLinearSolver(6)
 
     return importer, problem

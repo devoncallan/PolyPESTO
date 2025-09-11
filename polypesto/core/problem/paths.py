@@ -1,9 +1,30 @@
 import os
 from pathlib import Path
-from typing import Optional
 
 
 class ProblemPaths:
+    """
+    Manage file paths for a parameter estimation problem.
+
+    Directory structure:
+
+    `base_dir/petab/`
+        - conditions.tsv
+        - observables.tsv
+        - parameters.tsv
+        - measurements.tsv
+        - petab.yaml
+        - model.xml
+        - params.json
+    `base_dir/pypesto/`
+        - results.hdf5
+    `base_dir/figures/`
+        - measurements.png
+        - waterfall.png
+        - profile.png
+        - sampling_trace.png
+        - ...
+    """
 
     def __init__(self, base_dir: str | Path):
         self.base_dir = Path(base_dir)
@@ -107,43 +128,3 @@ class ProblemPaths:
     @property
     def model_fit_fig(self) -> str:
         return f"{self.figures_dir}/model_fit.png"
-
-
-def find_problem_dirs(base_dir: str | Path):
-
-    base_dir = Path(base_dir)
-
-    experiment_paths = {}
-    for yaml_path in sorted(base_dir.glob("petab.yaml")):
-
-        paths = ProblemPaths.from_yaml(yaml_path)
-
-        # problem_id
-        problem_id = yaml_path.parent.name
-        experiment_paths[problem_id] = paths
-
-    return experiment_paths
-
-
-"""      
-base_dir/
-    problem_id/
-        petab/
-            conditions.tsv
-            observables.tsv
-            parameters.tsv
-            measurements.tsv
-            model.yaml
-            model.xml
-        pypesto/
-            results.hdf5
-        figures/
-            measurements.png
-            waterfall.png
-            profile.png
-            sampling_trace.png
-            confidence_intervals.png
-            sampling_scatter.png
-            optimization_scatter.png
-            ensemble_predictions.png
-"""

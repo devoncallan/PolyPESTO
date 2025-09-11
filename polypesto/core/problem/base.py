@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
 
@@ -11,6 +12,7 @@ from ..problem import ProblemPaths
 
 @dataclass
 class Problem:
+    """A parameter estimation problem."""
 
     model: ModelBase
     petab_problem: PetabProblem
@@ -59,23 +61,20 @@ class Problem:
     ) -> "Problem":
         print("Creating problem from experiments...")
         print(f"Data directory: {data_dir}")
-        paths = ProblemPaths(data_dir, problem_id)
 
         # Create PEtab problem from experiments
         cond_df, meas_df = experiments_to_petab(experiments)
-        obs_df = model.get_obs_df()
-        param_df = model.get_param_df()
         petab_data = PetabData(
-            obs_df=obs_df,
+            obs_df=model.get_obs_df(),
             cond_df=cond_df,
-            param_df=param_df,
+            param_df=model.get_param_df(),
             meas_df=meas_df,
             name=problem_id,
         )
 
-        write_petab(model, paths, petab_data)
+        problem = write_petab(data_dir, model, petab_data)
 
-        return Problem.load(model, paths)
+        return problem
 
     def get_results(self):
 
@@ -88,11 +87,24 @@ class Problem:
 
 
 def write_petab(
+    data_dir: str | Path,
     model: ModelBase,
-    paths: ProblemPaths,
     petab_data: PetabData,
     true_params: Optional[ParameterSet] = None,
-):
+) -> Problem:
+    """Write PEtab files to specified directory.
+
+    Args:
+        data_dir (str | Path): Directory to write PEtab files to.
+        model (ModelBase): Model to use for simulation.
+        petab_data (PetabData): PEtab data to write.
+        true_params (Optional[ParameterSet]): True parameter values to write. Defaults to None.
+
+    Returns:
+        Problem: Created problem instance.
+    """
+
+    paths = ProblemPaths(data_dir)
 
     sbml_filepath = sbml.write_model(
         model_def=model.sbml_model_def(), model_filepath=paths.model
@@ -115,3 +127,5 @@ def write_petab(
         obs_filepath=paths.observables,
         param_filepath=paths.fit_parameters,
     )
+
+    return Problem.load(model, paths)

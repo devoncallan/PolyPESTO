@@ -1,9 +1,8 @@
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Tuple
 from uuid import uuid4
 
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
 
 from .params import ParameterSet
@@ -60,7 +59,17 @@ class Experiment:
         return Experiment(id=id, conds=conditions, data=data)
 
 
-def experiments_to_petab(experiments: List[Experiment]):
+def experiments_to_petab(
+    experiments: List[Experiment],
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    """Convert a list of Experiment objects to PEtab format.
+
+    Args:
+        experiments (List[Experiment]): List of Experiment objects.
+
+    Returns:
+        Tuple[pd.DataFrame, pd.DataFrame]: PEtab conditions and measurements dataframes.
+    """
 
     data_dict = {}
     conds = []
@@ -98,7 +107,15 @@ def experiments_to_petab(experiments: List[Experiment]):
     return cond_df, meas_df
 
 
-def _meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
+def meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
+    """Convert a PEtab measurement dataframe to a list of Dataset objects.
+
+    Args:
+        meas_df (pd.DataFrame): PEtab measurement dataframe.
+
+    Returns:
+        List[Dataset]: List of Dataset objects.
+    """
 
     obs_ids = meas_df[pet.C.OBSERVABLE_ID].unique()
     obs_map = {obs_id: obs_id for obs_id in obs_ids}
@@ -127,6 +144,14 @@ def _meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
 
 
 def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
+    """Convert a PEtab problem to a list of Experiment objects.
+
+    Args:
+        petab_problem (pet.PetabProblem): PEtab problem instance.
+
+    Returns:
+        List[Experiment]: List of Experiment objects.
+    """
 
     cond_df = petab_problem.condition_df
     meas_df = petab_problem.measurement_df
@@ -134,7 +159,6 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
     assert cond_df is not None and meas_df is not None
 
     experiments = []
-    print(cond_df)
     exp_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
 
     cond_dict = cond_df.drop(columns=pet.C.CONDITION_NAME).to_dict(orient="index")
@@ -145,7 +169,7 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
 
         exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == exp_id]
 
-        data = _meas_df_to_datasets(exp_meas_df)
+        data = meas_df_to_datasets(exp_meas_df)
         exp = Experiment.load(id=exp_id, conds=conds, data=data)
         experiments.append(exp)
 

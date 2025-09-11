@@ -6,7 +6,7 @@ from .conditions import (
     conditions_to_df,
 )
 from .experiment import Experiment, Dataset, experiments_to_petab, petab_to_experiments
-from .params import Parameter, ParameterSet, ParameterContainer, ParameterGroup
+from .params import Parameter, ParameterSet, ParameterGroup
 from . import petab as pet
 from .problem import Problem, ProblemPaths, run_parameter_estimation, write_petab
 from .pypesto import (
@@ -40,7 +40,6 @@ __all__ = [
     "petab_to_experiments",
     "Parameter",
     "ParameterSet",
-    "ParameterContainer",
     "ParameterGroup",
     "pet",
     "Problem",

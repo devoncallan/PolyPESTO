@@ -66,6 +66,7 @@ class ReversibleCPE(ModelBase):
     def sbml_model_def(self) -> sbml.ModelDefinition:
 
         return reversible_ode
+        # return reversible_cpe
 
 
 def reversible_ode() -> sbml.ModelDefinition:
@@ -248,12 +249,15 @@ def reversible_cpe() -> sbml.ModelDefinition:
     # Irreversible: dpBB/dt = 0 = kpBB*pAB*pB*B - kpBA*pBB*pB*A
     # Reversible: dpBB/dt = 0 = kpBB*pAB*pB*B + kdBA*pBB*pBA*pA - pBB*pB*(kpBA*A + kdBB*pAB)
 
-    sbml.create_algebraic_rule(
-        model,
-        formula="kpAB*pA*B + pAB*(kdBA*pBA*pA + kdBB*pBB*pB) - pAB*pB*(kpBA*A + kpBB*B + kdAB)",
-    )
+    # sbml.create_algebraic_rule(
+    #     model,
+    #     formula="kpAB*pA*B + pAB*(kdBA*pBA*pA + kdBB*pBB*pB) - pAB*pB*(kpBA*A + kpBB*B + kdAB)",
+    # )
     # Irreversible: dPAB/dt = 0 = kpAB*pA*B - kpBA*pAB*pB*A - kpBB*pAB*pB*B
     # Reversible: dPAB/dt = 0 = kpAB*pA*B + pAB*(kdBA*pBA*pA + kdBB*pBB*pB) - pAB*pB*(kpBA*A + kpBB*B + kdAB)
+    sbml.create_algebraic_rule(
+        model, formula="kpAB*pA*B + kdBA*pBA*pA - kpBA*pB*A - kdAB*pAB*pB"
+    )
 
     # Identity rules
     sbml.create_rule(model, pA, formula="1 - pB")

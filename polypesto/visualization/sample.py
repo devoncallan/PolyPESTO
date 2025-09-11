@@ -58,7 +58,7 @@ def plot_parameter_traces(
     return fig, axes
 
 
-@safe_plot
+# @safe_plot
 def plot_confidence_intervals(
     result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, Axes]:
@@ -104,7 +104,7 @@ def plot_confidence_intervals(
     plt.tight_layout()
     return fig, ax
 
-@safe_plot
+# @safe_plot
 def plot_sampling_scatter(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, sns.PairGrid]:

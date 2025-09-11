@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Callable
+from typing import Dict, Optional, Callable, Any
 
 from pypesto import Result, store
 
@@ -9,7 +9,7 @@ from . import Problem
 
 def run_parameter_estimation(
     prob: Problem,
-    config: dict = {},
+    config: Dict[str, Any] = {},
     result: Optional[Result] = None,
     save: bool = True,
     overwrite: bool = True,
