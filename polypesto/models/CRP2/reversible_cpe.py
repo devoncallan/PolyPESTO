@@ -5,7 +5,7 @@ from polypesto.models import sbml, ModelBase
 from .common import define_reversible_k
 
 
-class ReversibleCPE(ModelBase):
+class BinaryReversible(ModelBase):
 
     def _default_obs(self) -> List[str]:
         return ["xA", "xB"]

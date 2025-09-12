@@ -1,62 +1,15 @@
 import matplotlib.pyplot as plt
 
-from polypesto.core.problem import Problem, SimulatedExperiment
-from polypesto.core.results import Result
 from polypesto.core.study import Study
-from polypesto.visualization import (
-    plot_optimization_scatter,
-    plot_sampling_scatter,
-    plot_confidence_intervals,
-    plot_waterfall,
-    plot_parameter_traces,
-    plot_profiles,
-    plot_ensemble_predictions,
-    plot_all_measurements,
-    # plot_all_comparisons,
-)
+from .results import plot_results
 
 
-def plot_results(prob: Problem | SimulatedExperiment, result: Result):
+def plot_all_results(study: Study):
 
-    true_params = None
-    if isinstance(prob, SimulatedExperiment):
-        true_params = prob.true_params.to_dict()
-        prob = prob.experiment
+    for key, result in study.results.items():
 
-    axs = plot_all_measurements(prob.petab_problem.measurement_df)
-    plt.gcf().savefig(prob.paths.measurements_data_plot, dpi=300)
-
-    fig, ax = plot_optimization_scatter(result, true_params)
-    plt.gcf().savefig(prob.paths.optimization_scatter_plot, dpi=300)
-
-    fig, ax = plot_waterfall(result)
-    plt.gcf().savefig(prob.paths.waterfall_plot, dpi=300)
-
-    fig, ax = plot_sampling_scatter(result, true_params)
-    plt.gcf().savefig(prob.paths.sampling_scatter_plot, dpi=300)
-
-    fig, ax = plot_parameter_traces(result, true_params)
-    plt.gcf().savefig(prob.paths.sampling_trace_plot, dpi=300)
-
-    fig, ax = plot_profiles(result, true_params)
-    plt.gcf().savefig(prob.paths.profile_plot, dpi=300)
-
-    fig, ax = plot_confidence_intervals(result, true_params)
-    plt.gcf().savefig(prob.paths.confidence_intervals_plot, dpi=300)
-
-    plt.close("all")
-
-
-def plot_all_results(
-    study: Study,
-):
-
-    for (cond_id, p_id), result in study.results.items():
-
-        exp = study.experiments[(cond_id, p_id)]
-        true_params = exp.true_params.to_dict()
-
-        plot_results(exp, result)
+        true_params = study.true_params.by_id(key[1]).to_dict()
+        plot_results(study.results[key], study.problems[key], true_params)
 
 
 def plot_all_ensemble_predictions(study: Study, test_study: Study):

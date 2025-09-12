@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Type
 from uuid import uuid4
 
 import numpy as np

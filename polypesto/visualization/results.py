@@ -16,7 +16,16 @@ from polypesto.visualization import (
 from pypesto.visualize import model_fit
 
 
-def plot_results(result: Result, problem: Problem, true_params: Optional[dict] = None):
+def plot_results(
+    result: Result, problem: Problem, true_params: Optional[dict] = None
+) -> None:
+    """Plots the results of the parameter estimation.
+
+    Args:
+        result (Result): The result object containing the optimization results.
+        problem (Problem): The problem object containing the problem definition.
+        true_params (Optional[dict], optional): The true parameter values. Defaults to None.
+    """
 
     plot_all_measurements(problem.petab_problem.measurement_df)
     plt.gcf().savefig(problem.paths.measurements_fig, dpi=300)

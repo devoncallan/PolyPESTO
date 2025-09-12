@@ -4,12 +4,9 @@ from pathlib import Path
 import numpy as np
 
 from polypesto.visualization import plot_results
-from polypesto.utils._patches import apply
-
-
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
 from polypesto.core import create_sim_conditions, simulate_experiments
-from polypesto.models.CRP2 import IrreversibleCPE
+from polypesto.models.CRP2 import BinaryIrreversible
 
 RAW_DATA_DIR = Path(__file__).parent / "raw"
 DATA_DIR = Path(__file__).parent / "data"
@@ -81,7 +78,7 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
 
 def exp_workflow():
 
-    model = IrreversibleCPE(
+    model = BinaryIrreversible(
         observables=["xA", "xB", "fA", "fB"],
     )
 
@@ -90,7 +87,7 @@ def exp_workflow():
         conds={"A0": 0.30, "B0": 0.70},
         data=[
             Dataset.load(
-                path=RAW_DATA_DIR / "data_3060.csv",
+                RAW_DATA_DIR / "data_3060.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
             )
@@ -102,7 +99,7 @@ def exp_workflow():
         conds={"A0": 0.50, "B0": 0.50},
         data=[
             Dataset.load(
-                path=RAW_DATA_DIR / "data_5050.csv",
+                RAW_DATA_DIR / "data_5050.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
             )
@@ -131,7 +128,7 @@ def exp_workflow():
 
 def sim_workflow():
 
-    model = IrreversibleCPE(
+    model = BinaryIrreversible(
         observables=["xA", "xB", "fA", "fB"],
     )
 
@@ -165,11 +162,11 @@ def sim_workflow():
 
 
 def main():
-    apply()
 
-    exp_workflow()
+    # exp_workflow()
     sim_workflow()
 
 
 if __name__ == "__main__":
+
     main()

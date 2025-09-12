@@ -17,6 +17,7 @@ from .problem import (
 )
 from .pypesto import (
     PypestoProblem,
+    Result,
     load_pypesto_problem,
     save_result,
     optimize_problem,

@@ -21,9 +21,9 @@ def define_irreversible_k(model: sbml.Model, kpAA_constant=False):
     rB = sbml.create_parameter(model, "rB", value=1)
     rX = sbml.create_parameter(model, "rX", value=1)
 
-    sbml.create_rule(model, kpAB, formula="kpAA / rA")
-    sbml.create_rule(model, kpBB, formula="kpAA / rX")
-    sbml.create_rule(model, kpBA, formula="kpBB / rB")
+    sbml.create_rule(model, "kpAB", formula="kpAA / rA")
+    sbml.create_rule(model, "kpBB", formula="kpAA / rX")
+    sbml.create_rule(model, "kpBA", formula="kpBB / rB")
 
 
 def define_reversible_k(model: sbml.Model, **kwargs):

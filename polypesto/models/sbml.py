@@ -67,7 +67,6 @@ def init_model(name: str) -> Tuple[Document, Model]:
 
     model: Model = document.createModel()
     _check(model, "create model")
-    _check(model.setId(name), "set model id")
     _check(model.setName(name), "set model name")
     _check(model.setTimeUnits("second"), "set model-wide time units")
     _check(model.setExtentUnits("mole"), "set model units of extent")
@@ -239,7 +238,7 @@ def create_rule(model: Model, var_id: str, formula: str = "") -> libsbml.Assignm
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rule.setMath(math_ast), "set math on kinetic law")
-    
+
     return rule
 
 
@@ -252,7 +251,7 @@ def create_rate_rule(model: Model, var_id: str, formula: str = "") -> libsbml.Ra
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rate_rule.setMath(math_ast), "set math on kinetic law")
-    
+
     return rate_rule
 
 
@@ -262,7 +261,7 @@ def create_algebraic_rule(model: Model, formula: str = "") -> libsbml.AlgebraicR
     math_ast: libsbml.ASTNode = libsbml.parseL3Formula(formula)
     _check(math_ast, "create AST for rate expression")
     _check(rule.setMath(math_ast), "set math on kinetic law")
-    
+
     return rule
 
 
@@ -337,7 +336,7 @@ class validateSBML:
         self.ucheck = ucheck
         self.numinvalid = 0
 
-    def validate(self, file: str | Path):
+    def validate(self, file: str | Path, quiet: bool = True) -> None:
         if not os.path.exists(file):
             print("[Error] %s : No such file." % file)
             self.numinvalid += 1
@@ -413,32 +412,35 @@ class validateSBML:
                 error_msg: libsbml.SBMLErrorLog = sbmlDoc.getErrorLog()
                 errMsgCC = error_msg.toString()
 
-        print("                 filename : %s" % file)
-        print("         file size (byte) : %d" % (os.path.getsize(file)))
-        print("           read time (ms) : %f" % timeRead)
+        if not quiet:
+            print("================= SBML Validation summary =================")
+            print("                 filename : %s" % file)
+            print("         file size (byte) : %d" % (os.path.getsize(file)))
+            print("           read time (ms) : %f" % timeRead)
 
-        if not skipCC:
-            print("        c-check time (ms) : %f" % timeCC)
-        else:
-            print("        c-check time (ms) : skipped")
+            if not skipCC:
+                print("        c-check time (ms) : %f" % timeCC)
+            else:
+                print("        c-check time (ms) : skipped")
 
-        print("      validation error(s) : %d" % (numReadErr + numCCErr))
-        if not skipCC:
-            print("    (consistency error(s)): %d" % numCCErr)
-        else:
-            print("    (consistency error(s)): skipped")
+            print("      validation error(s) : %d" % (numReadErr + numCCErr))
+            if not skipCC:
+                print("    (consistency error(s)): %d" % numCCErr)
+            else:
+                print("    (consistency error(s)): skipped")
 
-        print("    validation warning(s) : %d" % (numReadWarn + numCCWarn))
-        if not skipCC:
-            print("  (consistency warning(s)): %d" % numCCWarn)
-        else:
-            print("  (consistency warning(s)): skipped")
+            print("    validation warning(s) : %d" % (numReadWarn + numCCWarn))
+            if not skipCC:
+                print("  (consistency warning(s)): %d" % numCCWarn)
+            else:
+                print("  (consistency warning(s)): skipped")
 
-        if errMsgRead or errMsgCC:
-            print()
-            print("===== validation error/warning messages =====\n")
-            if errMsgRead:
-                print(errMsgRead)
-            if errMsgCC:
-                print("*** consistency check ***\n")
-                print(errMsgCC)
+            if errMsgRead or errMsgCC:
+                print()
+                print("===== validation error/warning messages =====\n")
+                if errMsgRead:
+                    print(errMsgRead)
+                if errMsgCC:
+                    print("*** consistency check ***\n")
+                    print(errMsgCC)
+            print("===========================================================")

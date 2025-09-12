@@ -9,8 +9,7 @@ import seaborn as sns
 import pypesto.visualize as vis
 from pypesto.result import Result
 
-# Import our result handlers
-from polypesto.core.results import SamplingResult
+from polypesto.core.pypesto import has_sampling_results, get_true_param_values
 from .true import (
     plot_true_params_on_pairgrid,
     plot_true_params_on_trace,
@@ -27,19 +26,25 @@ from .base import safe_plot
 def plot_parameter_traces(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, List[Axes]]:
+    """Plots the parameter traces.
 
-    # Create sampling result handler
-    sampling_result = SamplingResult(result, true_params)
+    Args:
+        result (Result): The result object containing the sampling results.
+        true_params (Optional[Dict[str, float]], optional): The true parameter values. Defaults to None.
+
+    Returns:
+        (Figure, List[Axes]): The figure and axes objects.
+    """
 
     # Return empty figure if no sampling results
-    if not sampling_result.has_sampling_results():
+    if not has_sampling_results(result):
         return plt.subplots()
 
     axes = vis.sampling_parameter_traces(result=result, **kwargs)
     fig = plt.gcf()
 
     # Skip if no true values
-    true_values = sampling_result.get_true_parameter_values(scaled=True)
+    true_values = get_true_param_values(result, true_params, scaled=True)
     if not true_values:
         plt.tight_layout()
         return fig, axes
@@ -51,35 +56,42 @@ def plot_parameter_traces(
         else axes.flatten() if isinstance(axes, np.ndarray) else axes
     )
 
-    param_names = sampling_result.param_names
-    plot_true_params_on_trace(axes_list, true_values, param_names)
+    plot_true_params_on_trace(axes_list, true_values)
 
     plt.tight_layout()
     return fig, axes
 
 
-# @safe_plot
+@safe_plot
 def plot_confidence_intervals(
-    result, true_params: Optional[Dict[str, float]] = None, **kwargs
+    result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, Axes]:
+    """Plots the confidence intervals.
 
-    # Create sampling result handler
-    sampling_result = SamplingResult(result, true_params)
+    Args:
+        result (Result): The result object containing the sampling results.
+        true_params (Optional[Dict[str, float]], optional): The true parameter values. Defaults to None.
+
+    Returns:
+        (Figure, Axes): The figure and axes objects.
+    """
 
     # Return empty figure if no results
-    if not sampling_result.has_sampling_results():
+    if not has_sampling_results(result):
         return plt.subplots()
 
     kwargs.setdefault("alpha", [90, 95, 99])
     # Plot confidence intervals
     ax = vis.sampling_parameter_cis(result=result, **kwargs)
+    ax.set_xlim(min(result.problem.lb), max(result.problem.ub))
     fig = plt.gcf()
 
     # Get true parameter values
-    true_values = sampling_result.get_true_parameter_values(scaled=True)
-    if not true_values:
+    if not true_params:
         plt.tight_layout()
         return fig, ax
+
+    true_values = get_true_param_values(result, true_params, scaled=True)
 
     # Get parameter positions from plot
     y_ticks = ax.get_yticks()
@@ -104,31 +116,37 @@ def plot_confidence_intervals(
     plt.tight_layout()
     return fig, ax
 
-# @safe_plot
+
+@safe_plot
 def plot_sampling_scatter(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, sns.PairGrid]:
+    """Plots the sampling scatter.
 
-    # Create sampling result handler
-    sampling_result = SamplingResult(result, true_params)
+    Args:
+        result (Result): The result object containing the sampling results.
+        true_params (Optional[Dict[str, float]], optional): The true parameter values. Defaults to None.
+
+    Returns:
+        (Figure, sns.PairGrid): The figure and pair grid objects.
+    """
 
     # Return empty figure if no sampling results
-    if not sampling_result.has_sampling_results():
+    if not has_sampling_results(result):
         return plt.subplots()
 
     # Create scatter plot
     grid = vis.sampling_scatter(result=result, **kwargs)
     fig = plt.gcf()
 
-    true_values = sampling_result.get_true_parameter_values(scaled=True)
-    param_names = grid.x_vars
-
     # Return if no true values or no valid grid
-    if not true_values or not hasattr(grid, "axes") or len(grid.axes) == 0:
+    if not true_params or not hasattr(grid, "axes") or len(grid.axes) == 0:
         plt.tight_layout()
         return fig, grid
 
-    plot_true_params_on_pairgrid(grid, true_values, param_names)
+    true_values = get_true_param_values(result, true_params, scaled=True)
+
+    plot_true_params_on_pairgrid(grid, true_values)
 
     plt.tight_layout()
     return fig, grid

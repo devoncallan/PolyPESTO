@@ -1,11 +1,7 @@
-from .irreversible_cpe import IrreversibleCPE
-from .irreversible_rxn import IrreversibleRxn
-from .reversible_cpe import ReversibleCPE
-from .reversible_rxn import ReversibleRxn
+from .irreversible_cpe import BinaryIrreversible
+from .reversible_cpe import BinaryReversible
 
 __all__ = [
-    "IrreversibleCPE",
-    "IrreversibleRxn",
-    "ReversibleCPE",
-    "ReversibleRxn",
+    "BinaryIrreversible",
+    "BinaryReversible",
 ]

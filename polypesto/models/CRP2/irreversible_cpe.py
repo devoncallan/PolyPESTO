@@ -5,7 +5,7 @@ from polypesto.models import sbml, ModelBase
 from .common import define_irreversible_k
 
 
-class IrreversibleCPE(ModelBase):
+class BinaryIrreversible(ModelBase):
 
     def _default_obs(self) -> List[str]:
         return ["xA", "xB"]
