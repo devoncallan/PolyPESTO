@@ -180,4 +180,4 @@ experiments/**/data/
 polypesto/**/data/
 Parker/
 polypesto/examples/**/*/
-*.DS_Store
+**/.DS_Store

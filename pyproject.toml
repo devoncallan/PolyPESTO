@@ -20,24 +20,11 @@ dependencies = [
   "pyswarm",
   "streamlit",
   "cmake",
+  "matplotlib",
+  "seaborn",
+  "jupyter",
+  "ipykernel",
 ]
-
-[project.optional-dependencies]
-# pick and choose
-dev = ["jupyter", "ipykernel"]
-viz = ["matplotlib", "seaborn"]  # if you use them
-heavy = ["dlib"]                 # dlib often fails to build; keep optional
-full = [
-  "jupyter", "ipykernel",
-  "matplotlib", "seaborn",
-  "dlib",
-]
-
-[tool.setuptools]
-# install top-level module `sitecustomize.py` (shim below)
-py-modules = ["sitecustomize"]
-package-dir = {"" = "."}
 
 [tool.setuptools.packages.find]
-where = ["."]
 include = ["polypesto*"]

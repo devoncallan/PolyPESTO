@@ -12,8 +12,18 @@ from petab.v1 import (
     write_condition_df,
     write_measurement_df,
     write_parameter_df,
-    Problem as PetabProblem,
 )
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Static analysis: provide the correct type for mypy/IDE
+    from petab.v1 import Problem as PetabProblem
+else:
+    # Runtime: thread-safe patching with lazy loading
+    from polypesto.utils.patches import get_patched_petab_problem
+    
+    PetabProblem = get_patched_petab_problem()
 
 
 @dataclass
