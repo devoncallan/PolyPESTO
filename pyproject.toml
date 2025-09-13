@@ -24,6 +24,8 @@ dependencies = [
   "seaborn",
   "jupyter",
   "ipykernel",
+  "pytest",
+  "pytest-cov",
 ]
 
 [tool.setuptools.packages.find]
