@@ -36,6 +36,7 @@ class ProblemPaths:
         os.makedirs(self.petab_dir, exist_ok=True)
         os.makedirs(self.pypesto_dir, exist_ok=True)
         os.makedirs(self.figures_dir, exist_ok=True)
+        os.makedirs(self.logs_dir, exist_ok=True)
 
     @staticmethod
     def from_yaml(yaml_path: str | Path) -> "ProblemPaths":
@@ -49,17 +50,13 @@ class ProblemPaths:
     def _data_dir(self) -> str:
         return f"{self.base_dir}"
 
+    ###################
+    ### PEtab Files ###
+    ###################
+
     @property
     def petab_dir(self) -> str:
         return f"{self._data_dir}/petab"
-
-    @property
-    def pypesto_dir(self) -> str:
-        return f"{self._data_dir}/pypesto"
-
-    @property
-    def figures_dir(self) -> str:
-        return f"{self._data_dir}/figures"
 
     @property
     def conditions(self) -> str:
@@ -89,9 +86,25 @@ class ProblemPaths:
     def true_params(self) -> str:
         return f"{self.petab_dir}/params.json"
 
+    #####################
+    ### PyPESTO Files ###
+    #####################
+
+    @property
+    def pypesto_dir(self) -> str:
+        return f"{self._data_dir}/pypesto"
+
     @property
     def pypesto_results(self) -> str:
         return f"{self.pypesto_dir}/results.hdf5"
+
+    #####################
+    ### Figures Files ###
+    #####################
+
+    @property
+    def figures_dir(self) -> str:
+        return f"{self._data_dir}/figures"
 
     @property
     def measurements_fig(self) -> str:
@@ -128,3 +141,15 @@ class ProblemPaths:
     @property
     def model_fit_fig(self) -> str:
         return f"{self.figures_dir}/model_fit.png"
+
+    #################
+    ### Log Files ###
+    #################
+
+    @property
+    def logs_dir(self) -> str:
+        return f"{self._data_dir}/logs"
+
+    @property
+    def model_load_log(self) -> str:
+        return f"{self.logs_dir}/model_load.log"

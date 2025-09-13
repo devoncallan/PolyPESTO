@@ -13,7 +13,7 @@ from .problem import (
     ProblemPaths,
     run_parameter_estimation,
     write_petab,
-    simulate_experiments,
+    simulate_problem,
 )
 from .pypesto import (
     PypestoProblem,
@@ -49,7 +49,7 @@ __all__ = [
     "optimize_problem",
     "profile_problem",
     "sample_problem",
-    "simulate_experiments",
+    "simulate_problem",
     "Result",
     "has_results",
     "ParameterResult",

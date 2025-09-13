@@ -112,6 +112,8 @@ def irreversible_ode() -> sbml.ModelDefinition:
     sbml.create_species(model, "xB", initialAmount=0.0)
     sbml.create_parameter(model, "fA", value=0)
     sbml.create_parameter(model, "fB", value=0)
+    sbml.create_parameter(model, "FA", value=0)
+    sbml.create_parameter(model, "FB", value=0)
 
     # Define assignment rules
     sbml.create_rule(model, "A", formula="A0 * (1 - xA)")
@@ -122,6 +124,10 @@ def irreversible_ode() -> sbml.ModelDefinition:
 
     sbml.create_rule(model, "fA", formula="A / (A + B + eps)")
     sbml.create_rule(model, "fB", formula="1 - fA")
+    sbml.create_rule(
+        model, "FA", formula="(A0/(A0+B0) - (1 - time) * fA) / (time + eps)"
+    )
+    sbml.create_rule(model, "FB", formula="1 - FA")
 
     sbml.create_parameter(model, "dR_dt", value=0)
     sbml.create_parameter(model, "dRA_dt", value=0)

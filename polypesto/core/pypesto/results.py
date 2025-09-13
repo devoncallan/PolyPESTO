@@ -5,7 +5,7 @@ This module provides classes for handling different types of parameter estimatio
 results (optimization, profile, sampling) with a consistent interface.
 """
 
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
 import numpy as np
 from pypesto import Result, Problem as PypestoProblem
@@ -97,6 +97,7 @@ def get_chain_data(
     result: Result,
     exclude_burn_in: bool = True,
 ) -> Dict[str, np.ndarray]:
+
     if not has_sampling_results(result):
         return {}
 
@@ -117,42 +118,26 @@ def get_chain_data(
 
     return {param_names[idx]: chain[:, idx] for idx in param_indices}
 
-    # Get trace data
-    trace_x = result.sample_result.trace_x
-
-    # Check if chain exists
-    if i_chain >= len(trace_x):
-        return {}
-
-    # Get selected chain
-    chain = trace_x[i_chain]
-
-    # Apply burn-in
-    if burn_in > 0:
-        if burn_in < 1.0:  # Interpret as fraction
-            burn_in = int(len(chain) * burn_in)
-        chain = chain[burn_in:]
-
-    # Apply stepsize
-    chain = chain[::stepsize]
-
-    # Extract parameters of interest
-    result = {"chain": chain, "parameters": {}}
-
-    # Extract each parameter trace
-    for i, idx in enumerate(self.parameter_indices):
-        name = self.param_names[i]
-        values = chain[:, i]
-        result["parameters"][name] = values
-
-    return result
-
 
 def calculate_cis(
     result: Result,
     ci_level: bool = 0.95,
     exclude_burn_in: bool = True,
-):
+) -> Dict[str, Tuple[float, float, float]]:
+    """Calculate parameter confidence intervals from sampling.
+
+    Args:
+        result (Result): Pypesto Result object with sampling results.
+        ci_level (bool, optional): Confidence interval level. Defaults to 0.95.
+        exclude_burn_in (bool, optional): Whether to exclude burn-in samples. Defaults to True.
+
+    Returns:
+        Dict(str, Tuple[float, float, float]): Dictionary mapping parameter names to
+            (lower_bound, median, upper_bound) tuples.
+    """
+
+    if not has_sampling_results(result):
+        return {}
 
     chain_data = get_chain_data(result, exclude_burn_in)
 

@@ -10,14 +10,14 @@ from ..problem import PypestoProblem, Problem, write_petab
 
 
 def write_empty_problem(
-    data_dir: str | Path,
+    prob_dir: str | Path,
     model: ModelBase,
     conds: List[SimConditions],
 ) -> Tuple[Problem, ParameterSet]:
     """Create an empty problem and parameter set.
 
     Args:
-        data_dir (str | Path): Directory where the data is stored.
+        prob_dir (str | Path): Directory where the data is stored.
         model (ModelBase): The model to be used for simulation.
         conds (List[SimConditions]): List of simulation conditions for each experiment.
 
@@ -39,31 +39,43 @@ def write_empty_problem(
     )
 
     true_params = conds[0].true_params
-    problem = write_petab(data_dir, model, petab_data, true_params)
+    problem = write_petab(prob_dir, model, petab_data, true_params)
 
     return problem, true_params
 
 
-def simulate_experiments(
-    data_dir: str | Path,
+def simulate_problem(
+    prob_dir: str | Path,
     model: ModelBase,
     conds: List[SimConditions],
+    overwrite: bool = False,
 ) -> Problem:
     """Simulate experiments based on the provided conditions.
 
     Args:
-        data_dir (str | Path): Directory where the data is stored.
+        prob_dir (str | Path): Directory where the data is stored.
         model (ModelBase): The model to be used for simulation.
         conds (List[SimConditions]): List of simulation conditions for each experiment.
+        overwrite (bool, optional): Whether to overwrite existing data. Defaults to False.
 
     Returns:
         Problem: The problem instance containing the simulation results.
     """
 
+    if not overwrite and Path(prob_dir).exists():
+        print(f"Data directory {prob_dir} already exists. Attempting to load problem.")
+        try:
+            problem = Problem.load(prob_dir, model)
+            print("Successfully loaded existing problem.")
+            return problem
+        except Exception as e:
+            print(f"Failed to load problem: {e}")
+            print("Proceeding to simulate new data.")
+
     from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
     from pypesto.objective import AmiciObjective
 
-    problem, true_params = write_empty_problem(data_dir, model, conds)
+    problem, true_params = write_empty_problem(prob_dir, model, conds)
 
     pypesto_problem = problem.pypesto_problem
     petab_problem = problem.petab_problem
@@ -93,6 +105,6 @@ def simulate_experiments(
     pet.PetabIO.write_meas_df(meas_df, filename=problem.paths.measurements)
 
     return Problem.load(
+        prob_dir=prob_dir,
         model=problem.model,
-        paths=problem.paths,
     )

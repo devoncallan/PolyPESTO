@@ -5,7 +5,7 @@ import numpy as np
 
 from polypesto.visualization import plot_results
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
-from polypesto.core import create_sim_conditions, simulate_experiments
+from polypesto.core import create_sim_conditions, simulate_problem
 from polypesto.models.CRP2 import BinaryIrreversible
 
 RAW_DATA_DIR = Path(__file__).parent / "raw"
@@ -129,25 +129,29 @@ def exp_workflow():
 def sim_workflow():
 
     model = BinaryIrreversible(
-        observables=["xA", "xB", "fA", "fB"],
+        observables=["xA", "xB", "fA", "fB", "FA", "FB"],
+        # observables=["xA", "fA", "FA"],
     )
 
-    true_params = {"rA": 1.0, "rB": 2.0}
+    # true_params = {"rA": 1.0, "rB": 2.0}
+    true_params = {"rA": 2.0, "rB": 1.0}
     sim_conds = create_sim_conditions(
         true_params=true_params,
         conds=dict(
-            A0=[0.30, 0.50],
-            B0=[0.70, 0.50],
+            A0=[0.70, 0.50],
+            B0=[0.30, 0.50],
+            # A0=[0.30, 0.50],
+            # B0=[0.70, 0.50],
         ),
-        # exp_ids=["exp1", "exp2"],
-        t_evals=np.linspace(0, 0.95, 20),
-        noise_levels=0.02,
+        t_evals=np.arange(0.05, 0.61, 0.05),
+        noise_levels=0.05,
     )
 
-    problem = simulate_experiments(
-        data_dir=DATA_DIR,
+    problem = simulate_problem(
+        prob_dir=DATA_DIR,
         model=model,
         conds=sim_conds,
+        overwrite=False,
     )
 
     result = run_parameter_estimation(

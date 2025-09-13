@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Type
+from typing import Dict, List, Tuple
 from uuid import uuid4
 
 import numpy as np
@@ -26,6 +26,28 @@ class Dataset:
     data: pd.DataFrame
     tkey: str
     obs_map: Dict[str, str]
+
+    def __post_init__(self):
+        """Validate that tkey and obs_map columns exist in the data."""
+
+        if not isinstance(self.data, pd.DataFrame):
+            raise TypeError(f"data must be a pandas DataFrame, got {type(self.data)}")
+
+        if len(self.data) == 0:
+            raise ValueError("Provided DataFrame is empty.")
+
+        if self.tkey not in self.data.columns:
+            raise KeyError(
+                f"Time key '{self.tkey}' not found in data columns ({self.data.columns.tolist()})."
+            )
+
+        missing_cols = [
+            col for col in self.obs_map.values() if col not in self.data.columns
+        ]
+        if missing_cols:
+            raise KeyError(
+                f"Observable columns {missing_cols} not found in data columns ({self.data.columns.tolist()})."
+            )
 
     @staticmethod
     def load(

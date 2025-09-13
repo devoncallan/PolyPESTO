@@ -52,3 +52,22 @@ class ModelBase(ABC):
         return pet.define_observables(
             self.observables, noise_value=self.obs_noise_level
         )
+
+    def model_name_with_hash(self) -> str:
+        import hashlib
+
+        obs_str = str(sorted(self.observables.keys()))
+        obs_hash_str = hashlib.md5(obs_str.encode()).hexdigest()
+
+        # Fit parameter fields that affect model compilation
+        fit_signature = {
+            param_id: (param.estimate, param.scale)
+            for param_id, param in self.fit_params.items()
+        }
+        fit_str = str(sorted(fit_signature.items()))
+        fit_hash_str = hashlib.md5(fit_str.encode()).hexdigest()
+
+        combined_str = f"{obs_hash_str}_{fit_hash_str}"
+        combined_hash_str = hashlib.md5(combined_str.encode()).hexdigest()
+
+        return f"{self.name}_{combined_hash_str}"

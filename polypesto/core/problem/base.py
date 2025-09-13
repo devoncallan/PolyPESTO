@@ -8,6 +8,7 @@ from ..params import ParameterSet
 from ..pypesto import PypestoProblem, load_pypesto_problem
 from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
 from ..problem import ProblemPaths
+from ...utils.logging import redirect_output_to_file
 
 
 @dataclass
@@ -22,14 +23,14 @@ class Problem:
     id: Optional[str] = None
 
     @staticmethod
-    def load(model: ModelBase, paths: ProblemPaths, **kwargs) -> "Problem":
+    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> "Problem":
         """
         Load a parameter estimation problem.
 
         Parameters
         ----------
-        paths : ProblemPaths
-            Defines locations of parameter estimation problem files.
+        prob_dir : str | Path
+            Directory containing the problem files.
         model : ModelInterface
             Model class to use for simulation.
 
@@ -39,9 +40,14 @@ class Problem:
             Loaded parameter estimation problem object
         """
 
-        importer, problem = load_pypesto_problem(
-            yaml_path=paths.petab_yaml, model_name=model.name, **kwargs
-        )
+        paths = ProblemPaths(prob_dir)
+
+        with redirect_output_to_file(paths.model_load_log, mode="a"):
+            model_name = model.model_name_with_hash()
+            importer, problem = load_pypesto_problem(
+                yaml_path=paths.petab_yaml, model_name=model_name, **kwargs
+            )
+
         experiments = petab_to_experiments(importer.petab_problem)
 
         return Problem(
@@ -127,4 +133,4 @@ def write_petab(
         param_filepath=paths.fit_parameters,
     )
 
-    return Problem.load(model, paths)
+    return Problem.load(data_dir, model)

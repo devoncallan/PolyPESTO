@@ -101,6 +101,8 @@ def sample_problem(
         problem=problem, n_samples=n_samples, sampler=sampler, **kwargs
     )
 
+    sample.geweke_test(result)
+
     return result
 
 
