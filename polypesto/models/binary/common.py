@@ -1,11 +1,6 @@
 from polypesto.models import sbml
 
 
-######################################################
-### Controlled Radical Polymerization (CRP) models ###
-######################################################
-
-
 def define_irreversible_k(model: sbml.Model, kpAA_constant=False):
 
     sbml.create_parameter(model, "kpAA", value=1, constant=kpAA_constant)

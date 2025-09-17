@@ -54,10 +54,20 @@ class ModelBase(ABC):
         """Return default sbml model."""
         pass
 
-    @abstractmethod
     def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
         """Default solver options"""
-        pass
+        solver.setNewtonMaxSteps(10_000)
+        solver.setNewtonDampingFactorMode(1)
+        solver.setAbsoluteTolerance(1e-10)
+        solver.setRelativeTolerance(1e-6)
+        solver.setMaxSteps(10_000)
+        solver.setMaxConvFails(1_000)
+        solver.setMaxNonlinIters(10_000)
+        solver.setLinearSolver(9)
+        solver.setStabilityLimitFlag(True)
+        solver.setReturnDataReportingMode(0)
+        solver.setLinearMultistepMethod(2)
+        return solver
 
     def get_param_df(self) -> pd.DataFrame:
         """Get fit parameter dataframe"""

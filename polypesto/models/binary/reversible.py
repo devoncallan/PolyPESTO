@@ -6,6 +6,10 @@ from polypesto.core import petab as pet
 from polypesto.models import sbml, ModelBase
 from .common import define_reversible_k
 
+##########################################
+### Reversible Binary Copolymerization ###
+##########################################
+
 
 class BinaryReversible(ModelBase):
 

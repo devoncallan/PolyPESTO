@@ -2,7 +2,6 @@ from typing import List
 
 import numpy as np
 
-
 from polypesto.core.experiment import Experiment
 from .irreversible import BinaryIrreversible
 from .reversible import BinaryReversible

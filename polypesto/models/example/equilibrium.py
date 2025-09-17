@@ -8,9 +8,10 @@ from polypesto.models import sbml, ModelBase
 ### Binary Reaction Model ###
 #############################
 
-
 # A -k1-> B
 # B -k2-> A
+
+
 class Equilibrium(ModelBase):
     """Simple Equilibrium Reaction Model"""
 
