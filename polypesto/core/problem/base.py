@@ -42,7 +42,8 @@ class Problem:
 
         paths = ProblemPaths(prob_dir)
 
-        with redirect_output_to_file(paths.model_load_log, mode="a"):
+        msg = f"Loading problem from {prob_dir}"
+        with redirect_output_to_file(paths.model_load_log, mode="a", message=msg):
             model_name = model.model_name_with_hash()
             importer, pypesto_problem = load_pypesto_problem(
                 yaml_path=paths.petab_yaml, model_name=model_name, **kwargs

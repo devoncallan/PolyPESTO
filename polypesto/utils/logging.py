@@ -14,6 +14,7 @@ def redirect_output_to_file(
     stderr: bool = True,
     capture_logging: bool = True,
     mode: str = "w",
+    message: Optional[str] = None,
 ):
     """
     Context manager to redirect stdout/stderr and logging to a log file.
@@ -30,6 +31,8 @@ def redirect_output_to_file(
         Whether to capture Python logging output (default: True)
     mode : str
         File open mode ('w' for overwrite, 'a' for append)
+    message : Optional[str]
+        Optional message to print to the user about the redirection
 
     Example
     -------
@@ -39,6 +42,9 @@ def redirect_output_to_file(
     ...     some_verbose_function()
     """
 
+    if message:
+        print(message)
+    print(f"Redirecting logging to {log_file}")
     log_file = Path(log_file)
 
     original_stdout = sys.stdout if stdout else None

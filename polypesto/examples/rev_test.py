@@ -41,6 +41,7 @@ def sim_workflow():
         prob_dir=DATA_DIR,
         model=model,
         conds=sim_conds,
+        overwrite=False,
     )
 
     result = run_parameter_estimation(

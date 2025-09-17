@@ -66,6 +66,7 @@ def simulate_problem(
         print(f"Data directory {prob_dir} already exists. Attempting to load problem.")
         try:
             problem = Problem.load(prob_dir, model)
+            # TODO: Check that conditions from loaded problem match provided conditions
             print("Successfully loaded existing problem.")
             return problem
         except Exception as e:
