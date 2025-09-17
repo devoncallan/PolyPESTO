@@ -13,7 +13,7 @@ def model_problem(request: pytest.FixtureRequest, tmp_path: pytest.TempPathFacto
     model_name = request.param
 
     if model_name == "BinaryIrreversible":
-        from polypesto.models.CRP2 import BinaryIrreversible
+        from polypesto.models.binary import BinaryIrreversible
 
         model = BinaryIrreversible(
             observables=["xA", "fA", "FA"],

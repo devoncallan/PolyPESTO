@@ -5,7 +5,7 @@ import numpy as np
 
 from polypesto.core import Study, create_study_conditions
 from polypesto.core import ParameterGroup
-from polypesto.models.CRP2 import BinaryIrreversible
+from polypesto.models.binary import BinaryIrreversible
 
 STUDY_DIR = Path(__file__).parent / "study"
 

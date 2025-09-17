@@ -8,7 +8,7 @@ from polypesto.visualization import plot_results
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
 from polypesto.core import create_sim_conditions, simulate_problem
 from polypesto.core.pypesto import calculate_cis
-from polypesto.models.CRP2 import BinaryIrreversible
+from polypesto.models.binary import BinaryIrreversible
 
 
 FILE = Path(__file__)
@@ -19,7 +19,7 @@ ENS_DIR = FILE.parent / FILE.stem / "ensemble"
 
 def exp_workflow():
 
-    from polypesto.models.CRP2.utils import modify_experiments
+    from polypesto.models.binary.utils import modify_experiments
 
     model = BinaryIrreversible(
         observables=["xA", "xB", "fA", "fB"],
@@ -109,7 +109,7 @@ def sim_workflow():
     cis = calculate_cis(result, ci_level=0.95)
 
     import matplotlib.pyplot as plt
-    from polypesto.models.CRP2.utils import create_ensemble_pred_problem
+    from polypesto.models.binary.utils import create_ensemble_pred_problem
     from polypesto.core.pypesto import create_ensemble, predict_with_ensemble
     from polypesto.visualization.predict import plot_ensemble_predictions
 

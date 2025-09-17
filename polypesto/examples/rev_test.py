@@ -12,7 +12,7 @@ from polypesto.core import (
     pet,
     calculate_cis,
 )
-from polypesto.models.CRP2 import BinaryReversible
+from polypesto.models.binary import BinaryReversible
 
 DATA_DIR = Path(__file__).parent / "polypesto/rev_test"
 

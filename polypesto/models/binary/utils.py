@@ -4,8 +4,8 @@ import numpy as np
 
 
 from polypesto.core.experiment import Experiment
-from .irreversible_cpe import BinaryIrreversible
-from .reversible_cpe import BinaryReversible
+from .irreversible import BinaryIrreversible
+from .reversible import BinaryReversible
 
 
 def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
