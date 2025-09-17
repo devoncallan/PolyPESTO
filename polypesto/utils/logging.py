@@ -13,7 +13,7 @@ def redirect_output_to_file(
     stdout: bool = True,
     stderr: bool = True,
     capture_logging: bool = True,
-    mode: str = "w"
+    mode: str = "w",
 ):
     """
     Context manager to redirect stdout/stderr and logging to a log file.
@@ -54,7 +54,9 @@ def redirect_output_to_file(
 
     if capture_logging:
         # Store original state of ALL loggers
-        all_loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
+        all_loggers = [
+            logging.getLogger(name) for name in logging.root.manager.loggerDict
+        ]
         all_loggers.append(logging.getLogger())  # Add root logger
 
         original_handlers = {}
@@ -69,7 +71,9 @@ def redirect_output_to_file(
         # Create file handler for logging
         file_handler = logging.FileHandler(log_file, mode=mode)
         file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         file_handler.setFormatter(formatter)
 
         # Replace ALL logger handlers with our file handler
@@ -102,65 +106,6 @@ def redirect_output_to_file(
                     logger.setLevel(original_levels.get(logger.name, logging.WARNING))
                     logger.propagate = original_propagate.get(logger.name, True)
                 file_handler.close()
-
-
-@contextmanager
-def tee_output_to_file(
-    log_file: Path, stdout: bool = True, stderr: bool = True, mode: str = "w"
-):
-    """
-    Context manager to duplicate (tee) stdout/stderr to both console and log file.
-
-    Parameters
-    ----------
-    log_file : Path
-        Path to the log file
-    stdout : bool
-        Whether to tee stdout (default: True)
-    stderr : bool
-        Whether to tee stderr (default: True)
-    mode : str
-        File open mode ('w' for overwrite, 'a' for append)
-
-    Example
-    -------
-    >>> with tee_output_to_file(Path("compilation.log")):
-    ...     print("This appears on console AND in log file")
-    """
-
-    class TeeWriter:
-        def __init__(self, original: TextIO, log_file: TextIO):
-            self.original = original
-            self.log_file = log_file
-
-        def write(self, text: str):
-            self.original.write(text)
-            self.log_file.write(text)
-
-        def flush(self):
-            self.original.flush()
-            self.log_file.flush()
-
-        def __getattr__(self, name):
-            return getattr(self.original, name)
-
-    original_stdout = sys.stdout if stdout else None
-    original_stderr = sys.stderr if stderr else None
-
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-
-    with open(log_file, mode) as f:
-        try:
-            if stdout:
-                sys.stdout = TeeWriter(original_stdout, f)
-            if stderr:
-                sys.stderr = TeeWriter(original_stderr, f)
-            yield f
-        finally:
-            if original_stdout:
-                sys.stdout = original_stdout
-            if original_stderr:
-                sys.stderr = original_stderr
 
 
 def get_log_file_path(

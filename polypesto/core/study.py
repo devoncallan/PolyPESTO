@@ -5,7 +5,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ..models import ModelBase
-from .problem import Problem, ProblemPaths, simulate_experiments
+from .problem import Problem, ProblemPaths, simulate_problem
 from .pypesto import Result
 from .conditions import SimConditions, create_sim_conditions
 from .params import ParameterGroup, ParameterSet
@@ -259,7 +259,7 @@ def create_study(
             for sim_cond in sim_conds_list:
                 sim_cond.true_params = param_set
 
-            problem = simulate_experiments(prob_dir, model, sim_conds_list)
+            problem = simulate_problem(prob_dir, model, sim_conds_list)
             problems[key] = problem
 
     write_json(f"{study_dir}/metadata.json", metadata)

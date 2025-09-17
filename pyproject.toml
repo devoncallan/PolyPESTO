@@ -5,12 +5,11 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "polypesto"
 version = "0.1.0"
-description = "PolyPESTO: parameter estimation utilities"
+description = "PolyPESTO: Polymerization parameter estimation"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [{name = "Your Name"}]
 
-# core deps (mirrors your dockerfile, minus system packages)
 dependencies = [
   "pypesto[amici,petab,fides]",
   "python-libsbml>=5.17.0",

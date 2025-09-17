@@ -8,23 +8,23 @@ from polypesto.visualization import plot_results
 from polypesto.core import (
     run_parameter_estimation,
     create_sim_conditions,
-    simulate_experiments,
+    simulate_problem,
     pet,
+    calculate_cis,
 )
-from polypesto.models.CRP2 import ReversibleCPE
+from polypesto.models.CRP2 import BinaryReversible
 
 DATA_DIR = Path(__file__).parent / "polypesto/rev_test"
 
 
 def sim_workflow():
 
-    model = ReversibleCPE(
+    model = BinaryReversible(
         observables=["xA", "xB", "fA", "fB"],
     )
     model.fit_params["KAA"].set(
         scale=pet.C.LOG10, bounds=(1e-2, 1e2), estimate=True, nominal_value=0.1
     )
-    print(model.fit_params)
 
     true_params = {"rA": 1.0, "rB": 2.0, "KAA": 0.5}
     sim_conds = create_sim_conditions(
@@ -37,8 +37,8 @@ def sim_workflow():
         noise_levels=0.05,
     )
 
-    problem = simulate_experiments(
-        data_dir=DATA_DIR,
+    problem = simulate_problem(
+        prob_dir=DATA_DIR,
         model=model,
         conds=sim_conds,
     )
@@ -52,6 +52,7 @@ def sim_workflow():
         overwrite=True,
     )
     plot_results(result, problem, true_params)
+    cis = calculate_cis(result, ci_level=0.95)
 
 
 def main():

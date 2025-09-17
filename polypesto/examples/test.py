@@ -7,11 +7,12 @@ import numpy as np
 from polypesto.visualization import plot_results
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
 from polypesto.core import create_sim_conditions, simulate_problem
+from polypesto.core.pypesto import calculate_cis
 from polypesto.models.CRP2 import BinaryIrreversible
 
 
 FILE = Path(__file__)
-RAW_DATA_DIR = FILE.parent / FILE.stem / "raw"
+RAW_DATA_DIR = FILE.parent / "raw"
 DATA_DIR = FILE.parent / FILE.stem / "data"
 ENS_DIR = FILE.parent / FILE.stem / "ensemble"
 
@@ -105,6 +106,7 @@ def sim_workflow():
         overwrite=False,
     )
     plot_results(result, problem, true_params)
+    cis = calculate_cis(result, ci_level=0.95)
 
     import matplotlib.pyplot as plt
     from polypesto.models.CRP2.utils import create_ensemble_pred_problem
@@ -124,7 +126,7 @@ def sim_workflow():
 
 def main():
 
-    # exp_workflow()
+    exp_workflow()
     sim_workflow()
 
 

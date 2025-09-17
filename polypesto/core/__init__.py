@@ -23,6 +23,13 @@ from .pypesto import (
     optimize_problem,
     profile_problem,
     sample_problem,
+    calculate_cis,
+)
+
+from .study import (
+    create_study_conditions,
+    create_study,
+    Study,
 )
 
 __all__ = [
@@ -56,4 +63,8 @@ __all__ = [
     "ProfileResult",
     "OptimizationResult",
     "SamplingResult",
+    "calculate_cis",
+    "create_study_conditions",
+    "create_study",
+    "Study",
 ]

@@ -67,8 +67,6 @@ def plot_optimization_scatter(
 
     # Get true parameter values
     true_values = get_true_param_values(result, true_params, scaled=True)
-    print(true_values)
-    # param_names = grid.x_vars
 
     # Return if no grid axes or parameter names
     if not hasattr(grid, "axes") or len(grid.axes) == 0:

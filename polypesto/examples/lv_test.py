@@ -1,16 +1,13 @@
-from typing import List
 from pathlib import Path
 
 import numpy as np
 
 from polypesto.visualization import plot_results
-
-
-from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
-from polypesto.core import create_sim_conditions, simulate_experiments
+from polypesto.core import run_parameter_estimation, calculate_cis
+from polypesto.core import create_sim_conditions, simulate_problem
 from polypesto.models.example.lotka_volterra import LotkaVolterra
 
-DATA_DIR = Path(__file__).parent / "data/lv_test"
+DATA_DIR = Path(__file__).parent / "polypesto/lv_test"
 
 
 def sim_workflow():
@@ -25,8 +22,8 @@ def sim_workflow():
         noise_levels=0.02,
     )
 
-    problem = simulate_experiments(
-        data_dir=DATA_DIR,
+    problem = simulate_problem(
+        prob_dir=DATA_DIR,
         model=model,
         conds=sim_conds,
     )
@@ -40,6 +37,7 @@ def sim_workflow():
         overwrite=True,
     )
     plot_results(result, problem, true_params)
+    cis = calculate_cis(result, ci_level=0.95)
 
 
 def main():

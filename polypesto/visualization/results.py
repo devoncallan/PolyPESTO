@@ -56,8 +56,6 @@ def plot_results(
         plt.gcf().savefig(problem.paths.sampling_trace_fig, dpi=300)
 
     if has_profile_results:
-        print("Plotting profiles...")
-        print(result.profile_result)
         plot_profiles(result, true_params)
         plt.gcf().savefig(problem.paths.profile_fig, dpi=300)
 
