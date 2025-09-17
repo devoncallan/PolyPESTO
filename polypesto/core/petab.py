@@ -1,5 +1,5 @@
 import os
-from typing import Dict, List, Optional, Tuple, Callable, TypeAlias
+from typing import Dict, List, Optional, Tuple, Callable, TypeAlias, TYPE_CHECKING
 from dataclasses import dataclass
 
 
@@ -14,15 +14,13 @@ from petab.v1 import (
     write_parameter_df,
 )
 
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     # Static analysis: provide the correct type for mypy/IDE
     from petab.v1 import Problem as PetabProblem
 else:
     # Runtime: thread-safe patching with lazy loading
     from polypesto.utils.patches import get_patched_petab_problem
-    
+
     PetabProblem = get_patched_petab_problem()
 
 

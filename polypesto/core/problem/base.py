@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from ..petab import PetabData, PetabIO, PetabProblem
 from ...models import sbml, ModelBase
 from ..params import ParameterSet
-from ..pypesto import PypestoProblem, load_pypesto_problem
+from ..pypesto import PypestoProblem, load_pypesto_problem, set_solver_options
 from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
 from ..problem import ProblemPaths
 from ...utils.logging import redirect_output_to_file
@@ -44,16 +44,17 @@ class Problem:
 
         with redirect_output_to_file(paths.model_load_log, mode="a"):
             model_name = model.model_name_with_hash()
-            importer, problem = load_pypesto_problem(
+            importer, pypesto_problem = load_pypesto_problem(
                 yaml_path=paths.petab_yaml, model_name=model_name, **kwargs
             )
+            pypesto_problem = set_solver_options(pypesto_problem, model.solver_options)
 
         experiments = petab_to_experiments(importer.petab_problem)
 
         return Problem(
             model=model,
             petab_problem=importer.petab_problem,
-            pypesto_problem=problem,
+            pypesto_problem=pypesto_problem,
             experiments=experiments,
             paths=paths,
         )

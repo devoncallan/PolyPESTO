@@ -1,5 +1,7 @@
 from typing import Dict, List
 
+from amici import AmiciSolver
+
 from polypesto.core import petab as pet
 from polypesto.models import sbml, ModelBase
 from .common import define_irreversible_k
@@ -37,6 +39,20 @@ class BinaryIrreversible(ModelBase):
 
     def _default_sbml_model(self) -> sbml.ModelDefinition:
         return irreversible_ode()
+
+    def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
+        solver.setNewtonMaxSteps(10_000)
+        solver.setNewtonDampingFactorMode(1)
+        solver.setAbsoluteTolerance(1e-10)
+        solver.setRelativeTolerance(1e-6)
+        solver.setMaxSteps(10_000)
+        solver.setMaxConvFails(1_000)
+        solver.setMaxNonlinIters(10_000)
+        solver.setLinearSolver(9)
+        solver.setStabilityLimitFlag(True)
+        solver.setReturnDataReportingMode(0)
+        solver.setLinearMultistepMethod(2)
+        return solver
 
 
 def irreversible_cpe() -> sbml.ModelDefinition:

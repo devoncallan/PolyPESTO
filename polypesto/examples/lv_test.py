@@ -4,7 +4,6 @@ from pathlib import Path
 import numpy as np
 
 from polypesto.visualization import plot_results
-from polypesto.utils._patches import apply
 
 
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
@@ -44,7 +43,6 @@ def sim_workflow():
 
 
 def main():
-    apply()
     sim_workflow()
 
 

@@ -132,6 +132,14 @@ def _filter_dict(
     return filtered_dict
 
 
+def _filter_by_conditions(filter_conds: Dict[str, float]):
+    
+    
+    
+    
+    pass
+
+
 """
 # Inner list: correspond to conditions for multiple experiments
 # Outer list: correspond to experiments for a single problem

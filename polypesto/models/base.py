@@ -1,8 +1,9 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Callable
 from pathlib import Path
 from abc import ABC, abstractmethod
 
 import pandas as pd
+from amici.amici import AmiciSolver
 
 from polypesto.core import petab as pet
 from . import sbml
@@ -18,6 +19,7 @@ class ModelBase(ABC):
         observables: Optional[List[str]] = None,
         obs_noise_level: float = 0.02,
         sbml_model: Optional[sbml.ModelDefinition] = None,
+        solver_options: Optional[Callable[[AmiciSolver], AmiciSolver]] = None,
     ):
 
         self.name = self.__class__.__name__
@@ -27,6 +29,15 @@ class ModelBase(ABC):
 
         self.fit_params = self._default_fit_params()
         self.sbml_model = sbml_model if sbml_model else self._default_sbml_model()
+
+        if solver_options is None:
+            self.solver_options = self._default_solver_options
+        elif not callable(solver_options):
+            raise TypeError(
+                "solver_options must be a function that takes and returns an AmiciSolver."
+            )
+        else:
+            self.solver_options = solver_options
 
     @abstractmethod
     def _default_obs(self) -> List[str]:
@@ -43,6 +54,11 @@ class ModelBase(ABC):
         """Return default sbml model."""
         pass
 
+    @abstractmethod
+    def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
+        """Default solver options"""
+        pass
+
     def get_param_df(self) -> pd.DataFrame:
         """Get fit parameter dataframe"""
         return pet.define_parameters(self.fit_params)
@@ -54,6 +70,13 @@ class ModelBase(ABC):
         )
 
     def model_name_with_hash(self) -> str:
+        """
+        Get a unique model name based on its observables and fit parameters.
+
+        Returns:
+            str: A unique model name.
+        """
+
         import hashlib
 
         obs_str = str(sorted(self.observables.keys()))

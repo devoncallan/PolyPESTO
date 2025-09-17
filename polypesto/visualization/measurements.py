@@ -76,31 +76,6 @@ def plot_all_measurements(
     ValueError
         - If `group_by` is not one of `C.CONDITION_ID` or `C.OBSERVABLE_ID`.
         - If `axes` is provided but its length does not match the expected number of subplots.
-
-    Notes
-    -----
-    - This function divides the data into subplots based on the `group_by` column. Each subplot represents either
-      a condition (with multiple observables) or an observable (with multiple conditions).
-    - The `get_plot_formatting` function is used to dynamically assign a unique color, marker, and linestyle
-      to each (condition, observable) pair, ensuring consistent formatting.
-    - The plotting is performed by the `plot_measurements` function, which handles the individual data subsets.
-
-    Example
-    -------
-    >>> axes = plot_all_measurements(
-    ...     meas_df=df,
-    ...     group_by=C.SIMULATION_CONDITION_ID,
-    ...     plot_style="both",
-    ...     format_axes_kwargs={
-    ...         "set_xlabel": "Time",
-    ...         "set_ylabel": "Measurement",
-    ...         "set_xlim": (0, 10),
-    ...         "set_ylim": (0, 1),
-    ...     },
-    ...     alpha=0.8
-    ... )
-    >>> plt.tight_layout()
-    >>> plt.show()
     """
 
     # Parse the unique conditions and observables
@@ -184,17 +159,6 @@ def plot_measurements(
         - C.MEASUREMENT: Measurement values to plot.
     **kwargs : dict
         Additional keyword arguments for plot customization.
-
-    Returns
-    -------
-    None
-        This function modifies the provided Axes object but does not return a value.
-
-    Example
-    -------
-    >>> plot_measurements(
-    ...     ax, meas_df=df, color="blue", marker="o", linestyle="-", label="Sample Data"
-    ... )
     """
 
     x = meas_df[C.TIME]
@@ -205,13 +169,12 @@ def plot_measurements(
 
 def get_color_shades(colormap_name: str, n_shades: int) -> List[str]:
     """
-    Generate color shades based on a given base colormap.
+    Generate color shades (list of hex codes) based on a given base colormap.
 
     Parameters
     ----------
     colormap_name : str
         Name of the base colormap (e.g., "Blues", "Reds", "Greens").
-        Must be a valid colormap recognized by matplotlib.
     n_shades : int
         Number of distinct shades to generate.
 
@@ -219,12 +182,6 @@ def get_color_shades(colormap_name: str, n_shades: int) -> List[str]:
     -------
     List[str]
         A list of color codes in the hex format.
-
-    Raises
-    ------
-    ValueError
-        If the provided `colormap_name` is invalid or not recognized by
-        matplotlib.
     """
     try:
         # Create the colormap with n_shades + 1 levels, then skip the first one
@@ -261,14 +218,7 @@ def get_plot_formatting(
     Dict[Tuple[str, str], Tuple[str, str, str]]
         A dictionary mapping (observable, condition) pairs to a tuple of
         (color, marker, linestyle). The values depend on the selected plot style.
-
-    Notes
-    -----
-    - Colors are generated from distinct colormaps for each observable.
-    - Markers cycle through a predefined list of marker styles.
-    - Linestyles are adjusted based on the provided plot style.
     """
-    # markers = ["^", "s", "^", "v", "D", "*", "P", "X"]
     markers = ["^", "^", "^", "^", "^", "^", "^", "^"]
     colormap_names = ["Blues", "Reds", "Greens", "Purples", "Oranges", "Greys"]
 
@@ -286,7 +236,16 @@ def get_plot_formatting(
 
     # For each (obs, cond) pair, assign a color, marker, and linestyle
     # colors = ["#60A88D", "#2D69B2"]
-    colors = ["tab:blue", "tab:orange", "tab:green", "tab:red", "tab:purple"]
+    colors = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:pink",
+        "tab:olive",
+        "tab:cyan",
+    ]
     for i, obs in enumerate(observables):
         obs_colormap_name = colormap_names[i % len(colormap_names)]
         # Generate enough color shades for all conditions
@@ -318,16 +277,6 @@ def format_axes(axes: Union[Axes, List[Axes]], **format_kwargs: Any) -> None:
         (e.g., 'set_xlabel', 'set_ylabel') and each value is the argument
         to be passed to that method.
 
-    Raises
-    ------
-    ValueError
-        If a specified method does not exist on the Axes object or
-        if it exists but is not callable.
-
-    Examples
-    --------
-    >>> fig, ax = plt.subplots()
-    >>> format_axes(ax, set_xlabel="Time (s)", set_ylabel="Amplitude")
     """
     # Ensure we have a list of axes
     if isinstance(axes, Axes):

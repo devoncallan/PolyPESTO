@@ -24,12 +24,19 @@ def plot_ensemble_predictions(
     mdf = prob.petab_problem.measurement_df
     mdf["conditionId"] = mdf["simulationConditionId"]
 
-    axs = sampling_prediction_trajectories(
-        ensemble_prediction=ensemble_pred, levels=levels, measurement_df=mdf, **kwargs
+    axs = vis.sampling_prediction_trajectories(
+        ensemble_prediction=ensemble_pred,
+        levels=levels,
+        measurement_df=mdf,
+        groupby="condition",
+        **kwargs,
     )
+    # axs = sampling_prediction_trajectories(
+    #     ensemble_prediction=ensemble_pred, levels=levels, measurement_df=mdf, **kwargs
+    # )
 
     fig = plt.gcf()
-    # plt.tight_layout()
+    plt.tight_layout()
 
     return fig, axs
 
@@ -804,7 +811,7 @@ def sampling_prediction_trajectories(
         n_variables=n_variables,
         reverse=reverse_opacities,
     )
-    variable_colors = [[98/255., 169/255., 143/255.], [45/255., 105/255., 178/255.]]
+    # variable_colors = [[98/255., 169/255., 143/255.], [45/255., 105/255., 178/255.]]
 
     if axes is None:
         n_row = int(np.round(np.sqrt(n_subplots)))

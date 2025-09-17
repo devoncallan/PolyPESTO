@@ -1,16 +1,17 @@
 from pathlib import Path
-from typing import Dict, Tuple, Callable, List, TypeAlias, Optional
+from typing import Dict, Tuple, TypeAlias, Optional
 import os
 import time
 
 import libsbml
-from petab.v1.models.sbml_model import SbmlModel as ModelDefinition
+from petab.v1.models.sbml_model import SbmlModel
+
+ModelDefinition: TypeAlias = SbmlModel
+Document: TypeAlias = libsbml.SBMLDocument
+Model: TypeAlias = libsbml.Model
 
 SBML_LEVEL = 3
 SBML_VERSION = 2
-
-Document: TypeAlias = libsbml.SBMLDocument
-Model: TypeAlias = libsbml.Model
 
 
 def write_model(model_def: ModelDefinition, model_filepath: str) -> None:

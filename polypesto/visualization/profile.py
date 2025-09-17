@@ -7,7 +7,6 @@ from matplotlib.axes import Axes
 import pypesto.visualize as vis
 from pypesto.result import Result
 
-# Import our result handlers
 from polypesto.core.pypesto import has_profile_results, get_true_param_values
 from .true import plot_true_params_on_distribution
 from .base import safe_plot

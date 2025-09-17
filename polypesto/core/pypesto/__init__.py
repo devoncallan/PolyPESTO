@@ -1,4 +1,4 @@
-from .setup import load_pypesto_problem, PypestoProblem
+from .setup import load_pypesto_problem, PypestoProblem, set_solver_options
 from .base import (
     optimize_problem,
     profile_problem,
@@ -24,6 +24,7 @@ from .results import (
 __all__ = [
     "load_pypesto_problem",
     "PypestoProblem",
+    "set_solver_options",
     "optimize_problem",
     "profile_problem",
     "sample_problem",
@@ -31,6 +32,7 @@ __all__ = [
     "create_ensemble",
     "create_predictor",
     "predict_with_ensemble",
+    "Result",
     "has_results",
     "has_optimization_results",
     "has_profile_results",

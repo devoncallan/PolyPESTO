@@ -1,3 +1,6 @@
+from typing import Dict, List, Sequence
+from functools import partial
+
 import numpy as np
 
 import pypesto
@@ -39,23 +42,25 @@ def create_predictor(prob: PypestoProblem, output_type: str) -> AmiciPredictor:
 
     # This post_processor will transform the output of the simulation tool
     # such that the output is compatible with the next steps.
-    def post_processor(amici_outputs, output_type, output_ids):
+    def post_processor(
+        amici_outputs: List[Dict[str, np.ndarray]],
+        _output_type: str,
+        _output_ids: Sequence[str],
+    ) -> List[np.ndarray]:
         outputs = [
             (
-                amici_output[output_type]
+                amici_output[_output_type]
                 if amici_output[AMICI_STATUS] == 0
-                else np.full((len(amici_output[AMICI_T]), len(output_ids)), np.nan)
+                else np.full((len(amici_output[AMICI_T]), len(_output_ids)), np.nan)
             )
             for amici_output in amici_outputs
         ]
         return outputs
 
-    from functools import partial
-
     post_processor_bound = partial(
         post_processor,
-        output_type=output_type,
-        output_ids=output_ids,
+        _output_type=output_type,
+        _output_ids=output_ids,
     )
 
     predictor = AmiciPredictor(

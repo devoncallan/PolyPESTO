@@ -1,91 +1,49 @@
-from typing import Tuple
-from amici.amici import Solver, Model
+from typing import Callable, Tuple
+
+from amici.amici import Solver
 from pypesto.petab import PetabImporter
 from pypesto.problem import Problem as PypestoProblem
 from pypesto.objective import AmiciObjective
 
 
-def set_amici_solver_params(problem: PypestoProblem) -> PypestoProblem:
+def set_solver_options(
+    problem: PypestoProblem, solver_options: Callable[[Solver], Solver]
+) -> PypestoProblem:
+    """Set solver options for a Pypesto problem.
 
-    solver: Solver = problem.objective.amici_solver
+    Args:
+        problem (PypestoProblem): The Pypesto problem.
+        solver_options (Callable[[Solver], Solver]): A function that takes and returns a Solver.
 
-    solver.setAbsoluteTolerance(1e-10)
-    solver.setRelativeTolerance(1e-10)
-    solver.setStabilityLimitFlag(True)
-    # solver.setMaxSteps(1e5)
-    # solver.setLinearSolver("dense")
+    Returns:
+        PypestoProblem: The updated Pypesto problem.
+    """
 
-    problem.objective.amici_solver = solver
+    assert isinstance(problem.objective, AmiciObjective)
+    assert isinstance(problem.objective.amici_solver, Solver)
+
+    problem.objective.amici_solver = solver_options(problem.objective.amici_solver)
 
     return problem
-
-
-def solver_settings(solver: Solver, **kwargs) -> Solver:
-
-    solver.setNewtonMaxSteps(10000)
-    solver.setNewtonDampingFactorMode(2)
-    solver.setAbsoluteTolerance(1e-8)
-    solver.setRelativeTolerance(1e-6)
-    solver.setMaxSteps(100000)
-    solver.setLinearSolver(6)
-
-    return solver
 
 
 def load_pypesto_problem(
     yaml_path: str, model_name: str, **kwargs
 ) -> Tuple[PetabImporter, PypestoProblem]:
+    """Load a PEtab problem from a YAML file.
 
+    Args:
+        yaml_path (str): Path to the PEtab YAML file.
+        model_name (str): Name of the model.
+
+    Returns:
+        Tuple[PetabImporter, PypestoProblem]: The PEtab importer and the Pypesto problem.
+    """
+
+    # Use absolute paths (base_path="")
     importer: PetabImporter = PetabImporter.from_yaml(
-        yaml_path,
-        model_name=model_name,
-        base_path="",  # Use absolute paths
+        yaml_path, model_name=model_name, base_path=""
     )
     problem: PypestoProblem = importer.create_problem(**kwargs)
-    assert isinstance(problem.objective, AmiciObjective)
-
-    # DAE
-    # problem.objective.amici_solver.setLinearMultistepMethod(2)
-    # problem.objective.amici_solver.setNonlinearSolverIteration(2)
-    # problem.objective.amici_solver.setSensitivityMethod(0)
-    # # problem.objective.amici_solver.setReturnDataReportingMode(0)
-    # problem.objective.amici_solver.setStabilityLimitFlag(False)
-    # problem.objective.amici_solver.setNewtonDampingFactorMode(1)
-    # problem.objective.amici_solver.setMaxSteps(10_000)
-    # problem.objective.amici_solver.setNewtonMaxSteps(10000)
-    # problem.objective.amici_solver.setLinearSolver(1)
-
-    problem.objective.amici_solver.setNewtonMaxSteps(10_000)
-    problem.objective.amici_solver.setNewtonDampingFactorMode(1)
-    problem.objective.amici_solver.setAbsoluteTolerance(1e-10)
-    problem.objective.amici_solver.setRelativeTolerance(1e-6)
-    problem.objective.amici_solver.setMaxSteps(10_000)
-    problem.objective.amici_solver.setMaxConvFails(1_000)
-    problem.objective.amici_solver.setMaxNonlinIters(10_000)
-    problem.objective.amici_solver.setLinearSolver(9)
-    problem.objective.amici_solver.setStabilityLimitFlag(True)
-    problem.objective.amici_solver.setReturnDataReportingMode(0)
-    problem.objective.amici_solver.setLinearMultistepMethod(2)
-    # problem.objective.amici_solver.set
-
-    # problem.objective.amici_solver.setNewtonMaxSteps(10000)
-    # problem.objective.amici_solver.setNewtonDampingFactorMode(1)
-    # problem.objective.amici_solver.setAbsoluteTolerance(1e-10)
-    # problem.objective.amici_solver.setRelativeTolerance(1e-6)
-    # problem.objective.amici_solver.setMaxSteps(100000)
-    # problem.objective.amici_solver.setMaxConvFails(100)
-    # problem.objective.amici_solver.setMaxNonlinIters(10000)
-    # problem.objective.amici_solver.setLinearSolver(6)
-    # problem.objective.amici_solver.setStabilityLimitFlag(False)
-    # problem.objective.amici_solver.setReturnDataReportingMode(0)
-    # problem.objective.amici_solver.setLinearMultistepMethod(2)
-
-    # problem.objective.amici_solver.setNewtonMaxSteps(10000)
-    # problem.objective.amici_solver.setNewtonDampingFactorMode(2)
-    # problem.objective.amici_solver.setAbsoluteTolerance(1e-8)
-    # problem.objective.amici_solver.setRelativeTolerance(1e-6)
-    # # problem.objective.amici_solver.setStabilityLimitFlag(True)
-    # problem.objective.amici_solver.setMaxSteps(100000)
-    # problem.objective.amici_solver.setLinearSolver(6)
 
     return importer, problem
