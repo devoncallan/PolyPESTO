@@ -1,10 +1,10 @@
 from pathlib import Path
-from typing import Dict, Tuple, TypeAlias, Optional
+from typing import Dict, Tuple, TypeAlias, Optional, cast
 import os
 import time
 
-import libsbml
-from petab.v1.models.sbml_model import SbmlModel
+import libsbml  # type: ignore
+from petab.v1.models.sbml_model import SbmlModel  # type: ignore
 
 ModelDefinition: TypeAlias = SbmlModel
 Document: TypeAlias = libsbml.SBMLDocument
@@ -311,7 +311,7 @@ def create_event_assignment(
     Returns:
     - EventAssignment: The created event assignment object.
     """
-    event = model.getEvent(event_id)
+    event: libsbml.Event = model.getEvent(event_id)
     if not event:
         raise ValueError(f"Event with ID '{event_id}' not found in the model.")
 
@@ -360,7 +360,9 @@ class validateSBML:
 
         if errors > 0:
             for i in range(errors):
-                error: libsbml.SBMLError = sbmlDoc.getError(i)
+
+                error = cast(libsbml.SBMLError, sbmlDoc.getError(i))
+
                 severity = error.getSeverity()
                 if (severity == libsbml.LIBSBML_SEV_ERROR) or (
                     severity == libsbml.LIBSBML_SEV_FATAL
@@ -370,7 +372,7 @@ class validateSBML:
                 else:
                     numReadWarn += 1
 
-                error_msg: libsbml.SBMLErrorLog = sbmlDoc.getErrorLog()
+                error_msg = cast(libsbml.SBMLErrorLog, sbmlDoc.getErrorLog())
                 errMsgRead = error_msg.toString()
 
         # If serious errors are encountered while reading an SBML document, it
@@ -400,7 +402,9 @@ class validateSBML:
 
                 isinvalid = False
                 for i in range(failures):
-                    error: libsbml.SBMLError = sbmlDoc.getError(i)
+
+                    error = cast(libsbml.SBMLError, sbmlDoc.getError(i))
+
                     severity = error.getSeverity()
                     if (severity == libsbml.LIBSBML_SEV_ERROR) or (
                         severity == libsbml.LIBSBML_SEV_FATAL
@@ -413,7 +417,7 @@ class validateSBML:
                 if isinvalid:
                     self.numinvalid += 1
 
-                error_msg: libsbml.SBMLErrorLog = sbmlDoc.getErrorLog()
+                error_msg = cast(libsbml.SBMLErrorLog, sbmlDoc.getErrorLog())
                 errMsgCC = error_msg.toString()
 
         if not quiet:

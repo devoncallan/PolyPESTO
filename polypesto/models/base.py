@@ -3,7 +3,7 @@ from pathlib import Path
 from abc import ABC, abstractmethod
 
 import pandas as pd
-from amici.amici import AmiciSolver
+from amici.amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
 from . import sbml
@@ -37,7 +37,8 @@ class ModelBase(ABC):
                 "solver_options must be a function that takes and returns an AmiciSolver."
             )
         else:
-            self.solver_options = solver_options
+            # Type assertion to help mypy understand the type after callable() check
+            self.solver_options = solver_options  # type: ignore[assignment]
 
     @abstractmethod
     def _default_obs(self) -> List[str]:

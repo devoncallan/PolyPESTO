@@ -1,19 +1,11 @@
-import os
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Callable, TypeAlias, TYPE_CHECKING
 from dataclasses import dataclass
 
 
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
-import petab.v1.C as C
-from petab.v1 import (
-    write_observable_df,
-    write_condition_df,
-    write_measurement_df,
-    write_parameter_df,
-)
+import petab.v1.C as C  # type: ignore
 
 if TYPE_CHECKING:
     # Static analysis: provide the correct type for mypy/IDE
@@ -147,8 +139,8 @@ class PetabIO:
         param_filepath: str,
     ) -> str:
 
-        from petab.v1.yaml import create_problem_yaml
-        from petab.v1.lint import lint_problem
+        from petab.v1.yaml import create_problem_yaml  # type: ignore
+        from petab.v1.lint import lint_problem  # type: ignore
 
         create_problem_yaml(
             sbml_files=sbml_filepath,
@@ -226,12 +218,12 @@ def define_conditions(
 
 
 def define_measurements(
-    data_dict: Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]],
+    data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]],
 ):
     """Define measurements DataFrame from a data dictionary.
 
     Args:
-        data_dict (Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]]): Mapping from (observable_id, exp_id) to (timepoints, measurements)
+        data_dict (Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]]): Mapping from (observable_id, exp_id) to (timepoints, measurements)
 
     Returns:
         pd.DataFrame: Formatted measurements DataFrame
@@ -254,14 +246,14 @@ def define_measurements(
 
 
 def define_empty_measurements(
-    data_dict: Dict[Tuple[str, str], ArrayLike],
+    data_dict: Dict[Tuple[str, str], np.ndarray],
 ) -> pd.DataFrame:
 
-    data_dict = {
+    empty_data_dict = {
         (obs_id, cond_id): (np.array(t), np.zeros_like(t))
         for (obs_id, cond_id), t in data_dict.items()
     }
-    return define_measurements(data_dict)
+    return define_measurements(empty_data_dict)
 
 
 def add_noise_to_measurements(

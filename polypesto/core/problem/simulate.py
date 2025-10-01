@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Sequence, Tuple
 from pathlib import Path
 
 from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df  # type: ignore
@@ -15,7 +15,7 @@ from ..pypesto import PypestoProblem
 def write_empty_problem(
     prob_dir: str | Path,
     model: ModelBase,
-    conds: List[SimConditions],
+    conds: Sequence[SimConditions],
 ) -> Tuple[Problem, ParameterSet]:
     """Create an empty problem and parameter set.
 

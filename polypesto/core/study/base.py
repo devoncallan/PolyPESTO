@@ -8,7 +8,7 @@ from polypesto.core.problem.simulate import simulate_problem
 from polypesto.models.base import ModelBase
 from polypesto.core import ParameterGroup
 
-from .types import ConditionsDict, ProblemDict, ResultsDict
+from .types import ConditionsDict, ProblemDict, ResultsDict, StudyKey
 from .metadata import StudyMetadata
 from ...utils.file import read_json, write_json
 
@@ -23,7 +23,7 @@ class Study:
         true_params: ParameterGroup,
         sim_params: ConditionsDict,
         problems: ProblemDict,
-        results: Optional[ResultsDict] = None,
+        results: ResultsDict = {},
     ):
         self.model = model
         self.true_params = true_params
@@ -32,19 +32,41 @@ class Study:
         self.results = results
 
     @staticmethod
-    def create() -> Study:
-        pass
+    def create(
+        study_dir: str | Path,
+        model: ModelBase,
+        true_params: ParameterGroup,
+        sim_conds: Dict[str, List[SimConditions]],
+    ) -> Study:
+        return create_study(study_dir, model, true_params, sim_conds)
 
     @staticmethod
     def load(study_dir: str | Path, model: ModelBase) -> Study:
-        pass
+        return load_study(study_dir, model)
 
     def run_parameter_estimation(
         self,
         config: Dict[str, Any],
         overwrite: bool = False,
     ) -> ResultsDict:
-        pass
+        """Run parameter estimation for all problems in the study."""
+        from ..problem.estimate import run_parameter_estimation
+
+        for key, problem in self.problems.items():
+
+            result = self.results.get(key, None)
+
+            if overwrite or result is None:
+                print(
+                    f"Running parameter estimation for {key.cond_id}, {key.param_id}..."
+                )
+                result = run_parameter_estimation(problem, config, result)
+                self.results[key] = result
+                print("Done.")
+            else:
+                print(f"Found existing result for {key.cond_id}, {key.param_id}.")
+
+        return self.results
 
 
 def create_study(
@@ -65,13 +87,12 @@ def create_study(
         param_set = true_params.by_id(param_id)
 
         for cond_id in cond_ids:
-
-            key = (cond_id, param_id)
-            key_str = f"{cond_id} | {param_id}"
+            
+            key = StudyKey(cond_id, param_id)
 
             prob_dir = study_dir / param_id / cond_id
 
-            problem_dirs[key_str] = str(prob_dir)
+            problem_dirs[key] = str(prob_dir)
 
             sim_conds_list = sim_conds[cond_id]
             for sim_cond in sim_conds_list:
@@ -108,14 +129,24 @@ def load_data_from_metadata(
     return problems, results
 
 
-# def study_conditions_from_json(
-#     sim_conds: Dict[str, Any], metadata: StudyMetadata
-# ) -> ConditionsDict:
+def study_conditions_from_json(
+    sim_conds: Dict[str, Any], true_params: ParameterGroup
+) -> ConditionsDict:
 
-#     conds_dict: ConditionsDict = {}
+    conds_dict: ConditionsDict = {}
 
-#     param_ids = metadata.get_all_keys()
-#     pass
+    param_ids = true_params.get_ids()
+    for param_id in param_ids:
+        param_set = true_params.by_id(param_id)
+
+        for prob_id, cond_list in sim_conds.items():
+            key = StudyKey(prob_id, param_id)
+            conds_dict[key] = []
+            for i in range(len(cond_list)):
+                cond_list[i]["true_params"] = param_set.to_dict()
+                conds_dict[key].append(SimConditions.from_dict(cond_list[i]))
+
+    return conds_dict
 
 
 def load_study(study_dir: str | Path, model: ModelBase) -> Study:
@@ -125,14 +156,15 @@ def load_study(study_dir: str | Path, model: ModelBase) -> Study:
     if not paths.study_dir.exists():
         raise FileNotFoundError(f"Study directory '{paths.study_dir}' does not exist.")
 
-    metadata = read_json(paths.metadata)
-    metadata = StudyMetadata.from_dict(metadata)
+    raw_metadata = read_json(paths.metadata)
+    metadata = StudyMetadata.from_dict(raw_metadata)
 
-    true_params = read_json(paths.true_params)
-    true_params = ParameterGroup.lazy_from_dict(true_params)
+    raw_true_params = read_json(paths.true_params)
+    true_params = ParameterGroup.lazy_from_dict(raw_true_params)
 
-    sim_conds = read_json(paths.sim_params)
-    # sim_conds = study_conditions_from_json(sim_conds)
+    raw_sim_conds = read_json(paths.sim_params)
+    sim_conds = study_conditions_from_json(raw_sim_conds, true_params)
+
     problems, results = load_data_from_metadata(model, metadata)
 
     return Study(model, true_params, sim_conds, problems, results)

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -35,11 +35,11 @@ class SimConditions(Conditions):
     """Simulation conditions for a given experiment."""
 
     true_params: ParameterSet
-    t_eval: ArrayLike
+    t_eval: np.ndarray
     noise_level: float = 0.0
 
-    def __post_init__(self):
-        self.t_eval = np.array(self.t_eval)
+    # def __post_init__(self):
+    #     self.t_eval = np.array(self.t_eval)
 
     def to_dict(self) -> Dict[str, Any]:
         base_dict = super().to_dict()
@@ -79,7 +79,7 @@ def create_conditions(
     """
 
     cond_labels = list(conds.keys())
-    len_conds = {k: len(v) for k, v in conds.items()}
+    len_conds = {k: len(np.array(v)) for k, v in conds.items()}
     n_conds = len_conds[cond_labels[0]]
 
     if not np.all(np.array(list(len_conds.values())) == n_conds):
@@ -99,7 +99,8 @@ def create_conditions(
         cond = Conditions(
             exp_id=exp_ids[i],
             values=ParameterSet.lazy_from_dict(
-                {cond_id: conds[cond_id][i] for cond_id in cond_labels}, id=exp_ids[i]
+                {cond_id: np.array(conds[cond_id])[i] for cond_id in cond_labels},
+                id=exp_ids[i],
             ),
         )
         conditions.append(cond)
@@ -142,7 +143,7 @@ def create_sim_conditions(
 
     if isinstance(t_evals, np.ndarray):
         t_evals = [t_evals] * n_conds
-    elif len(t_evals) != n_conds:
+    elif isinstance(t_evals, list) and len(t_evals) != n_conds:
         raise ValueError(
             f"Length of t_evals ({len(t_evals)}) must match number of conditions ({n_conds})."
         )
@@ -163,7 +164,7 @@ def create_sim_conditions(
             exp_id=conditions[i].exp_id,
             values=conditions[i].values,
             true_params=true_params,
-            t_eval=t_evals[i],
+            t_eval=np.array(t_evals[i]),
             noise_level=noise_levels[i],
         )
         sim_conditions.append(sim_cond)
@@ -171,7 +172,9 @@ def create_sim_conditions(
     return sim_conditions
 
 
-def conditions_to_df(conds: List[Conditions | SimConditions]) -> pd.DataFrame:
+def conditions_to_df(
+    conds: Sequence[Conditions] | Sequence[SimConditions],
+) -> pd.DataFrame:
     """Convert a list of Conditions to a PEtab conditions dataframe.
 
     Args:
