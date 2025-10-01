@@ -4,13 +4,12 @@ from typing import TypeAlias, Dict, List, Optional, Tuple, Any, TypeVar
 import numpy as np
 from numpy.typing import ArrayLike
 
-from ..models import ModelBase
-from .problem import Problem, ProblemPaths, simulate_problem
-from .pypesto import Result
-from .conditions import SimConditions, create_sim_conditions
-from .params import ParameterGroup, ParameterSet
-from ..utils.file import read_json, write_json
-from pypesto import store
+from ...models import ModelBase
+from ..problem import Problem, ProblemPaths, simulate_problem
+from ..pypesto import Result
+from ..conditions import SimConditions, create_sim_conditions
+from ..params import ParameterGroup, ParameterSet
+from ...utils.file import read_json, write_json
 
 ProbParamKey: TypeAlias = Tuple[str, str]
 T = TypeVar("T")
@@ -99,7 +98,7 @@ class Study:
         overwrite: bool = False,
     ) -> ResultsDict:
         """Run parameter estimation for all problems in the study."""
-        from .problem.estimate import run_parameter_estimation
+        from ..problem.estimate import run_parameter_estimation
 
         for (prob_id, param_id), problem in self.problems.items():
             key = (prob_id, param_id)
@@ -133,10 +132,7 @@ def _filter_dict(
 
 
 def _filter_by_conditions(filter_conds: Dict[str, float]):
-    
-    
-    
-    
+
     pass
 
 
@@ -305,11 +301,9 @@ def load_data_from_metadata(
         prob_id, param_id = key_str.split(" | ")
         key = (prob_id, param_id)
 
-        paths = ProblemPaths(prob_dir)
-        problems[key] = Problem.load(model=model, paths=paths)
-
-        if Path(paths.pypesto_results).exists():
-            results[key] = store.read_result(paths.pypesto_results)
+        problem = Problem.load(prob_dir, model)
+        problems[key] = problem
+        results[key] = problem.get_results()
 
     return problems, results
 
