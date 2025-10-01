@@ -8,9 +8,9 @@ results (optimization, profile, sampling) with a consistent interface.
 from typing import Dict, Optional, Tuple
 
 import numpy as np
-from pypesto import Result, Problem as PypestoProblem
-from pypesto.sample.util import geweke_test
-from petab.v1.parameters import scale, unscale
+from pypesto import Result, Problem as PypestoProblem  # type: ignore
+from pypesto.sample.util import geweke_test  # type: ignore
+from petab.v1.parameters import scale  # type: ignore
 
 
 def has_optimization_results(result: Result) -> bool:
@@ -121,14 +121,14 @@ def get_chain_data(
 
 def calculate_cis(
     result: Result,
-    ci_level: bool = 0.95,
+    ci_level: float = 0.95,
     exclude_burn_in: bool = True,
 ) -> Dict[str, Tuple[float, float, float]]:
     """Calculate parameter confidence intervals from sampling.
 
     Args:
         result (Result): Pypesto Result object with sampling results.
-        ci_level (bool, optional): Confidence interval level. Defaults to 0.95.
+        ci_level (float, optional): Confidence interval level. Defaults to 0.95.
         exclude_burn_in (bool, optional): Whether to exclude burn-in samples. Defaults to True.
 
     Returns:

@@ -1,9 +1,32 @@
-import os
-import json
+from typing import Callable, Any, Dict, TypeVar
+from functools import wraps
 from pathlib import Path
+import json
+import os
 
 
-def read_json(filepath: str | Path, **kwargs) -> dict:
+def filepath(func: Callable[..., Path]) -> property:
+    """
+    Decorator that handles lazy directory creation.
+
+    Creates a property that returns a Path, ensuring the parent
+    directory exists when the path is accessed.
+
+    """
+
+    @wraps(func)
+    def wrapper(self) -> Path:
+        path = func(self)
+        if not isinstance(path, Path):
+            path = Path(path)
+        os.makedirs(path.parent, exist_ok=True)
+        return path
+
+    wrapper.__annotations__["return"] = Path
+    return property(wrapper)
+
+
+def read_json(filepath: str | Path, **kwargs) -> Dict[Any, Any]:
     """Read a JSON file and return its contents.
 
     Args:
@@ -14,8 +37,10 @@ def read_json(filepath: str | Path, **kwargs) -> dict:
     """
     if not Path(filepath).exists():
         raise FileNotFoundError(f"File not found: {filepath}")
+
     with open(filepath, "r", **kwargs) as file:
         data = json.load(file)
+
     return data
 
 

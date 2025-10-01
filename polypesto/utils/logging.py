@@ -57,6 +57,7 @@ def redirect_output_to_file(
     all_loggers = []
     original_handlers = {}
     original_levels = {}
+    original_propagate = {}
 
     if capture_logging:
         # Store original state of ALL loggers
@@ -64,10 +65,6 @@ def redirect_output_to_file(
             logging.getLogger(name) for name in logging.root.manager.loggerDict
         ]
         all_loggers.append(logging.getLogger())  # Add root logger
-
-        original_handlers = {}
-        original_levels = {}
-        original_propagate = {}
 
         for logger in all_loggers:
             original_handlers[logger.name] = logger.handlers[:]

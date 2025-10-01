@@ -3,6 +3,7 @@ from typing import Dict, List, Tuple
 from uuid import uuid4
 
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 
 from .params import ParameterSet
@@ -93,7 +94,7 @@ def experiments_to_petab(
         Tuple[pd.DataFrame, pd.DataFrame]: PEtab conditions and measurements dataframes.
     """
 
-    data_dict = {}
+    data_dict: Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]] = {}
     conds = []
     exp_ids = []
     for exp in experiments:

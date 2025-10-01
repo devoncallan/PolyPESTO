@@ -1,9 +1,13 @@
 from typing import Dict, Optional, Callable, Any
 
-from pypesto import Result, store
-
-from ..pypesto import optimize_problem, profile_problem, sample_problem
-from ..pypesto.results import has_results
+from ..pypesto import (
+    Result,
+    has_results,
+    write_result,
+    optimize_problem,
+    profile_problem,
+    sample_problem,
+)
 from . import Problem
 
 
@@ -48,7 +52,7 @@ def run_parameter_estimation(
         print(f"\tSaving results to {prob.paths.pypesto_results}")
 
         try:
-            store.write_result(
+            write_result(
                 result=result,
                 filename=prob.paths.pypesto_results,
                 overwrite=overwrite,

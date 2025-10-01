@@ -1,3 +1,5 @@
+from pypesto.store import write_result, read_result  # type: ignore
+
 from .setup import load_pypesto_problem, PypestoProblem, set_solver_options
 from .base import (
     optimize_problem,
@@ -33,6 +35,8 @@ __all__ = [
     "create_predictor",
     "predict_with_ensemble",
     "Result",
+    "write_result",
+    "read_result",
     "has_results",
     "has_optimization_results",
     "has_profile_results",

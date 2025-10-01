@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, TypeAlias
+from typing import Any, Dict, List, Optional, TypeAlias, Callable
 from dataclasses import dataclass, asdict
 import itertools
 
@@ -88,7 +88,7 @@ class ParameterSet:
 
     @staticmethod
     def lazy_from_dict(
-        data: Dict[ParameterID, Any], id: Optional[ParameterSetID] = "default_id"
+        data: Dict[ParameterID, Any], id: ParameterSetID = "default_id"
     ) -> "ParameterSet":
         """
         ```
@@ -244,7 +244,7 @@ class ParameterGroup:
     def create_parameter_grid(
         parameter_ranges: Dict[ParameterID, List[float]],
         group_id: str = "parameter_grid",
-        filter_fn: Optional[callable] = None,
+        filter_fn: Optional[Callable[[Dict[ParameterID, float]], bool]] = None,
     ) -> "ParameterGroup":
         """
         Create a parameter group from a grid of parameter values.

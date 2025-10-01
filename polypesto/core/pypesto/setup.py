@@ -1,9 +1,9 @@
 from typing import Callable, Tuple
 
-from amici.amici import Solver
-from pypesto.petab import PetabImporter
-from pypesto.problem import Problem as PypestoProblem
-from pypesto.objective import AmiciObjective
+from amici.amici import Solver  # type: ignore
+from pypesto.petab import PetabImporter  # type: ignore
+from pypesto.problem import Problem as PypestoProblem  # type: ignore
+from pypesto.objective import AmiciObjective  # type: ignore
 
 
 def set_solver_options(

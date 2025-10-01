@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Callable, TypeAlias, TYPE_CHECKING
 from dataclasses import dataclass
 
@@ -34,7 +35,7 @@ class PetabData:
     cond_df: pd.DataFrame
     param_df: pd.DataFrame
     meas_df: pd.DataFrame
-    name: str = None
+    name: Optional[str] = None
 
 
 @dataclass
@@ -72,6 +73,7 @@ class PetabIO:
     """
 
     _FormatFunc: TypeAlias = Callable[[pd.DataFrame], pd.DataFrame]
+    _WriteFunc: TypeAlias = Callable[[pd.DataFrame, str | Path], None]
 
     ##########################
     ### Format PETab files ###
@@ -134,36 +136,6 @@ class PetabIO:
     #########################
     ### Write PETab files ###
     #########################
-
-    @staticmethod
-    def write_df(df: pd.DataFrame, write_func, dir: str = None, filename: str = None):
-        filepath = os.path.join(dir, filename) if dir else filename
-        write_func(df, filepath)
-        return filepath
-
-    @staticmethod
-    def write_obs_df(
-        df: pd.DataFrame, dir: str = None, filename: str = "observables.tsv"
-    ):
-        return PetabIO.write_df(df, write_observable_df, dir, filename)
-
-    @staticmethod
-    def write_cond_df(
-        df: pd.DataFrame, dir: str = None, filename: str = "conditions.tsv"
-    ):
-        return PetabIO.write_df(df, write_condition_df, dir, filename)
-
-    @staticmethod
-    def write_meas_df(
-        df: pd.DataFrame, dir: str = None, filename: str = "measurements.tsv"
-    ):
-        return PetabIO.write_df(df, write_measurement_df, dir, filename)
-
-    @staticmethod
-    def write_param_df(
-        df: pd.DataFrame, dir: str = None, filename: str = "parameters.tsv"
-    ):
-        return PetabIO.write_df(df, write_parameter_df, dir, filename)
 
     @staticmethod
     def write_yaml(
@@ -233,7 +205,7 @@ def define_observables(
 
 
 def define_conditions(
-    conds: List[Dict[str, float]], exp_ids: List[str] = None
+    conds: List[Dict[str, float]], exp_ids: Optional[List[str]] = None
 ) -> pd.DataFrame:
 
     if exp_ids is None:
@@ -267,6 +239,7 @@ def define_measurements(
 
     meas_dfs = []
     for (obs_id, cond_id), (t, y) in data_dict.items():
+        t = np.array(t)
         df = pd.DataFrame(
             {
                 C.OBSERVABLE_ID: [obs_id] * len(t),
@@ -285,7 +258,7 @@ def define_empty_measurements(
 ) -> pd.DataFrame:
 
     data_dict = {
-        (obs_id, cond_id): (t, np.zeros_like(t))
+        (obs_id, cond_id): (np.array(t), np.zeros_like(t))
         for (obs_id, cond_id), t in data_dict.items()
     }
     return define_measurements(data_dict)

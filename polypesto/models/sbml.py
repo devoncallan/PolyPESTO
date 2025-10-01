@@ -14,11 +14,12 @@ SBML_LEVEL = 3
 SBML_VERSION = 2
 
 
-def write_model(model_def: ModelDefinition, model_filepath: str) -> None:
+def write_model(model_def: ModelDefinition, model_filepath: str | Path) -> None:
     """Writes an SBML model from the given file path."""
 
-    print(f"Writing SBML model ({model_def.model_id}) to {model_filepath}")
-    model_path = Path(model_filepath)
+    model_path = Path(model_filepath).resolve()
+    print(f"Writing SBML model ({str(model_def.model_id)}) to {str(model_path)}")
+
     os.makedirs(model_path.parent, exist_ok=True)
     model_def.to_file(model_path)
 
@@ -337,14 +338,16 @@ class validateSBML:
         self.ucheck = ucheck
         self.numinvalid = 0
 
-    def validate(self, file: str | Path, quiet: bool = True) -> None:
-        if not os.path.exists(file):
-            print("[Error] %s : No such file." % file)
+    def validate(self, filepath: str | Path, quiet: bool = True) -> None:
+
+        filepath = Path(filepath).resolve()
+        if not os.path.exists(filepath):
+            print("[Error] %s : No such file." % filepath)
             self.numinvalid += 1
             return
 
         start = time.time()
-        sbmlDoc: libsbml.SBMLDocument = libsbml.readSBML(file)
+        sbmlDoc: libsbml.SBMLDocument = libsbml.readSBML(filepath)
         stop = time.time()
         timeRead = (stop - start) * 1000
         errors = sbmlDoc.getNumErrors()
@@ -415,8 +418,8 @@ class validateSBML:
 
         if not quiet:
             print("================= SBML Validation summary =================")
-            print("                 filename : %s" % file)
-            print("         file size (byte) : %d" % (os.path.getsize(file)))
+            print("                 filename : %s" % filepath)
+            print("         file size (byte) : %d" % (os.path.getsize(filepath)))
             print("           read time (ms) : %f" % timeRead)
 
             if not skipCC:

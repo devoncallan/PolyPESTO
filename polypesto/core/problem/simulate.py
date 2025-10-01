@@ -1,12 +1,15 @@
 from typing import List, Tuple
 from pathlib import Path
 
+from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df  # type: ignore
+from pypesto.objective import AmiciObjective  # type: ignore
 
 from polypesto.models import ModelBase
 from .. import petab as pet
 from ..params import ParameterSet
 from ..conditions import SimConditions, conditions_to_df
-from ..problem import PypestoProblem, Problem, write_petab
+from ..problem import Problem, write_petab
+from ..pypesto import PypestoProblem
 
 
 def write_empty_problem(
@@ -73,9 +76,6 @@ def simulate_problem(
             print(f"Failed to load problem: {e}")
             print("Proceeding to simulate new data.")
 
-    from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df
-    from pypesto.objective import AmiciObjective
-
     problem, true_params = write_empty_problem(prob_dir, model, conds)
 
     pypesto_problem = problem.pypesto_problem
@@ -103,7 +103,7 @@ def simulate_problem(
         meas_df, noise_level=problem.model.obs_noise_level
     )
 
-    pet.PetabIO.write_meas_df(meas_df, filename=problem.paths.measurements)
+    pet.write_measurement_df(meas_df, problem.paths.measurements)
 
     return Problem.load(
         prob_dir=prob_dir,

@@ -1,7 +1,8 @@
-import pypesto
-import pypesto.optimize
-from pypesto.problem import Problem as PypestoProblem
-from pypesto import Result
+import pypesto  # type: ignore
+import pypesto.optimize  # type: ignore
+from pypesto import Result  # type: ignore
+
+from .setup import PypestoProblem
 
 
 def optimize_problem(
@@ -59,7 +60,7 @@ def profile_problem(
     Result
         Updated result object containing parameter profiles
     """
-    import pypesto.profile as profile
+    import pypesto.profile as profile  # type: ignore
 
     optimizer = pypesto.optimize.ScipyOptimizer(method=method)
     result = profile.parameter_profile(problem=problem, optimizer=optimizer, **kwargs)
@@ -90,7 +91,7 @@ def sample_problem(
     Result
         Updated result object containing parameter samples
     """
-    import pypesto.sample as sample
+    import pypesto.sample as sample  # type: ignore
 
     sampler = sample.AdaptiveParallelTemperingSampler(
         internal_sampler=sample.AdaptiveMetropolisSampler(),

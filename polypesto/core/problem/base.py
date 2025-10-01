@@ -2,10 +2,10 @@ from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
 
-from ..petab import PetabData, PetabIO, PetabProblem
+from .. import petab as pet
 from ...models import sbml, ModelBase
 from ..params import ParameterSet
-from ..pypesto import PypestoProblem, load_pypesto_problem, set_solver_options
+from ..pypesto import Result, PypestoProblem, load_pypesto_problem, set_solver_options
 from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
 from ..problem import ProblemPaths
 from ...utils.logging import redirect_output_to_file
@@ -16,10 +16,10 @@ class Problem:
     """A parameter estimation problem."""
 
     model: ModelBase
-    petab_problem: PetabProblem
+    petab_problem: pet.PetabProblem
     pypesto_problem: PypestoProblem
-    experiments: Optional[List[Experiment]] = None
-    paths: Optional[ProblemPaths] = None
+    paths: ProblemPaths
+    experiments: List[Experiment]
     id: Optional[str] = None
 
     @staticmethod
@@ -52,6 +52,9 @@ class Problem:
 
         experiments = petab_to_experiments(importer.petab_problem)
 
+        # if paths.sim_conditions.exists():
+        #     pass
+
         return Problem(
             model=model,
             petab_problem=importer.petab_problem,
@@ -72,7 +75,7 @@ class Problem:
 
         # Create PEtab problem from experiments
         cond_df, meas_df = experiments_to_petab(experiments)
-        petab_data = PetabData(
+        petab_data = pet.PetabData(
             obs_df=model.get_obs_df(),
             cond_df=cond_df,
             param_df=model.get_param_df(),
@@ -84,12 +87,12 @@ class Problem:
 
         return problem
 
-    def get_results(self):
-
-        from pypesto import store
+    def get_results(self) -> Optional[Result]:
 
         try:
-            return store.read_result(self.paths.pypesto_results)
+            from pypesto.store import read_result  # type: ignore
+
+            return read_result(self.paths.pypesto_results)
         except:
             return None
 
@@ -97,7 +100,7 @@ class Problem:
 def write_petab(
     data_dir: str | Path,
     model: ModelBase,
-    petab_data: PetabData,
+    petab_data: pet.PetabData,
     true_params: Optional[ParameterSet] = None,
 ) -> Problem:
     """Write PEtab files to specified directory.
@@ -117,16 +120,16 @@ def write_petab(
     sbml_model = model.sbml_model
     sbml.write_model(sbml_model, paths.sbml_model)
 
-    PetabIO.write_obs_df(petab_data.obs_df, filename=paths.observables)
-    PetabIO.write_cond_df(petab_data.cond_df, filename=paths.conditions)
-    PetabIO.write_param_df(petab_data.param_df, filename=paths.fit_parameters)
-    PetabIO.write_meas_df(petab_data.meas_df, filename=paths.measurements)
+    pet.write_observable_df(petab_data.obs_df, paths.observables)
+    pet.write_condition_df(petab_data.cond_df, paths.conditions)
+    pet.write_parameter_df(petab_data.param_df, paths.fit_parameters)
+    pet.write_measurement_df(petab_data.meas_df, paths.measurements)
 
     if true_params is not None:
         true_params.write(paths.true_params)
 
     print("Writing PEtab files...")
-    PetabIO.write_yaml(
+    pet.PetabIO.write_yaml(
         yaml_filepath=paths.petab_yaml,
         sbml_filepath=paths.sbml_model,
         cond_filepath=paths.conditions,

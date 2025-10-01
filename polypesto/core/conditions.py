@@ -38,6 +38,9 @@ class SimConditions(Conditions):
     t_eval: ArrayLike
     noise_level: float = 0.0
 
+    def __post_init__(self):
+        self.t_eval = np.array(self.t_eval)
+
     def to_dict(self) -> Dict[str, Any]:
         base_dict = super().to_dict()
         base_dict.update(
@@ -168,7 +171,7 @@ def create_sim_conditions(
     return sim_conditions
 
 
-def conditions_to_df(conds: List[Conditions]) -> pd.DataFrame:
+def conditions_to_df(conds: List[Conditions | SimConditions]) -> pd.DataFrame:
     """Convert a list of Conditions to a PEtab conditions dataframe.
 
     Args:

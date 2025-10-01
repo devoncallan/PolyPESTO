@@ -3,13 +3,13 @@ from functools import partial
 
 import numpy as np
 
-import pypesto
-from pypesto import Result
-from pypesto.ensemble import Ensemble, EnsemblePrediction
-from pypesto.objective import AmiciObjective
-from pypesto.C import EnsembleType, AMICI_STATUS, AMICI_T, AMICI_X, AMICI_Y
-from pypesto.predict import AmiciPredictor
-from pypesto.problem import Problem as PypestoProblem
+import pypesto  # type: ignore
+from pypesto import Result  # type: ignore
+from pypesto.ensemble import Ensemble, EnsemblePrediction  # type: ignore
+from pypesto.objective import AmiciObjective  # type: ignore
+from pypesto.C import EnsembleType, AMICI_STATUS, AMICI_T, AMICI_X, AMICI_Y  # type: ignore
+from pypesto.predict import AmiciPredictor  # type: ignore
+from pypesto.problem import Problem as PypestoProblem  # type: ignore
 
 
 def create_ensemble(prob: PypestoProblem, result: Result) -> Ensemble:
