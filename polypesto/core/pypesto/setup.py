@@ -40,7 +40,6 @@ def load_pypesto_problem(
         Tuple[PetabImporter, PypestoProblem]: The PEtab importer and the Pypesto problem.
     """
 
-    # Use absolute paths (base_path="")
     importer: PetabImporter = PetabImporter.from_yaml(yaml_path, model_name)
     problem: PypestoProblem = importer.create_problem(**kwargs)
 

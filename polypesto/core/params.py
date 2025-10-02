@@ -1,13 +1,12 @@
 from __future__ import annotations
 import itertools
-from typing import Dict, List, NamedTuple, Optional, TypeAlias, Callable
+from typing import Dict, List, Mapping, NamedTuple, Optional, TypeAlias, Callable
 from pathlib import Path
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from polypesto.utils import file
-from polypesto.utils.ids import make_param_ids
+from polypesto.utils import read_json, write_json, ID
 
 ParamID: TypeAlias = str
 ParamSetID: TypeAlias = str
@@ -42,11 +41,11 @@ class ParameterSet(Dict[ParamID, float]):
 
     @staticmethod
     def load(filepath: str | Path) -> ParameterSet:
-        data = file.read_json(filepath)
+        data = read_json(filepath)
         return ParameterSet.from_dict(data)
 
     def write(self, filepath: str | Path) -> None:
-        file.write_json(filepath, self.to_dict())
+        write_json(filepath, self.to_dict())
 
     def set_id(self, id: ParamSetID) -> ParameterSet:
         self.id = id
@@ -63,7 +62,7 @@ class ParameterSet(Dict[ParamID, float]):
 
     @staticmethod
     def from_dict_list(
-        data: Dict[ParamID, ArrayLike], ids: Optional[List[ParamSetID]] = None
+        data: Mapping[ParamID, ArrayLike], ids: Optional[List[ParamSetID]] = None
     ) -> List[ParameterSet]:
 
         param_ids = list(data.keys())
@@ -76,7 +75,7 @@ class ParameterSet(Dict[ParamID, float]):
                 f"All parameter lists must have the same length. Actual lengths: {len_conds}"
             )
 
-        ids = ids or make_param_ids(n_conds)
+        ids = ids or ID.make_param_ids(n_conds)
 
         if len(ids) != n_conds:
             raise ValueError(
@@ -108,7 +107,10 @@ class ParameterGroup(Dict[ParamSetID, ParameterSet]):
         return dict(self)
 
     def write(self, filepath: str | Path) -> None:
-        file.write_json(filepath, self.to_dict())
+        write_json(filepath, self.to_dict())
+
+    def get_ids(self) -> List[ParamSetID]:
+        return list(self.keys())
 
     @classmethod
     def from_dict(
@@ -123,7 +125,7 @@ class ParameterGroup(Dict[ParamSetID, ParameterSet]):
 
     @staticmethod
     def load(filepath: str | Path) -> ParameterGroup:
-        data = file.read_json(filepath)
+        data = read_json(filepath)
         return ParameterGroup.from_dict(data)
 
     @staticmethod

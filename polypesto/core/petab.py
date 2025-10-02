@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Callable, TypeAlias, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Callable, TypeAlias
 from dataclasses import dataclass
 
 import numpy as np
@@ -10,18 +10,10 @@ from petab.v1 import (
     write_condition_df,
     write_measurement_df,
     write_parameter_df,
+    Problem as PetabProblem,
 )
 
-from polypesto.utils.ids import make_cond_ids
-
-if TYPE_CHECKING:
-    # Static analysis: provide the correct type for mypy/IDE
-    from petab.v1 import Problem as PetabProblem
-else:
-    # Runtime: thread-safe patching with lazy loading
-    from polypesto.utils.patches import get_patched_petab_problem
-
-    PetabProblem = get_patched_petab_problem()
+from polypesto.utils import ID
 
 
 @dataclass
@@ -196,7 +188,7 @@ def define_observables(
 
     df = pd.DataFrame(
         data={
-            C.OBSERVABLE_ID: [f"obs_{id}" for id in observable_ids],
+            C.OBSERVABLE_ID: [ID.obs_id(id) for id in observable_ids],
             C.OBSERVABLE_FORMULA: observable_formulas,
             C.NOISE_FORMULA: [noise_value] * len(observable_ids),
         }
@@ -208,7 +200,7 @@ def define_conditions(
     conds: List[Dict[str, float]], ids: Optional[List[str]] = None
 ) -> pd.DataFrame:
 
-    ids = ids or make_cond_ids(len(conds))
+    ids = ids or ID.make_cond_ids(len(conds))
     if len(ids) != len(conds):
         raise ValueError(
             f"Number of provided cond_ids ({len(ids)}) must match number of conditions ({len(conds)})."
@@ -254,9 +246,17 @@ def define_measurements(
 def define_empty_measurements(
     data_dict: Dict[Tuple[str, str], np.ndarray],
 ) -> pd.DataFrame:
+    """Define empty measurements DataFrame from a data dictionary.
+
+    Args:
+        data_dict (Dict[Tuple[str, str], np.ndarray]): Mapping from (obs_id, cond_id) to timepoints
+
+    Returns:
+        pd.DataFrame: Formatted measurements DataFrame
+    """
 
     empty_data_dict = {
-        (obs_id, cond_id): (np.array(t), np.zeros_like(t))
+        (obs_id, cond_id): (t, np.zeros_like(t))
         for (obs_id, cond_id), t in data_dict.items()
     }
     return define_measurements(empty_data_dict)
@@ -279,3 +279,22 @@ def add_noise_to_measurements(
     noisy_measurements[C.MEASUREMENT] = values + noise
 
     return noisy_measurements
+
+
+__all__ = [
+    "C",
+    "write_observable_df",
+    "write_condition_df",
+    "write_measurement_df",
+    "write_parameter_df",
+    "PetabProblem",
+    "PetabData",
+    "FitParameter",
+    "PetabIO",
+    "define_parameters",
+    "define_observables",
+    "define_conditions",
+    "define_measurements",
+    "define_empty_measurements",
+    "add_noise_to_measurements",
+]

@@ -2,7 +2,12 @@ from typing import List
 
 import numpy as np
 
-from polypesto.core.experiment import Experiment
+from polypesto.core import (
+    Experiment,
+    SimulatedProblem,
+    create_sim_conditions,
+    write_empty_problem,
+)
 from .irreversible import BinaryIrreversible
 from .reversible import BinaryReversible
 
@@ -73,12 +78,7 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
 
 def create_ensemble_pred_problem(
     data_dir: str, model: BinaryIrreversible | BinaryReversible
-):
-
-    from polypesto.core.problem.simulate import (
-        create_sim_conditions,
-        write_empty_problem,
-    )
+) -> SimulatedProblem:
 
     fA0s = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
     cM0s = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
@@ -86,7 +86,7 @@ def create_ensemble_pred_problem(
     A0s = fA0s * cM0s
     B0s = (1 - fA0s) * cM0s
 
-    problem, _ = write_empty_problem(
+    problem = write_empty_problem(
         prob_dir=data_dir,
         model=model,
         sim_conds=create_sim_conditions(

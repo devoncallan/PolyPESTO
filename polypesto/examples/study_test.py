@@ -3,11 +3,13 @@ from pathlib import Path
 
 import numpy as np
 
-from polypesto.core import Study, create_study_conditions
+from polypesto.core.study import Study, create_study_conditions
 from polypesto.core import ParameterGroup
 from polypesto.models.binary import BinaryIrreversible
 
-STUDY_DIR = Path(__file__).parent / "study"
+from polypesto.examples.base import output_dirs
+
+OUTPUT_DIR, _ = output_dirs(Path(__file__).stem)
 
 
 def study_workflow():
@@ -18,8 +20,8 @@ def study_workflow():
 
     true_params = ParameterGroup.create_parameter_grid(
         {
-            "rA": [0.5, 1.0, 2.0],
-            "rB": [1.0, 2.0, 4.0],
+            "rA": [0.5],
+            "rB": [1.0, 2.0],
         },
         filter_fn=lambda p: p["rB"] > p["rA"],
     )
@@ -35,16 +37,16 @@ def study_workflow():
     for key, conds in conds_dict.items():
         print(f"Conditions for problem {key}:")
         for sim_cond in conds:
-            print(f"{key}: {sim_cond.id}, {sim_cond.values.to_dict()}")
+            print(f"{key}: {sim_cond.conds.id}, {sim_cond.conds.to_dict()}")
 
     study = Study.create(
-        study_dir=STUDY_DIR,
+        study_dir=OUTPUT_DIR,
         model=model,
         true_params=true_params,
         sim_conds=conds_dict,
         overwrite=True,
     )
-    study = Study.load(STUDY_DIR, model)
+    study = Study.load(OUTPUT_DIR, model)
 
     study.run_parameter_estimation(
         config=dict(

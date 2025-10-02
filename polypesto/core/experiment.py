@@ -4,12 +4,11 @@ from typing import Dict, List, Tuple
 from uuid import uuid4
 
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
 
+from polypesto.utils import ID
 from .params import ParameterSet
 from . import petab as pet
-from polypesto.utils.ids import obs_id, cond_id
 
 
 @dataclass
@@ -94,7 +93,7 @@ def experiments_to_petab(
     data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]] = {}
     conds = []
 
-    cond_ids = [cond_id(exp.conds.id) for exp in experiments]
+    cond_ids = [ID.cond_id(exp.conds.id) for exp in experiments]
     assert len(cond_ids) == len(
         set(cond_ids)
     ), f"Condition IDs must be unique. Found duplicates in {cond_ids}"
@@ -107,7 +106,7 @@ def experiments_to_petab(
 
             for obs_name, col_name in dataset.obs_map.items():
 
-                key = (obs_id(obs_name), cond_ids[i])
+                key = (ID.obs_id(obs_name), cond_ids[i])
                 t = np.array(dataset.data[dataset.tkey])
                 y = np.array(dataset.data[col_name])
 

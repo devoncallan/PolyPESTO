@@ -1,17 +1,21 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
-from polypesto.core.conditions import SimConditions
-from polypesto.core.problem.base import Problem
-from polypesto.core.problem.simulate import simulate_problem
-from polypesto.models.base import ModelBase
-from polypesto.core import ParameterGroup
 
-from .types import ConditionsDict, ProblemDict, ResultsDict, StudyKey
+from polypesto.models import ModelBase
+from polypesto.utils import write_json
+
+from ..params import ParameterGroup
+from ..problem import (
+    SimulatedProblem,
+    SimConditions,
+    simulate_problem,
+    run_parameter_estimation,
+)
+
+from .types import StudyKey, SimulatedProblemDict, ResultsDict
 from .metadata import StudyMetadata
-from ...utils.file import read_json, write_json
-
 from .paths import StudyPaths
 
 
@@ -21,14 +25,14 @@ class Study:
         self,
         model: ModelBase,
         true_params: ParameterGroup,
-        sim_params: ConditionsDict,
-        problems: ProblemDict,
+        problems: SimulatedProblemDict,
+        paths: StudyPaths,
         results: ResultsDict = {},
     ):
         self.model = model
         self.true_params = true_params
-        self.sim_params = sim_params
         self.problems = problems
+        self.paths = paths
         self.results = results
 
     @staticmethod
@@ -37,8 +41,9 @@ class Study:
         model: ModelBase,
         true_params: ParameterGroup,
         sim_conds: Dict[str, List[SimConditions]],
+        **kwargs,
     ) -> Study:
-        return create_study(study_dir, model, true_params, sim_conds)
+        return create_study(study_dir, model, true_params, sim_conds, **kwargs)
 
     @staticmethod
     def load(study_dir: str | Path, model: ModelBase) -> Study:
@@ -50,7 +55,6 @@ class Study:
         overwrite: bool = False,
     ) -> ResultsDict:
         """Run parameter estimation for all problems in the study."""
-        from ..problem.estimate import run_parameter_estimation
 
         for key, problem in self.problems.items():
 
@@ -58,13 +62,13 @@ class Study:
 
             if overwrite or result is None:
                 print(
-                    f"Running parameter estimation for {key.cond_id}, {key.param_id}..."
+                    f"Running parameter estimation for {key.param_id}, {key.param_id}..."
                 )
                 result = run_parameter_estimation(problem, config, result)
                 self.results[key] = result
                 print("Done.")
             else:
-                print(f"Found existing result for {key.cond_id}, {key.param_id}.")
+                print(f"Found existing result for {key.param_id}, {key.param_id}.")
 
         return self.results
 
@@ -74,79 +78,49 @@ def create_study(
     model: ModelBase,
     true_params: ParameterGroup,
     sim_conds: Dict[str, List[SimConditions]],
+    **kwargs,
 ) -> Study:
 
     study_dir = Path(study_dir)
-    param_ids = true_params.get_ids()
-    cond_ids = list(sim_conds.keys())
-    conds_dict = {k: [cond.to_dict() for cond in v] for k, v in sim_conds.items()}
+    paths = StudyPaths(study_dir)
 
     problems = {}
     problem_dirs = {}
+    all_sim_conds = {}
+
+    prob_ids = list(sim_conds.keys())
+    param_ids = true_params.get_ids()
     for param_id in param_ids:
-        param_set = true_params.by_id(param_id)
+        param_set = true_params[param_id]
 
-        for cond_id in cond_ids:
-            
-            key = StudyKey(cond_id, param_id)
+        for prob_id in prob_ids:
 
-            prob_dir = study_dir / param_id / cond_id
+            key = StudyKey(prob_id, param_id)
 
+            prob_dir = paths.prob_dir(key)
             problem_dirs[key] = str(prob_dir)
 
-            sim_conds_list = sim_conds[cond_id]
+            sim_conds_list = sim_conds[prob_id]
             for sim_cond in sim_conds_list:
                 sim_cond.true_params = param_set
+            all_sim_conds[key] = sim_conds_list
 
-            problem = simulate_problem(prob_dir, model, sim_conds_list)
+            overwrite = kwargs.pop("overwrite", False)
+            problem = simulate_problem(
+                prob_dir, model, sim_conds_list, overwrite=overwrite
+            )
             problems[key] = problem
 
     metadata = StudyMetadata(
         model_name=model.name,
+        prob_ids=prob_ids,
         param_ids=param_ids,
-        cond_ids=cond_ids,
         problem_dirs=problem_dirs,
     )
-    write_json(study_dir / "metadata.json", metadata.to_dict())
-    write_json(study_dir / "true_params.json", true_params.to_dict())
-    write_json(study_dir / "sim_conds.json", conds_dict)
+    write_json(paths.metadata, metadata.to_dict())
+    write_json(paths.true_params, true_params.to_dict())
 
-    return Study(model, true_params, sim_conds, problems)
-
-
-def load_data_from_metadata(
-    model: ModelBase, metadata: StudyMetadata
-) -> Tuple[ProblemDict, ResultsDict]:
-
-    problems: ProblemDict = {}
-    results: ResultsDict = {}
-    for key, prob_dir in metadata.problem_dirs.items():
-
-        problem = Problem.load(prob_dir, model)
-        problems[key] = problem
-        results[key] = problem.get_results()
-
-    return problems, results
-
-
-def study_conditions_from_json(
-    sim_conds: Dict[str, Any], true_params: ParameterGroup
-) -> ConditionsDict:
-
-    conds_dict: ConditionsDict = {}
-
-    param_ids = true_params.get_ids()
-    for param_id in param_ids:
-        param_set = true_params.by_id(param_id)
-
-        for prob_id, cond_list in sim_conds.items():
-            key = StudyKey(prob_id, param_id)
-            conds_dict[key] = []
-            for i in range(len(cond_list)):
-                cond_list[i]["true_params"] = param_set.to_dict()
-                conds_dict[key].append(SimConditions.from_dict(cond_list[i]))
-
-    return conds_dict
+    return Study(model, true_params, problems, paths)
 
 
 def load_study(study_dir: str | Path, model: ModelBase) -> Study:
@@ -156,15 +130,15 @@ def load_study(study_dir: str | Path, model: ModelBase) -> Study:
     if not paths.study_dir.exists():
         raise FileNotFoundError(f"Study directory '{paths.study_dir}' does not exist.")
 
-    raw_metadata = read_json(paths.metadata)
-    metadata = StudyMetadata.from_dict(raw_metadata)
+    metadata = StudyMetadata.load(paths.metadata)
+    true_params = ParameterGroup.load(paths.true_params)
 
-    raw_true_params = read_json(paths.true_params)
-    true_params = ParameterGroup.lazy_from_dict(raw_true_params)
+    problems: SimulatedProblemDict = {}
+    results: ResultsDict = {}
+    for key, prob_dir in metadata.problem_dirs.items():
 
-    raw_sim_conds = read_json(paths.sim_params)
-    sim_conds = study_conditions_from_json(raw_sim_conds, true_params)
+        problem = SimulatedProblem.load(prob_dir, model)
+        problems[key] = problem
+        results[key] = problem.get_results()
 
-    problems, results = load_data_from_metadata(model, metadata)
-
-    return Study(model, true_params, sim_conds, problems, results)
+    return Study(model, true_params, problems, paths, results=results)

@@ -1,15 +1,16 @@
 from __future__ import annotations
-from typing import Dict, List
+from typing import Dict, List, Mapping
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from ..conditions import SimConditions, create_sim_conditions
+from polypesto.utils import ID
+from ..problem.simulate import SimConditions, create_sim_conditions
 from ..params import ParameterSet
 
 
 def _transpose_study_conditions(
-    conds: Dict[str, List[ArrayLike]],
+    conds: Mapping[str, List[ArrayLike]],
 ) -> List[Dict[str, np.ndarray]]:
     """Transpose study conditions from `dict of lists` to `list of dicts`.
 
@@ -51,7 +52,7 @@ def _transpose_study_conditions(
 
 
 def create_study_conditions(
-    conds: Dict[str, List[ArrayLike]],
+    conds: Mapping[str, List[ArrayLike]],
     t_evals: ArrayLike | List[ArrayLike],
     noise_levels: float | List[float] = 0.0,
 ) -> Dict[str, List[SimConditions]]:
@@ -59,15 +60,16 @@ def create_study_conditions(
     sim_conds: Dict[str, List[SimConditions]] = {}
 
     conds_list = _transpose_study_conditions(conds)
-    prob_ids = [f"prob_{i}" for i in range(len(conds_list))]
+    prob_ids = ID.make_prob_ids(len(conds_list))
+
     raw_conds_dict = dict(zip(prob_ids, conds_list))
 
     # Create simulation conditions for each parameter set
     for prob_id, raw_conds in raw_conds_dict.items():
 
         sim_conds[prob_id] = create_sim_conditions(
-            true_params=ParameterSet.empty(),
             conds=raw_conds,
+            true_params=ParameterSet.empty(),
             t_evals=t_evals,
             noise_levels=noise_levels,
         )

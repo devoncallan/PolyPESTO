@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from polypesto.utils.file import filepath
+from polypesto.utils import filepath
+from .types import StudyKey
 
 
 class StudyPaths:
@@ -10,12 +11,13 @@ class StudyPaths:
 
     @filepath
     def metadata(self) -> Path:
+        """Path to study metadata JSON file."""
         return self.study_dir / "metadata.json"
 
     @filepath
     def true_params(self) -> Path:
+        """Path to all study true parameters (ParameterGroup) JSON file."""
         return self.study_dir / "true_params.json"
 
-    @filepath
-    def sim_params(self) -> Path:
-        return self.study_dir / "sim_params.json"
+    def prob_dir(self, key: StudyKey) -> Path:
+        return self.study_dir / key.param_id / key.prob_id

@@ -1,5 +1,6 @@
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, Dict
+from typing import Any, List, Sequence, Tuple, Dict, Mapping
 from pathlib import Path
 
 import numpy as np
@@ -8,14 +9,12 @@ from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df  # 
 from pypesto.objective import AmiciObjective  # type: ignore
 
 from polypesto.models import ModelBase
+from polypesto.utils import read_json, write_json, ID
+
 from .. import petab as pet
 from ..params import ParameterSet
-
-from ..problem import Problem, write_petab
 from ..pypesto import PypestoProblem
-
-
-from polypesto.utils.ids import make_cond_ids
+from .base import Problem, ProblemPaths, write_petab
 
 
 @dataclass
@@ -28,8 +27,84 @@ class SimConditions:
     noise_level: float = 0.0
 
 
+def write_sim_conditions(
+    paths: ProblemPaths,
+    sim_conditions: Sequence[SimConditions],
+) -> ParameterSet:
+    """Write a list of SimConditions to a JSON file."""
+    cond_ids = [sim_cond.conds.id for sim_cond in sim_conditions]
+
+    sim_conds_dict = {}
+    param_set = {}
+    for cond_id, sim_cond in zip(cond_ids, sim_conditions):
+        param_set[cond_id] = sim_cond.true_params
+        sim_conds_dict[cond_id] = {
+            "conds": sim_cond.conds.to_dict(),
+            "t_eval": sim_cond.t_eval.tolist(),
+            "noise_level": sim_cond.noise_level,
+        }
+    # Check that all true_params are the same
+    true_params_list = list(param_set.values())
+    if not all(tp == true_params_list[0] for tp in true_params_list):
+        raise ValueError("All SimConditions must have the same true_params.")
+    true_params = true_params_list[0]
+
+    write_json(paths.sim_conditions, sim_conds_dict)
+    write_json(paths.true_params, true_params.to_dict())
+
+    return true_params
+
+
+def load_sim_conditions(
+    paths: ProblemPaths,
+) -> Tuple[ParameterSet, List[SimConditions]]:
+    """Load a list of SimConditions from a JSON file."""
+    data = read_json(paths.sim_conditions)
+    true_params = ParameterSet.load(paths.true_params)
+    sim_conds = []
+    for cond_id, sim_cond_data in data.items():
+        sim_cond = SimConditions(
+            true_params=true_params,
+            conds=ParameterSet.from_dict(sim_cond_data["conds"], id=cond_id),
+            t_eval=np.array(sim_cond_data["t_eval"]),
+            noise_level=float(sim_cond_data["noise_level"]),
+        )
+        sim_conds.append(sim_cond)
+
+    return true_params, sim_conds
+
+
+@dataclass
+class SimulatedProblem(Problem):
+    """A parameter estimation problem with simulated data."""
+
+    true_params: ParameterSet
+    sim_conditions: List[SimConditions]
+
+    @staticmethod
+    def from_problem(
+        problem: Problem, true_params: ParameterSet, sim_conditions: List[SimConditions]
+    ) -> SimulatedProblem:
+        return SimulatedProblem(
+            model=problem.model,
+            petab_problem=problem.petab_problem,
+            pypesto_problem=problem.pypesto_problem,
+            paths=problem.paths,
+            experiments=problem.experiments,
+            true_params=true_params,
+            sim_conditions=sim_conditions,
+        )
+
+    @staticmethod
+    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> SimulatedProblem:
+
+        problem = Problem.load(prob_dir, model, **kwargs)
+        true_params, sim_conditions = load_sim_conditions(problem.paths)
+        return SimulatedProblem.from_problem(problem, true_params, sim_conditions)
+
+
 def create_sim_conditions(
-    conds: Dict[str, ArrayLike],
+    conds: Mapping[str, ArrayLike],
     true_params: ParameterSet | Dict[str, float],
     t_evals: ArrayLike | List[ArrayLike],
     noise_levels: float | List[float] = 0.0,
@@ -55,7 +130,7 @@ def create_sim_conditions(
         raise ValueError("true_params must be a ParameterSet or a dict.")
 
     conds_list = ParameterSet.from_dict_list(conds)
-    cond_ids = make_cond_ids(len(conds_list))
+    cond_ids = ID.make_cond_ids(len(conds_list))
     conds_list = [cond.set_id(cond_id) for cond, cond_id in zip(conds_list, cond_ids)]
 
     n_conds = len(conds_list)
@@ -104,7 +179,7 @@ def write_empty_problem(
     prob_dir: str | Path,
     model: ModelBase,
     sim_conds: List[SimConditions],
-) -> Tuple[Problem, ParameterSet]:
+) -> SimulatedProblem:
     """Create an empty problem and parameter set.
 
     Args:
@@ -113,15 +188,13 @@ def write_empty_problem(
         conds (List[SimConditions]): List of simulation conditions for each experiment.
 
     Returns:
-        Tuple[Problem, ParameterSet]: An empty problem (no measurements) and the true parameters.
+        SimulatedProblem: An empty problem (no measurements).
     """
 
-    from polypesto.utils.ids import obs_id
-
     data_dict = {
-        (obs_id(id), sim_cond.conds.id): sim_cond.t_eval
+        (ID.obs_id(obs_name), sim_cond.conds.id): sim_cond.t_eval
         for sim_cond in sim_conds
-        for id in model.observables.keys()
+        for obs_name in model.observables.keys()
     }
     conds_list = [cond.conds.to_dict() for cond in sim_conds]
     cond_ids = [cond.conds.id for cond in sim_conds]
@@ -133,10 +206,12 @@ def write_empty_problem(
         meas_df=pet.define_empty_measurements(data_dict),
     )
 
-    true_params = sim_conds[0].true_params
-    problem = write_petab(prob_dir, model, petab_data, true_params)
+    problem = write_petab(prob_dir, model, petab_data)
+    true_params = write_sim_conditions(problem.paths, sim_conds)
 
-    return problem, true_params
+    problem = SimulatedProblem.from_problem(problem, true_params, sim_conds)
+
+    return problem
 
 
 def simulate_problem(
@@ -144,7 +219,7 @@ def simulate_problem(
     model: ModelBase,
     conds: List[SimConditions],
     overwrite: bool = False,
-) -> Problem:
+) -> SimulatedProblem:
     """Simulate experiments based on the provided conditions.
 
     Args:
@@ -160,7 +235,7 @@ def simulate_problem(
     if not overwrite and Path(prob_dir).exists():
         print(f"Data directory {prob_dir} already exists. Attempting to load problem.")
         try:
-            problem = Problem.load(prob_dir, model)
+            problem = SimulatedProblem.load(prob_dir, model)
             # TODO: Check that conditions from loaded problem match provided conditions
             print("Successfully loaded existing problem.")
             return problem
@@ -168,7 +243,7 @@ def simulate_problem(
             print(f"Failed to load problem: {e}")
             print("Proceeding to simulate new data.")
 
-    problem, true_params = write_empty_problem(prob_dir, model, conds)
+    problem = write_empty_problem(prob_dir, model, conds)
 
     pypesto_problem = problem.pypesto_problem
     petab_problem = problem.petab_problem
@@ -181,7 +256,7 @@ def simulate_problem(
         petab_problem=petab_problem,
         amici_model=pypesto_problem.objective.amici_model,
         solver=pypesto_problem.objective.amici_solver,
-        problem_parameters=true_params.to_dict(),
+        problem_parameters=problem.true_params.to_dict(),
     )
 
     # Create measurement DataFrame
@@ -197,7 +272,7 @@ def simulate_problem(
 
     pet.write_measurement_df(meas_df, problem.paths.measurements)
 
-    return Problem.load(
+    return SimulatedProblem.load(
         prob_dir=prob_dir,
         model=problem.model,
     )

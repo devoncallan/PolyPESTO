@@ -1,15 +1,22 @@
+from __future__ import annotations
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict, Any, Callable
 from dataclasses import dataclass
 
-
+from polypesto.utils import redirect_output_to_file
+from ..pypesto import (
+    Result,
+    has_results,
+    write_result,
+    optimize_problem,
+    profile_problem,
+    sample_problem,
+)
 from .. import petab as pet
 from ...models import sbml, ModelBase
-from ..params import ParameterSet
 from ..pypesto import Result, PypestoProblem, load_pypesto_problem, set_solver_options
 from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
 from ..problem import ProblemPaths
-from ...utils.logging import redirect_output_to_file
 
 
 @dataclass
@@ -21,10 +28,9 @@ class Problem:
     pypesto_problem: PypestoProblem
     paths: ProblemPaths
     experiments: List[Experiment]
-    id: Optional[str] = None
 
     @staticmethod
-    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> "Problem":
+    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> Problem:
         """
         Load a parameter estimation problem.
 
@@ -52,9 +58,6 @@ class Problem:
             pypesto_problem = set_solver_options(pypesto_problem, model.solver_options)
 
         experiments = petab_to_experiments(importer.petab_problem)
-
-        # if paths.sim_conditions.exists():
-        #     pass
 
         return Problem(
             model=model,
@@ -102,7 +105,6 @@ def write_petab(
     data_dir: str | Path,
     model: ModelBase,
     petab_data: pet.PetabData,
-    true_params: Optional[ParameterSet] = None,
 ) -> Problem:
     """Write PEtab files to specified directory.
 
@@ -126,9 +128,6 @@ def write_petab(
     pet.write_parameter_df(petab_data.param_df, paths.fit_parameters)
     pet.write_measurement_df(petab_data.meas_df, paths.measurements)
 
-    if true_params is not None:
-        true_params.write(paths.true_params)
-
     print("Writing PEtab files...")
     pet.PetabIO.write_yaml(
         yaml_filepath=paths.petab_yaml,
@@ -140,3 +139,57 @@ def write_petab(
     )
 
     return Problem.load(data_dir, model)
+
+
+def run_parameter_estimation(
+    prob: Problem,
+    config: Dict[str, Any] = {},
+    result: Optional[Result] = None,
+    save: bool = True,
+    overwrite: bool = True,
+) -> Result:
+
+    if config == {}:
+        print("No parameter estimation steps configured - skipping")
+        return None
+
+    save_components: Dict[str, bool] = {"problem": True}
+    save_components.update({key: True for key in config.keys()})
+
+    def run_if_found(
+        key: str, fun: Callable, _result: Optional[Result] = None
+    ) -> Optional[Result]:
+
+        if key not in config:
+            return _result
+
+        if not overwrite and has_results(_result, key):
+            print(f"\tUsing existing {key} results - skipping")
+            return _result
+
+        print(f"\tRunning {fun.__name__} with {config[key]}")
+        _result = fun(prob.pypesto_problem, result=_result, **config[key])
+        return _result
+
+    if result is None:
+        result = prob.get_results()
+
+    result = run_if_found("optimize", optimize_problem, result)
+    result = run_if_found("profile", profile_problem, result)
+    result = run_if_found("sample", sample_problem, result)
+
+    if result and save:
+        print(f"\tSaving results to {prob.paths.pypesto_results}")
+
+        try:
+            write_result(
+                result=result,
+                filename=prob.paths.pypesto_results,
+                overwrite=overwrite,
+                **save_components,
+            )
+        except RuntimeError as e:
+            if overwrite:
+                print("Error saving results despite overwrite=True")
+
+    return result

@@ -1,10 +1,3 @@
-"""
-Parameter estimation result handler classes.
-
-This module provides classes for handling different types of parameter estimation
-results (optimization, profile, sampling) with a consistent interface.
-"""
-
 from typing import Dict, Optional, Tuple
 
 import numpy as np

@@ -4,10 +4,13 @@ from . import petab as pet
 from .problem import (
     Problem,
     ProblemPaths,
+    SimulatedProblem,
+    SimConditions,
     run_parameter_estimation,
     write_petab,
     simulate_problem,
     create_sim_conditions,
+    write_empty_problem,
 )
 from .pypesto import (
     PypestoProblem,
@@ -20,11 +23,10 @@ from .pypesto import (
     calculate_cis,
 )
 
-# from .study import (
-#     Study,
-#     create_study_conditions,
-#     create_study,
-# )
+from .study import (
+    Study,
+    create_study_conditions,
+)
 
 __all__ = [
     # experiment
@@ -41,9 +43,13 @@ __all__ = [
     # problem
     "Problem",
     "ProblemPaths",
+    "SimulatedProblem",
+    "SimConditions",
     "run_parameter_estimation",
     "write_petab",
     "simulate_problem",
+    "create_sim_conditions",
+    "write_empty_problem",
     # pypesto
     "PypestoProblem",
     "Result",
@@ -52,11 +58,8 @@ __all__ = [
     "optimize_problem",
     "profile_problem",
     "sample_problem",
-    "simulate_problem",
-    "create_sim_conditions",
+    "calculate_cis",
     # study
     "Study",
     "create_study_conditions",
-    "create_study",
-    "calculate_cis",
 ]
