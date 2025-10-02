@@ -1,5 +1,6 @@
 import functools
-from typing import Callable, Tuple, Any, TypeAlias
+from pathlib import Path
+from typing import Callable, Optional, Tuple, Any, TypeAlias
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -24,3 +25,20 @@ def safe_plot(func: plot_func) -> plot_func:
             return plt.subplots()
 
     return wrapper
+
+
+from contextlib import contextmanager
+
+
+@contextmanager
+def save_plot(path: Optional[str | Path] = None, dpi: int = 300, close: bool = True):
+    """Context manager for creating and saving a plot."""
+
+    try:
+        yield
+        if path:
+            path = Path(path)
+            plt.gcf().savefig(path, dpi=dpi)
+    finally:
+        if close:
+            plt.close()

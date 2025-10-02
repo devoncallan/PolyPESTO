@@ -1,23 +1,28 @@
-from typing import Optional
-
-import matplotlib.pyplot as plt
+from typing import Dict, Optional
 
 from polypesto.core import Result, Problem
-from polypesto.visualization import (
+from polypesto.core.pypesto import (
+    has_optimization_results,
+    has_profile_results,
+    has_sampling_results,
+    has_problem_results,
+)
+from polypesto.vis import (
     plot_optimization_scatter,
     plot_sampling_scatter,
     plot_confidence_intervals,
     plot_waterfall,
     plot_parameter_traces,
     plot_profiles,
+    plot_optimized_model_fit,
     plot_ensemble_predictions,
     plot_all_measurements,
 )
-from pypesto.visualize import model_fit
+from .base import save_plot
 
 
 def plot_results(
-    result: Result, problem: Problem, true_params: Optional[dict] = None
+    result: Result, problem: Problem, true_params: Optional[Dict[str, float]] = None
 ) -> None:
     """Plots the results of the parameter estimation.
 
@@ -27,44 +32,34 @@ def plot_results(
         true_params (Optional[dict], optional): The true parameter values. Defaults to None.
     """
 
-    plot_all_measurements(problem.petab_problem.measurement_df)
-    plt.gcf().savefig(problem.paths.measurements_fig, dpi=300)
+    if has_problem_results(result):
 
-    has_optimize_results = (
-        len(result.optimize_result.list) > 0 if result.optimize_result else False
-    )
-    has_sample_results = result.sample_result
-    has_profile_results = (
-        len(result.profile_result.list) > 0 if result.profile_result else False
-    )
+        with save_plot(problem.paths.measurements_fig):
+            plot_all_measurements(problem.petab_problem.measurement_df)
 
-    if has_optimize_results:
-        plot_optimization_scatter(result, true_params)
-        plt.gcf().savefig(problem.paths.optimization_scatter_fig, dpi=300)
+    if has_optimization_results(result):
 
-        plot_waterfall(result)
-        plt.gcf().savefig(problem.paths.waterfall_fig, dpi=300)
+        with save_plot(problem.paths.optimization_scatter_fig):
+            plot_optimization_scatter(result, true_params)
 
-    if has_sample_results:
-        plot_sampling_scatter(result, true_params)
-        plt.gcf().savefig(problem.paths.sampling_scatter_fig, dpi=300)
+        with save_plot(problem.paths.waterfall_fig):
+            plot_waterfall(result)
 
-        plot_confidence_intervals(result, true_params)
-        plt.gcf().savefig(problem.paths.confidence_intervals_fig, dpi=300)
+        with save_plot(problem.paths.model_fit_fig):
+            plot_optimized_model_fit(result, problem)
 
-        plot_parameter_traces(result, true_params)
-        plt.gcf().savefig(problem.paths.sampling_trace_fig, dpi=300)
+    if has_sampling_results(result):
 
-    if has_profile_results:
-        plot_profiles(result, true_params)
-        plt.gcf().savefig(problem.paths.profile_fig, dpi=300)
+        with save_plot(problem.paths.sampling_scatter_fig):
+            plot_sampling_scatter(result, true_params)
 
-    ax = model_fit.visualize_optimized_model_fit(
-        petab_problem=problem.petab_problem,
-        result=result,
-        pypesto_problem=problem.pypesto_problem,
-    )
-    # model_fit.
-    plt.gcf().savefig(problem.paths.model_fit_fig, dpi=300)
+        with save_plot(problem.paths.confidence_intervals_fig):
+            plot_confidence_intervals(result, true_params)
 
-    plt.close("all")
+        with save_plot(problem.paths.sampling_trace_fig):
+            plot_parameter_traces(result, true_params)
+
+    if has_profile_results(result):
+
+        with save_plot(problem.paths.profile_fig):
+            plot_profiles(result, true_params)

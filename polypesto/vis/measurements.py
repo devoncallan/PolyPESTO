@@ -1,11 +1,11 @@
-from typing import List, Dict, Any, Union, Tuple, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from matplotlib import pyplot as plt
-from matplotlib.axes import Axes
 import matplotlib.cm as cm
 import matplotlib.colors as colors
 import pandas as pd
 import petab.v1.C as C
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
 
 # Grid sizing lookup table
 # Maps the number of panels to (num_rows, num_cols)
@@ -34,7 +34,7 @@ def plot_all_measurements(
     meas_df: pd.DataFrame,
     group_by: str = C.SIMULATION_CONDITION_ID,
     axes: List[Axes] = None,
-    format_axes_kwargs: Dict[str, Any] = {},
+    format_axes_kwargs: Optional[Dict[str, Any]] = None,
     plot_style: str = "scatter",
     dpi=150,
     **kwargs,
@@ -55,7 +55,7 @@ def plot_all_measurements(
     axes : List[Axes], optional
         A list of matplotlib Axes objects to use for plotting. If not provided, subplots are created automatically.
         If provided, the number of Axes must >= the number of panels (conditions or observables).
-    format_axes_kwargs : Dict[str, Any], optional
+    format_axes_kwargs : Optional[Dict[str, Any]], optional
         A dictionary of matplotlib Axes formatting methods and their arguments.
         Example: `{"set_xlabel": "Time", "set_ylabel": "Measurement", "set_xlim": (0, 1)}`.
     plot_style : {"lines", "scatter", "both"}, default="lines"
@@ -77,6 +77,9 @@ def plot_all_measurements(
         - If `group_by` is not one of `C.CONDITION_ID` or `C.OBSERVABLE_ID`.
         - If `axes` is provided but its length does not match the expected number of subplots.
     """
+
+    if format_axes_kwargs is None:
+        format_axes_kwargs = {}
 
     # Parse the unique conditions and observables
     conditions = meas_df[C.SIMULATION_CONDITION_ID].unique()

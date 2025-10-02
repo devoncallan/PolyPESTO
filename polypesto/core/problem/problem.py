@@ -3,17 +3,22 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from polypesto.utils import redirect_output_to_file
+from polypesto.models import ModelBase, sbml
 
-from ...models import ModelBase, sbml
+
 from .. import petab as pet
 from ..experiment import Experiment, experiments_to_petab, petab_to_experiments
 from ..problem import ProblemPaths
 from ..pypesto import (
     PypestoProblem,
     Result,
+    Ensemble,
+    EnsemblePrediction,
+    create_ensemble,
+    predict_with_ensemble,
     has_results,
     load_pypesto_problem,
     load_result,
@@ -101,6 +106,24 @@ class Problem:
 
         return load_result(self.paths.pypesto_results)
 
+    def visualize_results(self, **kwargs) -> None:
+        from polypesto.vis import plot_results
+
+        result = self.get_results()
+        if result is None:
+            return
+        plot_results(result, self, **kwargs)
+
+    def run_parameter_estimation(
+        self, config: Optional[Dict[str, Any]] = None, **kwargs
+    ) -> Optional[Result]:
+        return run_parameter_estimation(self, config, **kwargs)
+
+    def ensemble_prediction(
+        self, ensemble_prob: Problem, **kwargs
+    ) -> Tuple[Ensemble, EnsemblePrediction]:
+        return ensemble_prediction(self, ensemble_prob, **kwargs)
+
 
 def write_petab(
     data_dir: str | Path,
@@ -147,6 +170,7 @@ def run_parameter_estimation(
     config: Optional[Dict[str, Any]] = None,
     save: bool = True,
     overwrite: bool = True,
+    plot: bool = True,
 ) -> Result:
 
     if config is None or len(config) == 0:
@@ -185,19 +209,35 @@ def run_parameter_estimation(
     result = run_if_found("profile", result)
     result = run_if_found("sample", result)
 
-    print(result)
     if result and save:
-        print(f"\tSaving results to {prob.paths.pypesto_results}")
+        save_result(
+            result, prob.paths.pypesto_results, overwrite=overwrite, **save_components
+        )
 
-        try:
-            save_result(
-                result=result,
-                filename=prob.paths.pypesto_results,
-                overwrite=overwrite,
-                **save_components,
-            )
-        except RuntimeError:
-            if overwrite:
-                print("Error saving results despite overwrite=True")
+    if result and plot:
+        prob.visualize_results()
 
     return result
+
+
+def ensemble_prediction(
+    prob: Problem, ensemble_prob: Problem, plot: bool = True
+) -> Tuple[Ensemble, EnsemblePrediction]:
+
+    result = prob.get_results()
+    if result is None:
+        print("No results found for problem - cannot create ensemble predictions")
+        return None
+
+    ensemble = create_ensemble(prob.pypesto_problem, result)
+    ensemble_pred = predict_with_ensemble(
+        ensemble, ensemble_prob.pypesto_problem, output_type="y"
+    )
+
+    if plot:
+        from polypesto.vis import plot_ensemble_predictions, save_plot
+
+        with save_plot(prob.paths.ensemble_predictions_fig):
+            plot_ensemble_predictions(ensemble_pred, prob)
+
+    return ensemble, ensemble_pred

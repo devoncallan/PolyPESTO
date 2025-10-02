@@ -7,6 +7,10 @@ from pypesto import Result
 from pypesto.sample.util import geweke_test  # type: ignore
 
 
+def has_problem_results(result: Result) -> bool:
+    return result is not None and result.problem is not None
+
+
 def has_optimization_results(result: Result) -> bool:
     return hasattr(result, "optimize_result") and len(result.optimize_result.list) > 0
 

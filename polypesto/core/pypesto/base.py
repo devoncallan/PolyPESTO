@@ -112,22 +112,28 @@ def sample_problem(
     return result
 
 
-def save_result(result: Result, filename: str | Path, **kwargs):
+def save_result(result: Result, filepath: str | Path, **kwargs) -> None:
 
-    pypesto.store.write_result(result=result, filename=filename, **kwargs)
+    filepath = Path(filepath)
+    try:
+        print(f"\tSaving results to {filepath}")
+        pypesto.store.write_result(result, filepath, **kwargs)
+
+    except RuntimeError as e:
+        print(f"\tError saving results from {filepath}: {e}")
 
 
-def load_result(filename: str | Path, **kwargs) -> Optional[Result]:
+def load_result(filepath: str | Path, **kwargs) -> Optional[Result]:
 
-    filepath = Path(filename)
+    filepath = Path(filepath)
     if not filepath.exists():
         return None
 
     try:
-        return pypesto.store.read_result(filename=filepath, **kwargs)
+        return pypesto.store.read_result(filepath, **kwargs)
 
     except Exception as e:
-        print(f"Could not load result from {str(filepath)}: {e}")
+        print(f"\tCould not load result from {str(filepath)}: {e}")
         return None
 
 

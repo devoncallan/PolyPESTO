@@ -6,18 +6,18 @@ from matplotlib.axes import Axes
 import seaborn as sns
 
 import pypesto.visualize as vis
+from pypesto.visualize import model_fit
 from pypesto.result import Result
 
+from polypesto.core.problem import Problem
 from polypesto.core.pypesto import has_optimization_results, get_true_param_values
 from .true import plot_true_params_on_pairgrid
-from .base import safe_plot
 
 ##########################
 ### Optimization Plots ###
 ##########################
 
 
-@safe_plot
 def plot_waterfall(result: Result, **kwargs) -> Tuple[Figure, Axes]:
     """Plots the waterfall chart.
 
@@ -38,7 +38,6 @@ def plot_waterfall(result: Result, **kwargs) -> Tuple[Figure, Axes]:
     return fig, axes
 
 
-@safe_plot
 def plot_optimization_scatter(
     result: Result, true_params: Optional[Dict[str, float]] = None, **kwargs
 ) -> Tuple[Figure, sns.PairGrid]:
@@ -78,3 +77,32 @@ def plot_optimization_scatter(
     plt.tight_layout()
 
     return fig, grid
+
+
+def plot_optimized_model_fit(
+    problem: Problem, result: Result, **kwargs
+) -> Tuple[Figure, Axes]:
+    """Plots the model fit after optimization.
+
+    Args:
+        problem (Problem): The problem object containing the problem definition.
+        result (Result): The result object containing the optimization results.
+
+    Returns:
+        (Figure, Axes): The figure and axes objects.
+    """
+
+    if not has_optimization_results(result):
+        return plt.subplots()
+
+    ax = model_fit.visualize_optimized_model_fit(
+        petab_problem=problem.petab_problem,
+        result=result,
+        pypesto_problem=problem.pypesto_problem,
+        **kwargs,
+    )
+
+    fig = plt.gcf()
+    plt.tight_layout()
+
+    return fig, ax

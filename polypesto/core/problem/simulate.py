@@ -113,6 +113,10 @@ class SimulatedProblem(Problem):
         true_params, sim_conditions = load_sim_conditions(problem.paths)
         return SimulatedProblem.from_problem(problem, true_params, sim_conditions)
 
+    def visualize_results(self, **kwargs):
+        true_params = self.true_params.to_dict()
+        return super().visualize_results(true_params=true_params, **kwargs)
+
 
 def create_sim_conditions(
     conds: Mapping[str, ArrayLike],

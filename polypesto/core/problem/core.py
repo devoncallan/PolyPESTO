@@ -17,8 +17,7 @@ class ProblemPaths:
         - measurements.tsv
         - petab.yaml
         - model.xml
-        - params.json
-        - sim_conditions.json (optional)
+        - sim_conds.json (optional)
     `base_dir/pypesto/`
         - results.hdf5
     `base_dir/figures/`

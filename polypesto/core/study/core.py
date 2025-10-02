@@ -35,6 +35,20 @@ ResultsDict: TypeAlias = StudyDict[Result]
 SimulatedProblemDict: TypeAlias = StudyDict[SimulatedProblem]
 
 
+def filter_study_dict(
+    data: StudyDict[T], prob_id: str | None, param_id: str | None
+) -> StudyDict[T]:
+
+    filtered_dict = {}
+    for key, value in data.items():
+        if (prob_id is None or key.prob_id == prob_id) and (
+            param_id is None or key.param_id == param_id
+        ):
+            filtered_dict[key] = value
+
+    return filtered_dict
+
+
 class StudyPaths:
 
     def __init__(self, study_dir: str | Path):
@@ -49,6 +63,14 @@ class StudyPaths:
     def true_params(self) -> Path:
         """Path to all study true parameters (ParameterGroup) JSON file."""
         return self.study_dir / "true_params.json"
+
+    @property
+    def logs_dir(self) -> Path:
+        return self.study_dir / "logs"
+
+    @filepath
+    def model_logs(self) -> Path:
+        return self.logs_dir / "model.log"
 
     def prob_dir(self, key: StudyKey) -> Path:
         return self.study_dir / key.param_id / key.prob_id

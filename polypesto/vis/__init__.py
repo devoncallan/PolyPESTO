@@ -4,7 +4,12 @@ Visualization package for PolyPESTO results.
 This package provides functions for visualizing parameter estimation results.
 """
 
-from .optimize import plot_waterfall, plot_optimization_scatter
+from .base import save_plot
+from .optimize import (
+    plot_waterfall,
+    plot_optimization_scatter,
+    plot_optimized_model_fit,
+)
 from .profile import plot_profiles
 from .sample import (
     plot_sampling_scatter,
@@ -34,8 +39,10 @@ from .measurements import (
 from .results import plot_results
 
 __all__ = [
+    "save_plot",
     "plot_waterfall",
     "plot_optimization_scatter",
+    "plot_optimized_model_fit",
     "plot_profiles",
     "plot_sampling_scatter",
     "plot_parameter_traces",
@@ -50,4 +57,5 @@ __all__ = [
     "plot_ensemble_predictions",
     "plot_all_comparisons_2D",
     "plot_all_comparisons_1D_fill",
+    "plot_results",
 ]

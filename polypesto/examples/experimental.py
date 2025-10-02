@@ -2,7 +2,7 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 
-from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
+from polypesto.core import Dataset, Experiment, Problem
 from polypesto.core.pypesto import calculate_cis, create_ensemble, predict_with_ensemble
 from polypesto.examples.base import DATA_DIR, output_dirs
 
@@ -12,7 +12,7 @@ from polypesto.models.binary.utils import (
     create_ensemble_pred_problem,
     modify_experiments,
 )
-from polypesto.visualization import plot_ensemble_predictions, plot_results
+from polypesto.vis import plot_ensemble_predictions
 
 OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
 
@@ -59,8 +59,7 @@ def main():
     )
 
     # Run parameter estimation (optimization + sampling)
-    result = run_parameter_estimation(
-        problem,
+    result = problem.run_parameter_estimation(
         config=dict(
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10000, n_chains=3),
@@ -69,19 +68,10 @@ def main():
     )
     calculate_cis(result, ci_level=0.95)
 
-    # Visualize results
-    plot_results(result, problem)
-
     # Predict using parameter ensemble from sampling
-    pred_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model=model)
+    ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
 
-    ensemble = create_ensemble(problem.pypesto_problem, result)
-    ensemble_pred = predict_with_ensemble(
-        ensemble, pred_prob.pypesto_problem, output_type="y"
-    )
-
-    plot_ensemble_predictions(ensemble_pred, problem)
-    plt.gcf().savefig(problem.paths.ensemble_predictions_fig, dpi=300)
+    problem.ensemble_prediction(ensemble_prob)
 
 
 if __name__ == "__main__":

@@ -3,6 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from pluggy import Result
+
 from polypesto.models import ModelBase
 from polypesto.utils import write_json
 
@@ -13,7 +15,14 @@ from ..problem import (
     run_parameter_estimation,
     simulate_problem,
 )
-from .core import ResultsDict, SimulatedProblemDict, StudyKey, StudyMetadata, StudyPaths
+from .core import (
+    filter_study_dict,
+    ResultsDict,
+    SimulatedProblemDict,
+    StudyKey,
+    StudyMetadata,
+    StudyPaths,
+)
 
 
 class Study:
@@ -46,25 +55,40 @@ class Study:
     def load(study_dir: str | Path, model: ModelBase) -> Study:
         return load_study(study_dir, model)
 
+    def get_problems(
+        self, prob_id: Optional[str] = None, param_id: Optional[str] = None
+    ) -> SimulatedProblemDict:
+        return filter_study_dict(self.problems, prob_id, param_id)
+
+    def get_results(
+        self, prob_id: Optional[str] = None, param_id: Optional[str] = None
+    ) -> ResultsDict:
+        if self.results is None:
+            raise ValueError(
+                "No results available. Please run parameter estimation first."
+            )
+        return filter_study_dict(self.results, prob_id, param_id)
+
     def run_parameter_estimation(
         self,
         config: Dict[str, Any],
-        save: bool = True,
-        overwrite: bool = False,
+        **kwargs,
     ) -> ResultsDict:
         """Run parameter estimation for all problems in the study."""
 
         for key, problem in self.problems.items():
 
-            if overwrite or self.results.get(key, None) is None:
-                print(
-                    f"Running parameter estimation for {key.param_id}, {key.param_id}..."
-                )
-                result = run_parameter_estimation(problem, config, overwrite=overwrite)
-                self.results[key] = result
-                print("Done.")
-            else:
-                print(f"Found existing result for {key.param_id}, {key.param_id}.")
+            result = run_parameter_estimation(problem, config, **kwargs)
+            self.results[key] = result
+            # if self.results.get(key, None) is None:
+            #     print(
+            #         f"Running parameter estimation for {key.param_id}, {key.param_id}..."
+            #     )
+            #     result = run_parameter_estimation(problem, config, **kwargs)
+            #     self.results[key] = result
+            #     print("Done.")
+            # else:
+            #     print(f"Found existing result for {key.param_id}, {key.param_id}.")
 
         return self.results
 

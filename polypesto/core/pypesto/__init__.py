@@ -9,6 +9,8 @@ from .base import (
     set_solver_options,
 )
 from .ensemble import (
+    Ensemble,
+    EnsemblePrediction,
     create_ensemble,
     create_predictor,
     predict_with_ensemble,
@@ -22,6 +24,7 @@ from .results import (
     has_profile_results,
     has_results,
     has_sampling_results,
+    has_problem_results,
 )
 
 __all__ = [
@@ -31,6 +34,8 @@ __all__ = [
     "optimize_problem",
     "profile_problem",
     "sample_problem",
+    "Ensemble",
+    "EnsemblePrediction",
     "create_ensemble",
     "create_predictor",
     "predict_with_ensemble",
@@ -41,6 +46,7 @@ __all__ = [
     "has_optimization_results",
     "has_profile_results",
     "has_sampling_results",
+    "has_problem_results",
     "get_true_param_values",
     "get_best_optimization_params",
     "calculate_cis",
