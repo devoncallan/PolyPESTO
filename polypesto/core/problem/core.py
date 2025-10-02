@@ -73,18 +73,10 @@ class ProblemPaths:
     @filepath
     def measurements(self) -> Path:
         return self.petab_dir / "measurements.tsv"
-    
-    ### -------------------------------- ###
-    ### Simulated problem specific files ###
-    ### -------------------------------- ###
 
     @filepath
-    def true_params(self) -> Path:
-        return self.petab_dir / "params.json"
-
-    @filepath
-    def sim_conditions(self) -> Path:
-        return self.petab_dir / "sim_conditions.json"
+    def sim_conds(self) -> Path:
+        return self.petab_dir / "sim_conds.json"
 
     #####################
     ### PyPESTO Files ###
@@ -97,6 +89,14 @@ class ProblemPaths:
     @filepath
     def pypesto_results(self) -> Path:
         return self.pypesto_dir / "results.hdf5"
+
+    ####################
+    ### Ensemble Dir ###
+    ####################
+
+    @property
+    def ensemble_dir(self) -> Path:
+        return self.base_dir / "ensemble"
 
     #####################
     ### Figures Files ###

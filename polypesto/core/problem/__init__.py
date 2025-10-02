@@ -1,5 +1,5 @@
-from .paths import ProblemPaths
-from .base import Problem, write_petab, run_parameter_estimation
+from .core import ProblemPaths
+from .problem import Problem, write_petab, run_parameter_estimation
 from .simulate import (
     SimulatedProblem,
     SimConditions,
@@ -9,12 +9,11 @@ from .simulate import (
 )
 
 __all__ = [
-    # paths
+    # core
     "ProblemPaths",
-    # base
+    # problem
     "Problem",
     "write_petab",
-    # estimate
     "run_parameter_estimation",
     # simulate
     "SimulatedProblem",

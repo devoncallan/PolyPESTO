@@ -9,10 +9,10 @@ from polypesto.models.binary import BinaryIrreversible
 
 from polypesto.examples.base import output_dirs
 
-OUTPUT_DIR, _ = output_dirs(Path(__file__).stem)
+OUTPUT_DIR = output_dirs(Path(__file__).stem)
 
 
-def study_workflow():
+def main():
 
     model = BinaryIrreversible(
         observables=["xA", "xB", "fA", "fB"],
@@ -44,7 +44,7 @@ def study_workflow():
         model=model,
         true_params=true_params,
         sim_conds=conds_dict,
-        overwrite=True,
+        overwrite=False,
     )
     study = Study.load(OUTPUT_DIR, model)
 
@@ -53,12 +53,8 @@ def study_workflow():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10_000, n_chains=3),
         ),
-        overwrite=True,
+        overwrite=False,
     )
-
-
-def main():
-    study_workflow()
 
 
 if __name__ == "__main__":

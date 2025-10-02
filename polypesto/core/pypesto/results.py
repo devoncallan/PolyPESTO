@@ -7,15 +7,15 @@ from petab.v1.parameters import scale  # type: ignore
 
 
 def has_optimization_results(result: Result) -> bool:
-    return hasattr(result, "optimize_result") and result.optimize_result is not None
+    return hasattr(result, "optimize_result") and len(result.optimize_result.list) > 0
 
 
 def has_profile_results(result: Result) -> bool:
-    return hasattr(result, "profile_result") and result.profile_result is not None
+    return hasattr(result, "profile_result") and len(result.profile_result.list) > 0
 
 
 def has_sampling_results(result: Result) -> bool:
-    return hasattr(result, "sample_result") and result.sample_result is not None
+    return hasattr(result, "sample_result") and hasattr(result.sample_result, "trace_x")
 
 
 def has_results(result: Optional[Result], key: Optional[str] = None) -> bool:
@@ -40,10 +40,10 @@ def has_results(result: Optional[Result], key: Optional[str] = None) -> bool:
 
 
 def get_true_param_values(
-    result: Result, true_params: Dict[str, float] = {}, scaled: bool = False
+    result: Result, true_params: Optional[Dict[str, float]] = None, scaled: bool = False
 ) -> Dict[str, float]:
 
-    if true_params == {} or true_params is None:
+    if true_params is None or true_params == {}:
         return {}
 
     problem: PypestoProblem = result.problem

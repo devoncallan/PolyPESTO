@@ -14,9 +14,8 @@ from ..problem import (
     run_parameter_estimation,
 )
 
-from .types import StudyKey, SimulatedProblemDict, ResultsDict
-from .metadata import StudyMetadata
-from .paths import StudyPaths
+
+from .core import StudyPaths, StudyKey, SimulatedProblemDict, ResultsDict, StudyMetadata
 
 
 class Study:
@@ -52,19 +51,18 @@ class Study:
     def run_parameter_estimation(
         self,
         config: Dict[str, Any],
+        save: bool = True,
         overwrite: bool = False,
     ) -> ResultsDict:
         """Run parameter estimation for all problems in the study."""
 
         for key, problem in self.problems.items():
 
-            result = self.results.get(key, None)
-
-            if overwrite or result is None:
+            if overwrite or self.results.get(key, None) is None:
                 print(
                     f"Running parameter estimation for {key.param_id}, {key.param_id}..."
                 )
-                result = run_parameter_estimation(problem, config, result)
+                result = run_parameter_estimation(problem, config, overwrite=overwrite)
                 self.results[key] = result
                 print("Done.")
             else:

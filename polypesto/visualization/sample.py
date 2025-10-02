@@ -36,7 +36,8 @@ def plot_parameter_traces(
 
     # Return empty figure if no sampling results
     if not has_sampling_results(result):
-        return plt.subplots()
+        fig, axs = plt.subplots()
+        return fig, [axs]
 
     axes = vis.sampling_parameter_traces(result=result, **kwargs)
     fig = plt.gcf()

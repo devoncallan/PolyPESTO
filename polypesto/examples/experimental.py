@@ -18,7 +18,7 @@ from polypesto.examples.base import DATA_DIR, output_dirs
 OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
 
 
-def exp_workflow():
+def main():
 
     # Initialize model with observables
     model = BinaryIrreversible(observables=["xA", "xB", "fA", "fB"])
@@ -74,7 +74,7 @@ def exp_workflow():
     plot_results(result, problem)
 
     # Predict using parameter ensemble from sampling
-    pred_prob = create_ensemble_pred_problem(data_dir=ENSEMBLE_DIR, model=model)
+    pred_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model=model)
 
     ensemble = create_ensemble(problem.pypesto_problem, result)
     ensemble_pred = predict_with_ensemble(
@@ -86,5 +86,4 @@ def exp_workflow():
 
 
 if __name__ == "__main__":
-
-    exp_workflow()
+    main()

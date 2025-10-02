@@ -1,4 +1,5 @@
 from __future__ import annotations
+from copy import deepcopy
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Callable
 from dataclasses import dataclass
@@ -140,7 +141,6 @@ def write_petab(
 def run_parameter_estimation(
     prob: Problem,
     config: Dict[str, Any] = {},
-    result: Optional[Result] = None,
     save: bool = True,
     overwrite: bool = True,
 ) -> Result:
@@ -152,28 +152,36 @@ def run_parameter_estimation(
     save_components: Dict[str, bool] = {"problem": True}
     save_components.update({key: True for key in config.keys()})
 
-    def run_if_found(
-        key: str, fun: Callable, _result: Optional[Result] = None
-    ) -> Optional[Result]:
+    existing_result = prob.get_results()
 
-        if key not in config:
+    def run_if_found(key: str, _result: Optional[Result] = None) -> Optional[Result]:
+
+        if not key in config:
             return _result
 
-        if not overwrite and has_results(_result, key):
-            print(f"\tUsing existing {key} results - skipping")
+        if not overwrite and has_results(existing_result, key):
+            print(f"\tUsing existing `{key}` results - skipping")
             return _result
 
-        print(f"\tRunning {fun.__name__} with {config[key]}")
-        _result = fun(prob.pypesto_problem, result=_result, **config[key])
-        return _result
+        kwargs = dict(problem=prob.pypesto_problem, **config[key])
+        if key == "optimize":
+            print(f"\tRunning optimize_problem...")
+            return optimize_problem(result=_result, **kwargs)
+        elif key == "profile":
+            print(f"\tRunning profile_problem...")
+            return profile_problem(result=_result, **kwargs)
+        elif key == "sample":
+            print(f"\tRunning sample_problem...")
+            return sample_problem(result=_result, **kwargs)
+        else:
+            raise ValueError(f"Unknown key: {key}")
 
-    if result is None:
-        result = prob.get_results()
+    result = deepcopy(existing_result)
+    result = run_if_found("optimize", result)
+    result = run_if_found("profile", result)
+    result = run_if_found("sample", result)
 
-    result = run_if_found("optimize", optimize_problem, result)
-    result = run_if_found("profile", profile_problem, result)
-    result = run_if_found("sample", sample_problem, result)
-
+    print(result)
     if result and save:
         print(f"\tSaving results to {prob.paths.pypesto_results}")
 

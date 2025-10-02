@@ -111,18 +111,22 @@ def sample_problem(
     return result
 
 
-def save_result(result: Result, filename: str, **kwargs):
+def save_result(result: Result, filename: str | Path, **kwargs):
 
     pypesto.store.write_result(result=result, filename=filename, **kwargs)
 
 
 def load_result(filename: str | Path, **kwargs) -> Optional[Result]:
 
-    try:
-        return pypesto.store.read_result(filename=filename, **kwargs)
+    filepath = Path(filename)
+    if not filepath.exists():
+        return None
 
-    except Exception:
-        print(f"Could not load result from {filename}.")
+    try:
+        return pypesto.store.read_result(filename=filepath, **kwargs)
+
+    except Exception as e:
+        print(f"Could not load result from {str(filepath)}: {e}")
         return None
 
 

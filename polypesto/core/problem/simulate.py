@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, Dict, Mapping
+from typing import List, Sequence, Tuple, Dict, Mapping, Any
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +14,8 @@ from polypesto.utils import read_json, write_json, ID
 from .. import petab as pet
 from ..params import ParameterSet
 from ..pypesto import PypestoProblem
-from .base import Problem, ProblemPaths, write_petab
+from .problem import Problem, write_petab
+from .core import ProblemPaths
 
 
 @dataclass
@@ -35,7 +36,7 @@ def write_sim_conditions(
     cond_ids = [sim_cond.conds.id for sim_cond in sim_conditions]
 
     sim_conds_dict = {}
-    param_set = {}
+    param_set: Dict[str, ParameterSet] = {}
     for cond_id, sim_cond in zip(cond_ids, sim_conditions):
         param_set[cond_id] = sim_cond.true_params
         sim_conds_dict[cond_id] = {
@@ -49,8 +50,11 @@ def write_sim_conditions(
         raise ValueError("All SimConditions must have the same true_params.")
     true_params = true_params_list[0]
 
-    write_json(paths.sim_conditions, sim_conds_dict)
-    write_json(paths.true_params, true_params.to_dict())
+    output_dict: Dict[str, Any] = {}
+    output_dict["sim_conds"] = sim_conds_dict
+    output_dict["true_params"] = true_params.to_dict()
+
+    write_json(paths.sim_conds, output_dict)
 
     return true_params
 
@@ -59,9 +63,12 @@ def load_sim_conditions(
     paths: ProblemPaths,
 ) -> Tuple[ParameterSet, List[SimConditions]]:
     """Load a list of SimConditions from a JSON file."""
-    data = read_json(paths.sim_conditions)
-    true_params = ParameterSet.load(paths.true_params)
+
+    data = read_json(paths.sim_conds)
+    true_params = ParameterSet.from_dict(data.pop("true_params"))
+
     sim_conds = []
+    data = data["sim_conds"]
     for cond_id, sim_cond_data in data.items():
         sim_cond = SimConditions(
             true_params=true_params,

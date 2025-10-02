@@ -17,10 +17,10 @@ from polypesto.models.binary.utils import create_ensemble_pred_problem
 
 from polypesto.examples.base import output_dirs
 
-OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
+OUTPUT_DIR = output_dirs(Path(__file__).stem)
 
 
-def sim_workflow():
+def main():
 
     # Initialize model with observables
     model = BinaryIrreversible(observables=["xA", "xB", "fA", "fB", "FA", "FB"])
@@ -42,7 +42,7 @@ def sim_workflow():
         prob_dir=OUTPUT_DIR,
         model=model,
         conds=sim_conds,
-        overwrite=True,
+        overwrite=False,
     )
 
     # Run parameter estimation (optimization + sampling)
@@ -52,7 +52,7 @@ def sim_workflow():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10000, n_chains=3),
         ),
-        overwrite=True,
+        overwrite=False,
     )
     calculate_cis(result, ci_level=0.95)
 
@@ -60,7 +60,7 @@ def sim_workflow():
     plot_results(result, problem, true_params)
 
     # Predict using parameter ensemble from sampling
-    pred_prob = create_ensemble_pred_problem(data_dir=ENSEMBLE_DIR, model=model)
+    pred_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model=model)
 
     ensemble = create_ensemble(problem.pypesto_problem, result)
     ensemble_pred = predict_with_ensemble(
@@ -72,5 +72,4 @@ def sim_workflow():
 
 
 if __name__ == "__main__":
-
-    sim_workflow()
+    main()
