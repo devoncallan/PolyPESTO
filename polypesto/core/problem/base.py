@@ -7,7 +7,8 @@ from polypesto.utils import redirect_output_to_file
 from ..pypesto import (
     Result,
     has_results,
-    write_result,
+    save_result,
+    load_result,
     optimize_problem,
     profile_problem,
     sample_problem,
@@ -93,12 +94,7 @@ class Problem:
 
     def get_results(self) -> Optional[Result]:
 
-        try:
-            from pypesto.store import read_result  # type: ignore
-
-            return read_result(self.paths.pypesto_results)
-        except:
-            return None
+        return load_result(self.paths.pypesto_results)
 
 
 def write_petab(
@@ -182,7 +178,7 @@ def run_parameter_estimation(
         print(f"\tSaving results to {prob.paths.pypesto_results}")
 
         try:
-            write_result(
+            save_result(
                 result=result,
                 filename=prob.paths.pypesto_results,
                 overwrite=overwrite,

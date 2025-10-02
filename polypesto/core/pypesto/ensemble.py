@@ -2,7 +2,6 @@ from typing import Dict, List, Sequence
 from functools import partial
 
 import numpy as np
-
 import pypesto  # type: ignore
 from pypesto import Result  # type: ignore
 from pypesto.ensemble import Ensemble, EnsemblePrediction  # type: ignore

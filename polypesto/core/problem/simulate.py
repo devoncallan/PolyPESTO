@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Any, List, Sequence, Tuple, Dict, Mapping
+from typing import List, Sequence, Tuple, Dict, Mapping
 from pathlib import Path
 
 import numpy as np

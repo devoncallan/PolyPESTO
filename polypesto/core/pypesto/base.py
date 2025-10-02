@@ -1,8 +1,12 @@
+from pathlib import Path
+from typing import Tuple, Callable, Optional
+
+from amici.amici import Solver  # type: ignore
 import pypesto  # type: ignore
 import pypesto.optimize  # type: ignore
-from pypesto import Result  # type: ignore
-
-from .setup import PypestoProblem
+from pypesto import Result, Problem as PypestoProblem  # type: ignore
+from pypesto.petab import PetabImporter  # type: ignore
+from pypesto.objective import AmiciObjective  # type: ignore
 
 
 def optimize_problem(
@@ -109,6 +113,54 @@ def sample_problem(
 
 def save_result(result: Result, filename: str, **kwargs):
 
-    pypesto.store.write_result(
-        result=result, filename=filename, overwrite=True, **kwargs
-    )
+    pypesto.store.write_result(result=result, filename=filename, **kwargs)
+
+
+def load_result(filename: str | Path, **kwargs) -> Optional[Result]:
+
+    try:
+        return pypesto.store.read_result(filename=filename, **kwargs)
+
+    except Exception:
+        print(f"Could not load result from {filename}.")
+        return None
+
+
+def set_solver_options(
+    problem: PypestoProblem, solver_options: Callable[[Solver], Solver]
+) -> PypestoProblem:
+    """Set solver options for a Pypesto problem.
+
+    Args:
+        problem (PypestoProblem): The Pypesto problem.
+        solver_options (Callable[[Solver], Solver]): A function that takes and returns a Solver.
+
+    Returns:
+        PypestoProblem: The updated Pypesto problem.
+    """
+
+    assert isinstance(problem.objective, AmiciObjective)
+    assert isinstance(problem.objective.amici_solver, Solver)
+
+    problem.objective.amici_solver = solver_options(problem.objective.amici_solver)
+
+    return problem
+
+
+def load_pypesto_problem(
+    yaml_path: str, model_name: str, **kwargs
+) -> Tuple[PetabImporter, PypestoProblem]:
+    """Load a PEtab problem from a YAML file.
+
+    Args:
+        yaml_path (str): Path to the PEtab YAML file.
+        model_name (str): Name of the model.
+
+    Returns:
+        Tuple[PetabImporter, PypestoProblem]: The PEtab importer and the Pypesto problem.
+    """
+
+    importer: PetabImporter = PetabImporter.from_yaml(yaml_path, model_name=model_name)
+    problem: PypestoProblem = importer.create_problem(**kwargs)
+
+    return importer, problem

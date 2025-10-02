@@ -4,14 +4,16 @@ from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-import petab.v1.C as C  # type: ignore
-from petab.v1 import (
+from petab.v1 import (  # type: ignore
     write_observable_df,
     write_condition_df,
     write_measurement_df,
     write_parameter_df,
     Problem as PetabProblem,
-)
+)  # type: ignore
+import petab.v1.C as C  # type: ignore
+from petab.v1.yaml import create_problem_yaml  # type: ignore
+from petab.v1.lint import lint_problem  # type: ignore
 
 from polypesto.utils import ID
 
@@ -138,9 +140,6 @@ class PetabIO:
         param_filepath: str | Path,
     ) -> Path:
 
-        from petab.v1.yaml import create_problem_yaml  # type: ignore
-        from petab.v1.lint import lint_problem  # type: ignore
-
         create_problem_yaml(
             sbml_files=str(sbml_filepath),
             condition_files=str(cond_filepath),
@@ -148,9 +147,7 @@ class PetabIO:
             parameter_file=str(param_filepath),
             observable_files=str(obs_filepath),
             yaml_file=str(yaml_filepath),
-            # relative_paths=False,
         )
-        # problem = PetabProblem.from_yaml(yaml_filepath, base_path="")
         problem = PetabProblem.from_yaml(yaml_filepath)
         lint_problem(problem)
 

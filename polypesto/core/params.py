@@ -11,7 +11,6 @@ from polypesto.utils import read_json, write_json, ID
 ParamID: TypeAlias = str
 ParamSetID: TypeAlias = str
 ParamGroupID: TypeAlias = str
-
 DEFAULT_ID = "unnamed"
 
 

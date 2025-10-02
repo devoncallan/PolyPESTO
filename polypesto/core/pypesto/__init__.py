@@ -1,11 +1,12 @@
-from pypesto.store import write_result, read_result  # type: ignore
-
-from .setup import load_pypesto_problem, PypestoProblem, set_solver_options
 from .base import (
+    load_pypesto_problem,
+    PypestoProblem,
+    set_solver_options,
     optimize_problem,
     profile_problem,
     sample_problem,
     save_result,
+    load_result,
 )
 from .ensemble import (
     create_ensemble,
@@ -30,13 +31,12 @@ __all__ = [
     "optimize_problem",
     "profile_problem",
     "sample_problem",
-    "save_result",
     "create_ensemble",
     "create_predictor",
     "predict_with_ensemble",
     "Result",
-    "write_result",
-    "read_result",
+    "save_result",
+    "load_result",
     "has_results",
     "has_optimization_results",
     "has_profile_results",

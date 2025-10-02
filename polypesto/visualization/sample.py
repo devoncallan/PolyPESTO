@@ -4,12 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-import seaborn as sns
+import seaborn as sns  # type: ignore
+import pypesto.visualize as vis  # type: ignore
 
-import pypesto.visualize as vis
-from pypesto.result import Result
-
-from polypesto.core.pypesto import has_sampling_results, get_true_param_values
+from polypesto.core.pypesto import Result, has_sampling_results, get_true_param_values
 from .true import (
     plot_true_params_on_pairgrid,
     plot_true_params_on_trace,
