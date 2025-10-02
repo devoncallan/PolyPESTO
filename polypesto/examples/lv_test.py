@@ -9,7 +9,7 @@ from polypesto.models.example.lotka_volterra import LotkaVolterra
 
 DATA_DIR = Path(__file__).parent / "polypesto/lv_test"
 
-
+ 
 def sim_workflow():
 
     model = LotkaVolterra()

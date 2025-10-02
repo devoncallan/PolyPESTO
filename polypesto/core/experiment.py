@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 from uuid import uuid4
@@ -7,7 +8,6 @@ from numpy.typing import ArrayLike
 import pandas as pd
 
 from .params import ParameterSet
-from .conditions import Conditions, SimConditions
 from . import petab as pet
 
 
@@ -69,16 +69,12 @@ class Experiment:
     """Container for data/metadata for a single experiment."""
 
     id: str
-    conds: Conditions | SimConditions
+    conds: ParameterSet
     data: List[Dataset]
 
-    @property
-    def is_simulated(self) -> bool:
-        return isinstance(self.conds, SimConditions)
-
     @staticmethod
-    def load(id: str, conds: Dict[str, float], data: List[Dataset]) -> "Experiment":
-        conditions = Conditions(exp_id=id, values=ParameterSet.lazy_from_dict(conds))
+    def load(id: str, conds: Dict[str, float], data: List[Dataset]) -> Experiment:
+        conditions = ParameterSet.from_dict(conds)
         return Experiment(id=id, conds=conditions, data=data)
 
 
@@ -94,24 +90,23 @@ def experiments_to_petab(
         Tuple[pd.DataFrame, pd.DataFrame]: PEtab conditions and measurements dataframes.
     """
 
-    data_dict: Dict[Tuple[str, str], Tuple[ArrayLike, ArrayLike]] = {}
+    data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]] = {}
     conds = []
     exp_ids = []
-    for exp in experiments:
 
+    for i, exp in enumerate(experiments):
         cond = exp.conds
-        exp_id = cond.exp_id
-        conds.append(cond.values.to_dict())
-        exp_ids.append(exp_id)
+        conds.append(cond.to_dict())
+        exp_ids.append(f"exp_{i}")
 
         for dataset in exp.data:
 
-            t = dataset.data[dataset.tkey]
             for obs, col_name in dataset.obs_map.items():
 
-                obs_id = f"obs_{obs}"
-                y = dataset.data[col_name]
-                key = (obs_id, exp_id)
+                key = (f"obs_{obs}", exp_ids[i])
+
+                t = np.array(dataset.data[dataset.tkey])
+                y = np.array(dataset.data[col_name])
 
                 # Remove nans
                 mask = ~np.isnan(y)
@@ -125,7 +120,7 @@ def experiments_to_petab(
 
                 data_dict[key] = (t, y)
 
-    cond_df = pet.define_conditions(conds, exp_ids=exp_ids)
+    cond_df = pet.define_conditions(conds, exp_ids)
     meas_df = pet.define_measurements(data_dict)
     return cond_df, meas_df
 

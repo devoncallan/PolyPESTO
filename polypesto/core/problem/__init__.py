@@ -1,21 +1,17 @@
-# from pypesto.problem import Problem as PypestoProblem
-
 from .paths import ProblemPaths
 from .base import Problem, write_petab
 from .estimate import run_parameter_estimation
-from .simulate import simulate_problem
+from .simulate import create_sim_conditions, simulate_problem
 
 __all__ = [
-    # "PypestoProblem",
+    # paths
+    "ProblemPaths",
+    # base
     "Problem",
     "write_petab",
-    "ProblemPaths",
+    # estimate
     "run_parameter_estimation",
+    # simulate
     "simulate_problem",
-    "Result",
-    "has_results",
-    "ParameterResult",
-    "ProfileResult",
-    "OptimizationResult",
-    "SamplingResult",
+    "create_sim_conditions",
 ]

@@ -6,7 +6,9 @@ import numpy as np
 # from polypesto.models import ModelBase
 from polypesto.visualization import plot_results
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
-from polypesto.core import create_sim_conditions, simulate_problem
+
+# from polypesto.core import create_sim_conditions, simulate_problem
+from polypesto.core.problem import create_sim_conditions, simulate_problem
 from polypesto.core.pypesto import calculate_cis
 from polypesto.models.binary import BinaryIrreversible
 
@@ -76,15 +78,12 @@ def sim_workflow():
         # observables=["xA", "fA", "FA"],
     )
 
-    # true_params = {"rA": 1.0, "rB": 2.0}
     true_params = {"rA": 2.0, "rB": 1.0}
     sim_conds = create_sim_conditions(
         true_params=true_params,
         conds=dict(
             A0=[0.70, 0.50],
             B0=[0.30, 0.50],
-            # A0=[0.30, 0.50],
-            # B0=[0.70, 0.50],
         ),
         t_evals=np.arange(0.05, 0.61, 0.05),
         noise_levels=0.05,
@@ -126,7 +125,7 @@ def sim_workflow():
 
 def main():
 
-    exp_workflow()
+    # exp_workflow()
     sim_workflow()
 
 

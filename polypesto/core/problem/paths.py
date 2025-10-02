@@ -73,6 +73,10 @@ class ProblemPaths:
     @filepath
     def measurements(self) -> Path:
         return self.petab_dir / "measurements.tsv"
+    
+    ### -------------------------------- ###
+    ### Simulated problem specific files ###
+    ### -------------------------------- ###
 
     @filepath
     def true_params(self) -> Path:

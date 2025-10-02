@@ -7,7 +7,7 @@ from numpy.typing import ArrayLike
 from ...models import ModelBase
 from ..problem import Problem, ProblemPaths, simulate_problem
 from ..pypesto import Result
-from ..conditions import SimConditions, create_sim_conditions
+# from ..conditions import SimConditions, create_sim_conditions
 from ..params import ParameterGroup, ParameterSet
 from ...utils.file import read_json, write_json
 

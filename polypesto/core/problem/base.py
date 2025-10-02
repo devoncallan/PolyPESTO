@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Optional
 from dataclasses import dataclass
 
+
 from .. import petab as pet
 from ...models import sbml, ModelBase
 from ..params import ParameterSet
@@ -31,7 +32,7 @@ class Problem:
         ----------
         prob_dir : str | Path
             Directory containing the problem files.
-        model : ModelInterface
+        model : ModelBase
             Model class to use for simulation.
 
         Returns

@@ -1,285 +1,146 @@
-from typing import Any, Dict, List, Optional, TypeAlias, Callable
-from dataclasses import dataclass, asdict
+from __future__ import annotations
 import itertools
+from typing import Dict, List, NamedTuple, Optional, TypeAlias, Callable
+from pathlib import Path
 
-import polypesto.utils.file as file
+import numpy as np
+from numpy.typing import ArrayLike
 
-# -------------------------- #
-#          CONSTANTS         #
-# -------------------------- #
+from polypesto.utils import file
 
-KEY_REQUIRED_PARAMS = "REQUIRED_PARAMETERS"
-KEY_PARAMETER_GROUPS = "PARAMETER_GROUPS"
-KEY_PARAMETER_SETS = "PARAMETER_SETS"
+ParamID: TypeAlias = str
+ParamSetID: TypeAlias = str
+ParamGroupID: TypeAlias = str
 
-ParameterID: TypeAlias = str
-ParameterSetID: TypeAlias = str
-ParameterGroupID: TypeAlias = str
-
-
-# -------------------------- #
-#        DATA CLASSES        #
-# -------------------------- #
+DEFAULT_ID = "unnamed"
 
 
-@dataclass
-class Parameter:
-    """
-    A single simulation parameter with an ID and a value.
+class Parameter(NamedTuple):
+    """A single parameter with an ID and a value."""
 
-    Example:
-    ```
-    p = Parameter.from_dict({
-        "id": "k1",
-        "value": 0.1
-    })
-    ```
-    """
-
-    id: ParameterID
+    id: ParamID
     value: float
 
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "Parameter":
-        return Parameter(**data)
+
+class ParameterSet(Dict[ParamID, float]):
+    """A collection of parameters."""
+
+    def __init__(self, data: Dict[ParamID, float], *, id: ParamSetID = DEFAULT_ID):
+        super().__init__(data)
+        self.id = id
 
     @staticmethod
-    def lazy_from_dict(
-        data: Dict[str, float], id: ParameterID = "default_id"
-    ) -> "Parameter":
-        return Parameter(id=id, value=data[id])
-
-
-@dataclass
-class ParameterSet:
-    """
-    A collection of parameters that define a single simulation condition.
-
-    Example:
-    ```
-    ps = ParameterSet.from_dict({
-        "id": "slow_kinetics",
-        "parameters": {
-            "k1": {"id": "k1", "value": 0.1},
-            "k2": {"id": "k2", "value": 0.2},
-        }
-    })
-    ```
-    """
-
-    id: ParameterSetID
-    parameters: Dict[ParameterID, Parameter]
-
-    def __repr__(self) -> str:
-        param_str = ", ".join(f"{p.id}: {p.value}" for p in self.parameters.values())
-        return f"ParameterSet(id='{self.id}', parameters={{ {param_str} }})"
+    def empty() -> ParameterSet:
+        return ParameterSet({}, id="")
 
     @staticmethod
-    def empty() -> "ParameterSet":
-        return ParameterSet(id="", parameters={})
+    def from_dict(
+        data: Dict[ParamID, float], id: ParamSetID = DEFAULT_ID
+    ) -> ParameterSet:
+        return ParameterSet(data, id=id)
 
     @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "ParameterSet":
-        parameters = {
-            param_id: Parameter.from_dict(param_data)
-            for param_id, param_data in data["parameters"].items()
-        }
-        return ParameterSet(id=data["id"], parameters=parameters)
-
-    @staticmethod
-    def lazy_from_dict(
-        data: Dict[ParameterID, Any], id: ParameterSetID = "default_id"
-    ) -> "ParameterSet":
-        """
-        ```
-        ps = ParameterSet.lazy_from_dict({
-            "k1": 0.1,
-            "k2": 0.2,
-        })
-        ```
-
-        """
-        parameters = {
-            param_id: Parameter(id=param_id, value=param_data)
-            for param_id, param_data in data.items()
-        }
-        return ParameterSet(id=id, parameters=parameters)
-
-    @staticmethod
-    def load(filepath: str, **kwargs):
+    def load(filepath: str | Path) -> ParameterSet:
         data = file.read_json(filepath)
         return ParameterSet.from_dict(data)
 
-    def write(self, filepath: str, **kwargs):
-        file.write_json(filepath, asdict(self))
-
-    def to_dict(self) -> Dict[str, float]:
-        return {param.id: float(param.value) for param in self.parameters.values()}
-
-    def by_id(self, parameter_id: ParameterID) -> Parameter:
-        if parameter_id not in self.parameters:
-            raise KeyError(
-                f"Parameter ID '{parameter_id}' not found in ParameterSet '{self.id}'."
-            )
-        return self.parameters[parameter_id]
-
-    def get_ids(self) -> List[ParameterID]:
-        return list(self.parameters.keys())
-
-    def get_parameters(self) -> List[Parameter]:
-        return list(self.parameters.values())
-
-
-@dataclass
-class ParameterGroup:
-    """
-    A collection of parameter sets that define a set of simulation conditions.
-
-    Example:
-    ```
-    pg = ParameterGroup.from_dict({
-        "id": "irreversible kinetics",
-        "parameter_sets": {
-            "slow_kinetics": {
-                "id": "slow_kinetics",
-                "parameters": {
-                    "k1": {"id": "k1", "value": 0.1},
-                    "k2": {"id": "k2", "value": 0.2},
-                }
-            },
-            "fast_kinetics: {
-                "id": "fast_kinetics",
-                "parameters": {
-                    "k1": {"id": "k1", "value": 1.1},
-                    "k2": {"id": "k2", "value": 1.6},
-                }
-            }
-        }
-    })
-    ```
-    """
-
-    id: ParameterGroupID
-    parameter_sets: Dict[ParameterSetID, ParameterSet]
-
-    @staticmethod
-    def from_dict(data: Dict[str, Any]) -> "ParameterGroup":
-        parameter_sets = {
-            param_set_id: ParameterSet.from_dict(param_set_data)
-            for param_set_id, param_set_data in data["parameter_sets"].items()
-        }
-        return ParameterGroup(id=data["id"], parameter_sets=parameter_sets)
-
-    @staticmethod
-    def lazy_from_dict(
-        data: Dict[str, Any], id: ParameterSetID = "default_id"
-    ) -> "ParameterGroup":
-        """
-        ```
-        pg = ParameterGroup.lazy_from_dict({
-            "slow_kinetics": {
-                "k1": 0.1,
-                "k2": 0.2
-            },
-            "fast_kinetics": {
-                "k1": 1.1,
-                "k2": 1.6
-            }
-        })
-        ```
-
-        """
-        parameter_sets = {
-            param_set_id: ParameterSet.lazy_from_dict(param_set_data)
-            for param_set_id, param_set_data in data.items()
-        }
-        return ParameterGroup(id=id, parameter_sets=parameter_sets)
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            param_set.id: param_set.to_dict()
-            for param_set in self.parameter_sets.values()
-        }
-
-    def add(self, parameter_set: ParameterSet):
-        if not self.parameter_sets:
-            self.parameter_sets = {parameter_set.id: parameter_set}
-            return
-
-        if parameter_set.id in self.parameter_sets:
-            raise KeyError(
-                f"ParameterSet ID '{parameter_set.id}' already exists in ParameterGroup '{self.id}'."
-            )
-
-        self.parameter_sets[parameter_set.id] = parameter_set
-
-    def lazy_add(self, params: Dict[ParameterID, Any]):
-
-        id = f"p_{len(self.parameter_sets):03d}"
-        param_set = ParameterSet.lazy_from_dict(params, id=id)
-        self.add(param_set)
-
-    def by_id(self, parameter_set_id: ParameterSetID) -> ParameterSet:
-        if parameter_set_id not in self.parameter_sets:
-            raise KeyError(
-                f"ParameterSet ID '{parameter_set_id}' not found in ParameterGroup '{self.id}'."
-            )
-        return self.parameter_sets[parameter_set_id]
-
-    def get_ids(self) -> List[ParameterSetID]:
-        return list(self.parameter_sets.keys())
-
-    def get_parameter_sets(self) -> List[ParameterSet]:
-        return list(self.parameter_sets.values())
-
-    def write(self, filepath: str):
+    def write(self, filepath: str | Path) -> None:
         file.write_json(filepath, self.to_dict())
 
+    def get_ids(self) -> List[ParamID]:
+        return list(self.keys())
+
+    def to_dict(self) -> Dict[ParamID, float]:
+        return dict(self)
+
+    def as_parameters(self) -> List[Parameter]:
+        return [Parameter(id, value) for id, value in self.items()]
+
     @staticmethod
-    def load(filepath: str, **kwargs):
+    def from_dict_list(
+        data: Dict[ParamID, ArrayLike], ids: Optional[List[ParamSetID]] = None
+    ) -> List[ParameterSet]:
+
+        param_ids = list(data.keys())
+        param_data = {param_id: np.array(values) for param_id, values in data.items()}
+        len_conds = {param_id: len(values) for param_id, values in param_data.items()}
+        n_conds = len_conds[param_ids[0]]
+
+        if not all(n == n_conds for n in len_conds.values()):
+            raise ValueError(
+                f"All parameter lists must have the same length. Actual lengths: {len_conds}"
+            )
+
+        if ids is None:
+            ids = [f"p_{i:03d}" for i in range(n_conds)]
+        elif len(ids) != n_conds:
+            raise ValueError(
+                f"Length of ids ({len(ids)}) must match number of parameter sets ({n_conds})."
+            )
+
+        return [
+            ParameterSet.from_dict(
+                {param_id: param_data[param_id][i] for param_id in param_ids}, id=ids[i]
+            )
+            for i in range(n_conds)
+        ]
+
+
+class ParameterGroup(Dict[ParamSetID, ParameterSet]):
+    """A collection of parameter sets."""
+
+    def __init__(
+        self, data: Dict[ParamSetID, ParameterSet], *, id: ParamGroupID = DEFAULT_ID
+    ):
+        super().__init__(data)
+        self.id = id
+
+    @staticmethod
+    def empty() -> ParameterGroup:
+        return ParameterGroup({}, id="")
+
+    def to_dict(self) -> Dict[ParamSetID, ParameterSet]:
+        return dict(self)
+
+    def write(self, filepath: str | Path) -> None:
+        file.write_json(filepath, self.to_dict())
+
+    @classmethod
+    def from_dict(
+        cls, data: Dict[ParamSetID, Dict[ParamID, float]], id: ParamGroupID = DEFAULT_ID
+    ) -> ParameterGroup:
+
+        param_sets = {
+            ps_id: ParameterSet.from_dict(ps_data, id=ps_id)
+            for ps_id, ps_data in data.items()
+        }
+        return cls(param_sets, id=id)
+
+    @staticmethod
+    def load(filepath: str | Path) -> ParameterGroup:
         data = file.read_json(filepath)
         return ParameterGroup.from_dict(data)
 
     @staticmethod
     def create_parameter_grid(
-        parameter_ranges: Dict[ParameterID, List[float]],
-        group_id: str = "parameter_grid",
-        filter_fn: Optional[Callable[[Dict[ParameterID, float]], bool]] = None,
-    ) -> "ParameterGroup":
-        """
-        Create a parameter group from a grid of parameter values.
+        param_ranges: Dict[ParamID, List[float]],
+        id: ParamGroupID = DEFAULT_ID,
+        filter_fn: Optional[Callable[[Dict[ParamID, float]], bool]] = None,
+    ) -> ParameterGroup:
 
-        Parameters
-        ----------
-        parameter_ranges : Dict[ParameterID, List[float]]
-            Dictionary mapping parameter names to lists of values
-        group_id : str, optional
-            ID for the parameter group
-        filter_fn : callable, optional
-            Function to filter parameter combinations. Should take a dictionary
-            of parameter values and return True or False.
+        pg = ParameterGroup({}, id=id)
+        param_names = list(param_ranges.keys())
+        param_values = list(param_ranges.values())
 
-        Returns
-        -------
-        ParameterGroup
-            Parameter group containing all combinations of parameter values
-        """
-        pg = ParameterGroup(id=group_id, parameter_sets={})
-
-        # Get parameter names and values
-        param_names = list(parameter_ranges.keys())
-        param_values = list(parameter_ranges.values())
-
-        # Generate all combinations
-        num_params = 0
+        num_psets = 0
         for combination in itertools.product(*param_values):
 
-            param_dict = {name: value for name, value in zip(param_names, combination)}
+            params = dict(zip(param_names, combination))
+            if filter_fn is None or filter_fn(params):
 
-            if filter_fn is not None and not filter_fn(param_dict):
-                continue
-
-            pg.add(ParameterSet.lazy_from_dict(param_dict, id=f"p_{num_params:03d}"))
-            num_params += 1
+                set_id = f"p_{num_psets:03d}"
+                param_set = ParameterSet.from_dict(params, id=set_id)
+                pg[set_id] = param_set
+                num_psets += 1
 
         return pg

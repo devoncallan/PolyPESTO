@@ -16,7 +16,7 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
     for exp in experiments:
 
         datasets = exp.data
-        cond = exp.conds.values.to_dict()
+        cond = exp.conds.to_dict()
 
         A0 = B0 = None
         if "A0" in cond and "B0" in cond:
@@ -75,8 +75,10 @@ def create_ensemble_pred_problem(
     data_dir: str, model: BinaryIrreversible | BinaryReversible
 ):
 
-    from polypesto.core.problem.simulate import write_empty_problem
-    from polypesto.core.conditions import create_sim_conditions
+    from polypesto.core.problem.simulate import (
+        create_sim_conditions,
+        write_empty_problem,
+    )
 
     fA0s = np.array([0.1, 0.3, 0.5, 0.7, 0.9])
     cM0s = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
