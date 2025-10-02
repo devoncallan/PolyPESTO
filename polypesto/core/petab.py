@@ -10,7 +10,9 @@ from petab.v1 import (
     write_condition_df,
     write_measurement_df,
     write_parameter_df,
-)  # type: ignore
+)
+
+from polypesto.utils.ids import make_cond_ids
 
 if TYPE_CHECKING:
     # Static analysis: provide the correct type for mypy/IDE
@@ -154,9 +156,10 @@ class PetabIO:
             parameter_file=str(param_filepath),
             observable_files=str(obs_filepath),
             yaml_file=str(yaml_filepath),
-            relative_paths=False,
+            # relative_paths=False,
         )
-        problem = PetabProblem.from_yaml(yaml_filepath, base_path="")
+        # problem = PetabProblem.from_yaml(yaml_filepath, base_path="")
+        problem = PetabProblem.from_yaml(yaml_filepath)
         lint_problem(problem)
 
         return Path(yaml_filepath)
@@ -202,22 +205,21 @@ def define_observables(
 
 
 def define_conditions(
-    conds: List[Dict[str, float]], exp_ids: Optional[List[str]] = None
+    conds: List[Dict[str, float]], ids: Optional[List[str]] = None
 ) -> pd.DataFrame:
 
-    if exp_ids is None:
-        exp_ids = [f"exp_{i}" for i in range(len(conds))]
-    elif len(exp_ids) != len(conds):
+    ids = ids or make_cond_ids(len(conds))
+    if len(ids) != len(conds):
         raise ValueError(
-            f"Number of provided exp_ids ({len(exp_ids)}) must match number of conditions ({len(conds)})."
+            f"Number of provided cond_ids ({len(ids)}) must match number of conditions ({len(conds)})."
         )
 
     if len({frozenset(c.keys()) for c in conds}) != 1:
         raise ValueError("All condition dictionaries must have the same keys")
 
     df = pd.DataFrame(conds)
-    df[C.CONDITION_ID] = exp_ids
-    df[C.CONDITION_NAME] = exp_ids
+    df[C.CONDITION_ID] = ids
+    df[C.CONDITION_NAME] = ids
 
     return PetabIO.format_cond_df(df)
 
@@ -228,7 +230,7 @@ def define_measurements(
     """Define measurements DataFrame from a data dictionary.
 
     Args:
-        data_dict (Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]]): Mapping from (observable_id, exp_id) to (timepoints, measurements)
+        data_dict (Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]]): Mapping from (obs_id, cond_id) to (timepoints, measurements)
 
     Returns:
         pd.DataFrame: Formatted measurements DataFrame
@@ -236,7 +238,6 @@ def define_measurements(
 
     meas_dfs = []
     for (obs_id, cond_id), (t, y) in data_dict.items():
-        t = np.array(t)
         df = pd.DataFrame(
             {
                 C.OBSERVABLE_ID: [obs_id] * len(t),

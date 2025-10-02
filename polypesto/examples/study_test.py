@@ -35,7 +35,7 @@ def study_workflow():
     for key, conds in conds_dict.items():
         print(f"Conditions for problem {key}:")
         for sim_cond in conds:
-            print(f"{key}: {sim_cond.exp_id}, {sim_cond.values.to_dict()}")
+            print(f"{key}: {sim_cond.id}, {sim_cond.values.to_dict()}")
 
     study = Study.create(
         study_dir=STUDY_DIR,

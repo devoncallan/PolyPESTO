@@ -41,9 +41,7 @@ def load_pypesto_problem(
     """
 
     # Use absolute paths (base_path="")
-    importer: PetabImporter = PetabImporter.from_yaml(
-        yaml_path, model_name=model_name, base_path=""
-    )
+    importer: PetabImporter = PetabImporter.from_yaml(yaml_path, model_name)
     problem: PypestoProblem = importer.create_problem(**kwargs)
 
     return importer, problem

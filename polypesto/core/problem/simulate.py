@@ -15,6 +15,9 @@ from ..problem import Problem, write_petab
 from ..pypesto import PypestoProblem
 
 
+from polypesto.utils.ids import make_cond_ids
+
+
 @dataclass
 class SimConditions:
     """Conditions for the simulation."""
@@ -42,8 +45,6 @@ def create_sim_conditions(
             e.g., `t_evals = np.linspace(0, 10, 100)` or `t_evals = [np.linspace(0, 10, 100), np.linspace(0, 5, 50)]`
         noise_levels (float | List[float]): Noise levels for the simulations. Defaults to 0.0.
             e.g., `noise_levels = 0.1` or `noise_levels = [0.1, 0.2]`
-        exp_ids (Optional[List[str]]): List of experiment IDs. Defaults to None.
-            e.g., `exp_ids = ["c_0", "c_1"]`. If None, will be auto-generated.
 
     Returns:
         List[SimConditions]: List of simulation conditions."""
@@ -54,6 +55,9 @@ def create_sim_conditions(
         raise ValueError("true_params must be a ParameterSet or a dict.")
 
     conds_list = ParameterSet.from_dict_list(conds)
+    cond_ids = make_cond_ids(len(conds_list))
+    conds_list = [cond.set_id(cond_id) for cond, cond_id in zip(conds_list, cond_ids)]
+
     n_conds = len(conds_list)
 
     if isinstance(t_evals, np.ndarray):
@@ -99,7 +103,7 @@ def create_sim_conditions(
 def write_empty_problem(
     prob_dir: str | Path,
     model: ModelBase,
-    conds: List[SimConditions],
+    sim_conds: List[SimConditions],
 ) -> Tuple[Problem, ParameterSet]:
     """Create an empty problem and parameter set.
 
@@ -112,21 +116,24 @@ def write_empty_problem(
         Tuple[Problem, ParameterSet]: An empty problem (no measurements) and the true parameters.
     """
 
+    from polypesto.utils.ids import obs_id
+
     data_dict = {
-        (f"obs_{obs_id}", cond.conds.id): cond.t_eval
-        for cond in conds
-        for obs_id in model.observables.keys()
+        (obs_id(id), sim_cond.conds.id): sim_cond.t_eval
+        for sim_cond in sim_conds
+        for id in model.observables.keys()
     }
-    conds_list = [cond.conds.to_dict() for cond in conds]
+    conds_list = [cond.conds.to_dict() for cond in sim_conds]
+    cond_ids = [cond.conds.id for cond in sim_conds]
 
     petab_data = pet.PetabData(
         obs_df=model.get_obs_df(),
-        cond_df=pet.define_conditions(conds_list),
+        cond_df=pet.define_conditions(conds_list, ids=cond_ids),
         param_df=model.get_param_df(),
         meas_df=pet.define_empty_measurements(data_dict),
     )
 
-    true_params = conds[0].true_params
+    true_params = sim_conds[0].true_params
     problem = write_petab(prob_dir, model, petab_data, true_params)
 
     return problem, true_params

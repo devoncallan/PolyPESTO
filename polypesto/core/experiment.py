@@ -9,6 +9,7 @@ import pandas as pd
 
 from .params import ParameterSet
 from . import petab as pet
+from polypesto.utils.ids import obs_id, cond_id
 
 
 @dataclass
@@ -74,7 +75,7 @@ class Experiment:
 
     @staticmethod
     def load(id: str, conds: Dict[str, float], data: List[Dataset]) -> Experiment:
-        conditions = ParameterSet.from_dict(conds)
+        conditions = ParameterSet.from_dict(conds, id=id)
         return Experiment(id=id, conds=conditions, data=data)
 
 
@@ -92,19 +93,21 @@ def experiments_to_petab(
 
     data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]] = {}
     conds = []
-    exp_ids = []
+
+    cond_ids = [cond_id(exp.conds.id) for exp in experiments]
+    assert len(cond_ids) == len(
+        set(cond_ids)
+    ), f"Condition IDs must be unique. Found duplicates in {cond_ids}"
 
     for i, exp in enumerate(experiments):
         cond = exp.conds
         conds.append(cond.to_dict())
-        exp_ids.append(f"exp_{i}")
 
         for dataset in exp.data:
 
-            for obs, col_name in dataset.obs_map.items():
+            for obs_name, col_name in dataset.obs_map.items():
 
-                key = (f"obs_{obs}", exp_ids[i])
-
+                key = (obs_id(obs_name), cond_ids[i])
                 t = np.array(dataset.data[dataset.tkey])
                 y = np.array(dataset.data[col_name])
 
@@ -120,7 +123,7 @@ def experiments_to_petab(
 
                 data_dict[key] = (t, y)
 
-    cond_df = pet.define_conditions(conds, exp_ids)
+    cond_df = pet.define_conditions(conds, cond_ids)
     meas_df = pet.define_measurements(data_dict)
     return cond_df, meas_df
 
@@ -177,18 +180,18 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
     assert cond_df is not None and meas_df is not None
 
     experiments = []
-    exp_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
+    cond_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
 
     cond_dict = cond_df.drop(columns=pet.C.CONDITION_NAME).to_dict(orient="index")
 
-    for exp_id in exp_ids:
+    for cond_id in cond_ids:
 
-        conds = cond_dict[exp_id]
+        conds = cond_dict[cond_id]
 
-        exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == exp_id]
+        exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == cond_id]
 
         data = meas_df_to_datasets(exp_meas_df)
-        exp = Experiment.load(id=exp_id, conds=conds, data=data)
+        exp = Experiment.load(cond_id, conds, data)
         experiments.append(exp)
 
     return experiments

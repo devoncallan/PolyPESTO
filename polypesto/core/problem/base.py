@@ -66,13 +66,13 @@ class Problem:
 
     @staticmethod
     def from_experiments(
-        data_dir: str,
+        output_dir: str,
         model: ModelBase,
         experiments: List[Experiment],
         problem_id: Optional[str] = None,
     ) -> "Problem":
         print("Creating problem from experiments...")
-        print(f"Data directory: {data_dir}")
+        print(f"Output directory: {output_dir}")
 
         # Create PEtab problem from experiments
         cond_df, meas_df = experiments_to_petab(experiments)
@@ -84,7 +84,7 @@ class Problem:
             name=problem_id,
         )
 
-        problem = write_petab(data_dir, model, petab_data)
+        problem = write_petab(output_dir, model, petab_data)
 
         return problem
 

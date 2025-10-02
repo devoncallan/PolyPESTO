@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from amici.amici import AmiciSolver
+from amici.amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
 from polypesto.models import sbml, ModelBase

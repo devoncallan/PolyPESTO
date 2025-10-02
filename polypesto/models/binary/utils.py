@@ -89,7 +89,7 @@ def create_ensemble_pred_problem(
     problem, _ = write_empty_problem(
         prob_dir=data_dir,
         model=model,
-        conds=create_sim_conditions(
+        sim_conds=create_sim_conditions(
             true_params={},
             t_evals=np.arange(0.01, 0.9, 0.01),
             conds=dict(

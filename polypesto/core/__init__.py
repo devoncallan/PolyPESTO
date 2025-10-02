@@ -7,6 +7,7 @@ from .problem import (
     run_parameter_estimation,
     write_petab,
     simulate_problem,
+    create_sim_conditions,
 )
 from .pypesto import (
     PypestoProblem,
@@ -18,6 +19,7 @@ from .pypesto import (
     sample_problem,
     calculate_cis,
 )
+
 # from .study import (
 #     Study,
 #     create_study_conditions,
@@ -51,9 +53,10 @@ __all__ = [
     "profile_problem",
     "sample_problem",
     "simulate_problem",
-    "calculate_cis",
+    "create_sim_conditions",
     # study
     "Study",
     "create_study_conditions",
     "create_study",
+    "calculate_cis",
 ]

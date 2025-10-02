@@ -2,18 +2,28 @@ from pathlib import Path
 
 import numpy as np
 
+from polypesto.core import (
+    create_sim_conditions,
+    simulate_problem,
+    run_parameter_estimation,
+    calculate_cis,
+)
 from polypesto.visualization import plot_results
-from polypesto.core import run_parameter_estimation, calculate_cis
-from polypesto.core import create_sim_conditions, simulate_problem
+
+# Model specific imports
 from polypesto.models.example.lotka_volterra import LotkaVolterra
 
-DATA_DIR = Path(__file__).parent / "polypesto/lv_test"
+from polypesto.examples.base import output_dirs
 
- 
-def sim_workflow():
+OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
 
+
+def main():
+
+    # Initialize model with default observables
     model = LotkaVolterra()
 
+    # Define true parameters and simulation conditions
     true_params = {"a": 1.1, "b": 0.4, "c": 0.4, "d": 0.1}
     sim_conds = create_sim_conditions(
         true_params=true_params,
@@ -23,7 +33,7 @@ def sim_workflow():
     )
 
     problem = simulate_problem(
-        prob_dir=DATA_DIR,
+        prob_dir=OUTPUT_DIR,
         model=model,
         conds=sim_conds,
     )
@@ -38,10 +48,6 @@ def sim_workflow():
     )
     plot_results(result, problem, true_params)
     cis = calculate_cis(result, ci_level=0.95)
-
-
-def main():
-    sim_workflow()
 
 
 if __name__ == "__main__":

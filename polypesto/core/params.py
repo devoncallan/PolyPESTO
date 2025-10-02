@@ -7,6 +7,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from polypesto.utils import file
+from polypesto.utils.ids import make_param_ids
 
 ParamID: TypeAlias = str
 ParamSetID: TypeAlias = str
@@ -47,6 +48,10 @@ class ParameterSet(Dict[ParamID, float]):
     def write(self, filepath: str | Path) -> None:
         file.write_json(filepath, self.to_dict())
 
+    def set_id(self, id: ParamSetID) -> ParameterSet:
+        self.id = id
+        return self
+
     def get_ids(self) -> List[ParamID]:
         return list(self.keys())
 
@@ -71,9 +76,9 @@ class ParameterSet(Dict[ParamID, float]):
                 f"All parameter lists must have the same length. Actual lengths: {len_conds}"
             )
 
-        if ids is None:
-            ids = [f"p_{i:03d}" for i in range(n_conds)]
-        elif len(ids) != n_conds:
+        ids = ids or make_param_ids(n_conds)
+
+        if len(ids) != n_conds:
             raise ValueError(
                 f"Length of ids ({len(ids)}) must match number of parameter sets ({n_conds})."
             )
