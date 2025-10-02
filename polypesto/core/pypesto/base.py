@@ -1,12 +1,13 @@
 from pathlib import Path
-from typing import Tuple, Callable, Optional
+from typing import Callable, Optional, Tuple
 
-from amici.amici import Solver  # type: ignore
 import pypesto  # type: ignore
 import pypesto.optimize  # type: ignore
-from pypesto import Result, Problem as PypestoProblem  # type: ignore
-from pypesto.petab import PetabImporter  # type: ignore
+from amici.amici import Solver  # type: ignore
+from pypesto import Problem as PypestoProblem  # type: ignore
+from pypesto import Result
 from pypesto.objective import AmiciObjective  # type: ignore
+from pypesto.petab import PetabImporter  # type: ignore
 
 
 def optimize_problem(

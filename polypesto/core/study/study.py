@@ -1,21 +1,19 @@
 from __future__ import annotations
-from pathlib import Path
-from typing import Any, Dict, List
 
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from polypesto.models import ModelBase
 from polypesto.utils import write_json
 
 from ..params import ParameterGroup
 from ..problem import (
-    SimulatedProblem,
     SimConditions,
-    simulate_problem,
+    SimulatedProblem,
     run_parameter_estimation,
+    simulate_problem,
 )
-
-
-from .core import StudyPaths, StudyKey, SimulatedProblemDict, ResultsDict, StudyMetadata
+from .core import ResultsDict, SimulatedProblemDict, StudyKey, StudyMetadata, StudyPaths
 
 
 class Study:
@@ -26,7 +24,7 @@ class Study:
         true_params: ParameterGroup,
         problems: SimulatedProblemDict,
         paths: StudyPaths,
-        results: ResultsDict = {},
+        results: Optional[ResultsDict] = None,
     ):
         self.model = model
         self.true_params = true_params

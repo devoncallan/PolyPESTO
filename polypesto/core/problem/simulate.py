@@ -1,21 +1,25 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, Dict, Mapping, Any
 from pathlib import Path
+from typing import Any, Dict, List, Mapping, Sequence, Tuple
 
 import numpy as np
+from amici.petab.simulations import (  # type: ignore
+    rdatas_to_measurement_df,
+    simulate_petab,
+)
 from numpy.typing import ArrayLike
-from amici.petab.simulations import simulate_petab, rdatas_to_measurement_df  # type: ignore
 from pypesto.objective import AmiciObjective  # type: ignore
 
 from polypesto.models import ModelBase
-from polypesto.utils import read_json, write_json, ID
+from polypesto.utils import ID, read_json, write_json
 
 from .. import petab as pet
 from ..params import ParameterSet
 from ..pypesto import PypestoProblem
-from .problem import Problem, write_petab
 from .core import ProblemPaths
+from .problem import Problem, write_petab
 
 
 @dataclass
@@ -37,7 +41,7 @@ def write_sim_conditions(
 
     sim_conds_dict = {}
     param_set: Dict[str, ParameterSet] = {}
-    for cond_id, sim_cond in zip(cond_ids, sim_conditions):
+    for cond_id, sim_cond in zip(cond_ids, sim_conditions, strict=True):
         param_set[cond_id] = sim_cond.true_params
         sim_conds_dict[cond_id] = {
             "conds": sim_cond.conds.to_dict(),
@@ -138,7 +142,9 @@ def create_sim_conditions(
 
     conds_list = ParameterSet.from_dict_list(conds)
     cond_ids = ID.make_cond_ids(len(conds_list))
-    conds_list = [cond.set_id(cond_id) for cond, cond_id in zip(conds_list, cond_ids)]
+    conds_list = [
+        cond.set_id(cond_id) for cond, cond_id in zip(conds_list, cond_ids, strict=True)
+    ]
 
     n_conds = len(conds_list)
 

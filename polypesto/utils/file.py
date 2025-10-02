@@ -1,8 +1,8 @@
-from typing import Callable, Any, Dict, TypeVar
-from functools import wraps
-from pathlib import Path
 import json
 import os
+from functools import wraps
+from pathlib import Path
+from typing import Any, Callable, Dict
 
 
 def filepath(func: Callable[..., Path]) -> property:

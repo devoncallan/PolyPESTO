@@ -1,12 +1,14 @@
 from __future__ import annotations
+
 from typing import Dict, List, Mapping
 
 import numpy as np
 from numpy.typing import ArrayLike
 
 from polypesto.utils import ID
-from ..problem.simulate import SimConditions, create_sim_conditions
+
 from ..params import ParameterSet
+from ..problem.simulate import SimConditions, create_sim_conditions
 
 
 def _transpose_study_conditions(
@@ -62,7 +64,7 @@ def create_study_conditions(
     conds_list = _transpose_study_conditions(conds)
     prob_ids = ID.make_prob_ids(len(conds_list))
 
-    raw_conds_dict = dict(zip(prob_ids, conds_list))
+    raw_conds_dict = dict(zip(prob_ids, conds_list, strict=True))
 
     # Create simulation conditions for each parameter set
     for prob_id, raw_conds in raw_conds_dict.items():

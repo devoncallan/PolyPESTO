@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 from uuid import uuid4
@@ -7,8 +8,9 @@ import numpy as np
 import pandas as pd
 
 from polypesto.utils import ID
-from .params import ParameterSet
+
 from . import petab as pet
+from .params import ParameterSet
 
 
 @dataclass

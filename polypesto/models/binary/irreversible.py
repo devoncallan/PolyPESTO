@@ -1,9 +1,10 @@
 from typing import Dict, List
 
-from amici import AmiciSolver # type: ignore
+from amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
-from polypesto.models import sbml, ModelBase
+from polypesto.models import ModelBase, sbml
+
 from .common import define_irreversible_k
 
 ############################################
@@ -73,19 +74,19 @@ def irreversible_cpe() -> sbml.ModelDefinition:
     # Define monomer concentration and conversion
     sbml.create_species(model, "xA", initialAmount=0.0)
     sbml.create_parameter(model, "A", value=0, units="mole")
-    sbml.create_rule(model, "A", formula=f"A0 * (1 - xA)")
+    sbml.create_rule(model, "A", formula="A0 * (1 - xA)")
 
     sbml.create_parameter(model, "xB", value=0)
     sbml.create_parameter(model, "B", value=0, units="mole")
-    sbml.create_rule(model, "B", formula=f"(A0 + B0)*(1 - time) - A")
+    sbml.create_rule(model, "B", formula="(A0 + B0)*(1 - time) - A")
     sbml.create_rule(model, "xB", formula="1 - B / B0")
 
     # Define rates of change of monomer concentration
     sbml.create_parameter(model, "dA", value=0)
-    sbml.create_rule(model, "dA", formula=f"-A*(rA*A + B)")
+    sbml.create_rule(model, "dA", formula="-A*(rA*A + B)")
 
     sbml.create_parameter(model, "dB", value=0)
-    sbml.create_rule(model, "dB", formula=f"-B*(A+rB*B)")
+    sbml.create_rule(model, "dB", formula="-B*(A+rB*B)")
 
     # Define unreacted monomer composition
     sbml.create_parameter(model, "fA", value=0)
@@ -163,19 +164,19 @@ def irreversible_ode() -> sbml.ModelDefinition:
     sbml.create_parameter(model, "dx_dt", value=0)
 
     # Define R, RA, RB balances
-    sbml.create_rule(model, "dR_dt", formula=f"-R*(kpAA*A + kpBB*B)")
-    sbml.create_rule(model, "dRA_dt", formula=f"R*(kpAA*A) - RA*(kpAA*A + kpAB*B)")
-    sbml.create_rule(model, "dRB_dt", formula=f"R*(kpBB*B) - RB*(kpBB*B + kpBA*A)")
+    sbml.create_rule(model, "dR_dt", formula="-R*(kpAA*A + kpBB*B)")
+    sbml.create_rule(model, "dRA_dt", formula="R*(kpAA*A) - RA*(kpAA*A + kpAB*B)")
+    sbml.create_rule(model, "dRB_dt", formula="R*(kpBB*B) - RB*(kpBB*B + kpBA*A)")
 
     # Define monomer balances
-    sbml.create_rule(model, "dA_dt", formula=f"-A*(kpAA*(R + PA) + kpBA*(R + PB))")
-    sbml.create_rule(model, "dB_dt", formula=f"-B*(kpBB*(R + PB) + kpAB*(R + PA))")
+    sbml.create_rule(model, "dA_dt", formula="-A*(kpAA*(R + PA) + kpBA*(R + PB))")
+    sbml.create_rule(model, "dB_dt", formula="-B*(kpBB*(R + PB) + kpAB*(R + PA))")
 
     # Define polymer balances
-    sbml.create_rule(model, "dPAA_dt", formula=f"kpAA*PA*A - PAA*(kpAA*A + kpAB*B)")
-    sbml.create_rule(model, "dPAB_dt", formula=f"kpAB*PA*B - PAB*(kpBA*A + kpBB*B)")
-    sbml.create_rule(model, "dPBA_dt", formula=f"kpBA*PB*A - PBA*(kpAB*B + kpAA*A)")
-    sbml.create_rule(model, "dPBB_dt", formula=f"kpBB*PB*B - PBB*(kpBB*B + kpBA*A)")
+    sbml.create_rule(model, "dPAA_dt", formula="kpAA*PA*A - PAA*(kpAA*A + kpAB*B)")
+    sbml.create_rule(model, "dPAB_dt", formula="kpAB*PA*B - PAB*(kpBA*A + kpBB*B)")
+    sbml.create_rule(model, "dPBA_dt", formula="kpBA*PB*A - PBA*(kpAB*B + kpAA*A)")
+    sbml.create_rule(model, "dPBB_dt", formula="kpBB*PB*B - PBB*(kpBB*B + kpBA*A)")
 
     # Define dx/dt (dx)
     sbml.create_rule(model, "dxA_dt", formula="-1/A0 * dA_dt")
@@ -233,11 +234,11 @@ def irreversible_rxn() -> sbml.ModelDefinition:
     sbml.create_species(model, "fA")
     sbml.create_species(model, "fB")
 
-    sbml.create_rule(model, "xA", formula=f"1 - A/A0")
-    sbml.create_rule(model, "xB", formula=f"1 - B/B0")
-    sbml.create_rule(model, "x", formula=f"1 - (A0+B0-A-B)/(A0+B0+1e-10)")
-    sbml.create_rule(model, "fA", formula=f"A/(A+B+1e-10)")
-    sbml.create_rule(model, "fB", formula=f"B/(A+B+1e-10)")
+    sbml.create_rule(model, "xA", formula="1 - A/A0")
+    sbml.create_rule(model, "xB", formula="1 - B/B0")
+    sbml.create_rule(model, "x", formula="1 - (A0+B0-A-B)/(A0+B0+1e-10)")
+    sbml.create_rule(model, "fA", formula="A/(A+B+1e-10)")
+    sbml.create_rule(model, "fB", formula="B/(A+B+1e-10)")
 
     # Defining reactions
     # Syntax: (reaction_id, {reactants: stoich}, {products: stoich}, kinetic_law)

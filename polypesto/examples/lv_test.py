@@ -3,17 +3,16 @@ from pathlib import Path
 import numpy as np
 
 from polypesto.core import (
-    create_sim_conditions,
-    simulate_problem,
-    run_parameter_estimation,
     calculate_cis,
+    create_sim_conditions,
+    run_parameter_estimation,
+    simulate_problem,
 )
-from polypesto.visualization import plot_results
+from polypesto.examples.base import output_dirs
 
 # Model specific imports
 from polypesto.models.example.lotka_volterra import LotkaVolterra
-
-from polypesto.examples.base import output_dirs
+from polypesto.visualization import plot_results
 
 OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
 
@@ -47,7 +46,7 @@ def main():
         overwrite=True,
     )
     plot_results(result, problem, true_params)
-    cis = calculate_cis(result, ci_level=0.95)
+    calculate_cis(result, ci_level=0.95)
 
 
 if __name__ == "__main__":

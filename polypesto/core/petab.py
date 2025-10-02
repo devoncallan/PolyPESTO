@@ -1,19 +1,19 @@
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Callable, TypeAlias
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Callable, Dict, List, Optional, Tuple, TypeAlias
 
 import numpy as np
 import pandas as pd
-from petab.v1 import (  # type: ignore
-    write_observable_df,
+import petab.v1.C as C  # type: ignore
+from petab.v1 import Problem as PetabProblem  # type: ignore
+from petab.v1 import (
     write_condition_df,
     write_measurement_df,
+    write_observable_df,
     write_parameter_df,
-    Problem as PetabProblem,
-)  # type: ignore
-import petab.v1.C as C  # type: ignore
-from petab.v1.yaml import create_problem_yaml  # type: ignore
+)
 from petab.v1.lint import lint_problem  # type: ignore
+from petab.v1.yaml import create_problem_yaml  # type: ignore
 
 from polypesto.utils import ID
 

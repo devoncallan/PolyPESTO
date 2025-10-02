@@ -1,24 +1,28 @@
 from __future__ import annotations
+
 from copy import deepcopy
-from pathlib import Path
-from typing import List, Optional, Dict, Any, Callable
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from polypesto.utils import redirect_output_to_file
+
+from ...models import ModelBase, sbml
+from .. import petab as pet
+from ..experiment import Experiment, experiments_to_petab, petab_to_experiments
+from ..problem import ProblemPaths
 from ..pypesto import (
+    PypestoProblem,
     Result,
     has_results,
-    save_result,
+    load_pypesto_problem,
     load_result,
     optimize_problem,
     profile_problem,
     sample_problem,
+    save_result,
+    set_solver_options,
 )
-from .. import petab as pet
-from ...models import sbml, ModelBase
-from ..pypesto import Result, PypestoProblem, load_pypesto_problem, set_solver_options
-from ..experiment import Experiment, petab_to_experiments, experiments_to_petab
-from ..problem import ProblemPaths
 
 
 @dataclass
@@ -140,12 +144,12 @@ def write_petab(
 
 def run_parameter_estimation(
     prob: Problem,
-    config: Dict[str, Any] = {},
+    config: Optional[Dict[str, Any]] = None,
     save: bool = True,
     overwrite: bool = True,
 ) -> Result:
 
-    if config == {}:
+    if config is None or len(config) == 0:
         print("No parameter estimation steps configured - skipping")
         return None
 
@@ -156,7 +160,7 @@ def run_parameter_estimation(
 
     def run_if_found(key: str, _result: Optional[Result] = None) -> Optional[Result]:
 
-        if not key in config:
+        if key not in config:
             return _result
 
         if not overwrite and has_results(existing_result, key):
@@ -165,13 +169,13 @@ def run_parameter_estimation(
 
         kwargs = dict(problem=prob.pypesto_problem, **config[key])
         if key == "optimize":
-            print(f"\tRunning optimize_problem...")
+            print("\tRunning optimize_problem...")
             return optimize_problem(result=_result, **kwargs)
         elif key == "profile":
-            print(f"\tRunning profile_problem...")
+            print("\tRunning profile_problem...")
             return profile_problem(result=_result, **kwargs)
         elif key == "sample":
-            print(f"\tRunning sample_problem...")
+            print("\tRunning sample_problem...")
             return sample_problem(result=_result, **kwargs)
         else:
             raise ValueError(f"Unknown key: {key}")
@@ -192,7 +196,7 @@ def run_parameter_estimation(
                 overwrite=overwrite,
                 **save_components,
             )
-        except RuntimeError as e:
+        except RuntimeError:
             if overwrite:
                 print("Error saving results despite overwrite=True")
 

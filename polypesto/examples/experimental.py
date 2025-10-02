@@ -4,16 +4,15 @@ import matplotlib.pyplot as plt
 
 from polypesto.core import Dataset, Experiment, Problem, run_parameter_estimation
 from polypesto.core.pypesto import calculate_cis, create_ensemble, predict_with_ensemble
-from polypesto.visualization import plot_results, plot_ensemble_predictions
+from polypesto.examples.base import DATA_DIR, output_dirs
 
 # Model specific imports
 from polypesto.models.binary import BinaryIrreversible
 from polypesto.models.binary.utils import (
-    modify_experiments,
     create_ensemble_pred_problem,
+    modify_experiments,
 )
-
-from polypesto.examples.base import DATA_DIR, output_dirs
+from polypesto.visualization import plot_ensemble_predictions, plot_results
 
 OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
 

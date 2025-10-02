@@ -1,19 +1,20 @@
-from typing import Optional, Tuple, Dict, List
+from typing import Dict, List, Optional, Tuple
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
-import seaborn as sns  # type: ignore
+import numpy as np
 import pypesto.visualize as vis  # type: ignore
+import seaborn as sns  # type: ignore
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 
-from polypesto.core.pypesto import Result, has_sampling_results, get_true_param_values
+from polypesto.core.pypesto import Result, get_true_param_values, has_sampling_results
+
+from .base import safe_plot
 from .true import (
+    draw_true_param_marker,
     plot_true_params_on_pairgrid,
     plot_true_params_on_trace,
-    draw_true_param_marker,
 )
-from .base import safe_plot
 
 ######################
 ### Sampling Plots ###

@@ -1,13 +1,11 @@
-from typing import List
 from pathlib import Path
 
 import numpy as np
 
-from polypesto.core.study import Study, create_study_conditions
 from polypesto.core import ParameterGroup
-from polypesto.models.binary import BinaryIrreversible
-
+from polypesto.core.study import Study, create_study_conditions
 from polypesto.examples.base import output_dirs
+from polypesto.models.binary import BinaryIrreversible
 
 OUTPUT_DIR = output_dirs(Path(__file__).stem)
 

@@ -1,9 +1,10 @@
 from typing import Dict, List
 
-from amici.amici import AmiciSolver # type: ignore
+from amici.amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
-from polypesto.models import sbml, ModelBase
+from polypesto.models import ModelBase, sbml
+
 from .common import define_reversible_k
 
 ##########################################
@@ -151,42 +152,42 @@ def reversible_ode() -> sbml.ModelDefinition:
     sbml.create_parameter(model, "dx_dt", value=0)
 
     # Define R, RA, RB balances
-    sbml.create_rule(model, "dR_dt", formula=f"-R*(kpAA*A + kpBB*B)")
-    sbml.create_rule(model, "dRA_dt", formula=f"R*(kpAA*A) - RA*(kpAA*A + kpAB*B)")
-    sbml.create_rule(model, "dRB_dt", formula=f"R*(kpBB*B) - RB*(kpBB*B + kpBA*A)")
+    sbml.create_rule(model, "dR_dt", formula="-R*(kpAA*A + kpBB*B)")
+    sbml.create_rule(model, "dRA_dt", formula="R*(kpAA*A) - RA*(kpAA*A + kpAB*B)")
+    sbml.create_rule(model, "dRB_dt", formula="R*(kpBB*B) - RB*(kpBB*B + kpBA*A)")
 
     # Define monomer balances
     sbml.create_rule(
         model,
         "dA_dt",
-        formula=f"-A*(kpAA*(R + PA) + kpBA*(R + PB)) + kdAA*PAA + kdBA*PBA",
+        formula="-A*(kpAA*(R + PA) + kpBA*(R + PB)) + kdAA*PAA + kdBA*PBA",
     )
     sbml.create_rule(
         model,
         "dB_dt",
-        formula=f"-B*(kpBB*(R + PB) + kpAB*(R + PA)) + kdBB*PBB + kdAB*PAB",
+        formula="-B*(kpBB*(R + PB) + kpAB*(R + PA)) + kdBB*PBB + kdAB*PAB",
     )
 
     # Define polymer balances
     sbml.create_rule(
         model,
         "dPAA_dt",
-        formula=f"kpAA*PA*A - PAA*(kpAA*A + kpAB*B) + kdAA*fPAA*PAA + kdAB*fPAA*PAB - kdAA*PAA",
+        formula="kpAA*PA*A - PAA*(kpAA*A + kpAB*B) + kdAA*fPAA*PAA + kdAB*fPAA*PAB - kdAA*PAA",
     )
     sbml.create_rule(
         model,
         "dPAB_dt",
-        formula=f"kpAB*PA*B - PAB*(kpBA*A + kpBB*B) + kdBA*fPAB*PBA + kdBB*fPAB*PBB - kdAB*PAB",
+        formula="kpAB*PA*B - PAB*(kpBA*A + kpBB*B) + kdBA*fPAB*PBA + kdBB*fPAB*PBB - kdAB*PAB",
     )
     sbml.create_rule(
         model,
         "dPBA_dt",
-        formula=f"kpBA*PB*A - PBA*(kpAB*B + kpAA*A) + kdAB*fPBA*PAB + kdAA*fPBA*PAA - kdBA*PBA",
+        formula="kpBA*PB*A - PBA*(kpAB*B + kpAA*A) + kdAB*fPBA*PAB + kdAA*fPBA*PAA - kdBA*PBA",
     )
     sbml.create_rule(
         model,
         "dPBB_dt",
-        formula=f"kpBB*PB*B - PBB*(kpBB*B + kpBA*A) + kdBB*fPBB*PBB + kdBA*fPBB*PBA - kdBB*PBB",
+        formula="kpBB*PB*B - PBB*(kpBB*B + kpBA*A) + kdBB*fPBB*PBB + kdBA*fPBB*PBA - kdBB*PBB",
     )
 
     # Define dx/dt (dx)
@@ -223,11 +224,11 @@ def reversible_cpe() -> sbml.ModelDefinition:
     # Define monomer concentration and conversion
     sbml.create_species(model, "xA", initialAmount=0.0)
     sbml.create_parameter(model, "A", value=0, units="mole")
-    sbml.create_rule(model, "A", formula=f"A0 * (1 - xA)")
+    sbml.create_rule(model, "A", formula="A0 * (1 - xA)")
 
     sbml.create_parameter(model, "xB", value=0)
     sbml.create_parameter(model, "B", value=0, units="mole")
-    sbml.create_rule(model, "B", formula=f"(A0 + B0)*(1 - time) - A")
+    sbml.create_rule(model, "B", formula="(A0 + B0)*(1 - time) - A")
     sbml.create_rule(model, "xB", formula="1 - B / B0")
 
     # Define terminal chain-end fractions
@@ -271,14 +272,14 @@ def reversible_cpe() -> sbml.ModelDefinition:
     # Define rates of change of monomer concentration
     sbml.create_parameter(model, "dA", value=0)
     sbml.create_rule(
-        model, "dA", formula=f"-A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)"
+        model, "dA", formula="-A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)"
     )
     # Irreversible: -A*(kpA*pA + kpBA*pB)
     # Reversible: -A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)
 
     sbml.create_parameter(model, "dB", value=0)
     sbml.create_rule(
-        model, "dB", formula=f"-B*(kpBB*pB + kpAB*pA) + pB*(kdBB*pBB + kdAB*pAB)"
+        model, "dB", formula="-B*(kpBB*pB + kpAB*pA) + pB*(kdBB*pBB + kdAB*pAB)"
     )
 
     sbml.create_parameter(model, "fA", value=0)
@@ -329,16 +330,16 @@ def reversible_rxn() -> sbml.ModelDefinition:
     # Calculates monomer conversion
     sbml.create_parameter(model, "xA", value=0)
     sbml.create_parameter(model, "xB", value=0)
-    sbml.create_rule(model, "xA", formula=f"1 - A/A0")
-    sbml.create_rule(model, "xB", formula=f"1 - B/B0")
+    sbml.create_rule(model, "xA", formula="1 - A/A0")
+    sbml.create_rule(model, "xB", formula="1 - B/B0")
 
     # Define chain-end dyad fractions
     sbml.create_parameter(model, "fPAA", value=1)
     sbml.create_parameter(model, "fPAB", value=1)
     sbml.create_parameter(model, "fPBA", value=1)
     sbml.create_parameter(model, "fPBB", value=1)
-    sbml.create_rule(model, "PA", formula=f"PAA + PBA")
-    sbml.create_rule(model, "PB", formula=f"PAB + PBB")
+    sbml.create_rule(model, "PA", formula="PAA + PBA")
+    sbml.create_rule(model, "PB", formula="PAB + PBB")
 
     eps = 1e-10
     sbml.create_rule(model, "fPAA", formula=f"(PAA + {eps}) / (PA + {eps})")

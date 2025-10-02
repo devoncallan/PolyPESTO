@@ -1,12 +1,13 @@
 from __future__ import annotations
+
 import itertools
-from typing import Dict, List, Mapping, NamedTuple, Optional, TypeAlias, Callable
 from pathlib import Path
+from typing import Callable, Dict, List, Mapping, NamedTuple, Optional, TypeAlias
 
 import numpy as np
 from numpy.typing import ArrayLike
 
-from polypesto.utils import read_json, write_json, ID
+from polypesto.utils import ID, read_json, write_json
 
 ParamID: TypeAlias = str
 ParamSetID: TypeAlias = str
@@ -141,7 +142,7 @@ class ParameterGroup(Dict[ParamSetID, ParameterSet]):
         num_psets = 0
         for combination in itertools.product(*param_values):
 
-            params = dict(zip(param_names, combination))
+            params = dict(zip(param_names, combination, strict=True))
             if filter_fn is None or filter_fn(params):
 
                 set_id = f"p_{num_psets:03d}"

@@ -1,9 +1,10 @@
 from typing import Dict, Optional, Tuple
 
 import numpy as np
-from pypesto import Result, Problem as PypestoProblem  # type: ignore
-from pypesto.sample.util import geweke_test  # type: ignore
 from petab.v1.parameters import scale  # type: ignore
+from pypesto import Problem as PypestoProblem  # type: ignore
+from pypesto import Result
+from pypesto.sample.util import geweke_test  # type: ignore
 
 
 def has_optimization_results(result: Result) -> bool:
@@ -76,7 +77,7 @@ def get_best_optimization_params(
 
     # Return as dictionary with parameter names
     result = {}
-    for i, idx in enumerate(problem.x_free_indices):
+    for idx in problem.x_free_indices:
 
         value = best_x[idx]
         if scaled:

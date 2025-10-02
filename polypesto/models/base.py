@@ -1,13 +1,13 @@
-from typing import Dict, List, Optional, Callable
-from pathlib import Path
 from abc import ABC, abstractmethod
+from pathlib import Path
+from typing import Callable, Dict, List, Optional
 
 import pandas as pd
 from amici.amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
-from . import sbml
 
+from . import sbml
 
 AMICI_MODEL_DIR = Path(__file__).parent.parent / "amici_models"
 
@@ -90,8 +90,11 @@ class ModelBase(ABC):
 
         import hashlib
 
+        def get_hash(s: str) -> str:
+            return hashlib.md5(s.encode(), usedforsecurity=False).hexdigest()
+
         obs_str = str(sorted(self.observables.keys()))
-        obs_hash_str = hashlib.md5(obs_str.encode()).hexdigest()
+        obs_hash_str = get_hash(obs_str)
 
         # Fit parameter fields that affect model compilation
         fit_signature = {
@@ -99,9 +102,9 @@ class ModelBase(ABC):
             for param_id, param in self.fit_params.items()
         }
         fit_str = str(sorted(fit_signature.items()))
-        fit_hash_str = hashlib.md5(fit_str.encode()).hexdigest()
+        fit_hash_str = get_hash(fit_str)
 
         combined_str = f"{obs_hash_str}_{fit_hash_str}"
-        combined_hash_str = hashlib.md5(combined_str.encode()).hexdigest()
+        combined_hash_str = get_hash(combined_str)
 
         return f"{self.name}_{combined_hash_str}"

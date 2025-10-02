@@ -1,12 +1,18 @@
-from typing import Dict, List, Sequence
 from functools import partial
+from typing import Dict, List, Sequence
 
 import numpy as np
 import pypesto  # type: ignore
 from pypesto import Result  # type: ignore
+from pypesto.C import (  # type: ignore
+    AMICI_STATUS,
+    AMICI_T,
+    AMICI_X,
+    AMICI_Y,
+    EnsembleType,
+)
 from pypesto.ensemble import Ensemble, EnsemblePrediction  # type: ignore
 from pypesto.objective import AmiciObjective  # type: ignore
-from pypesto.C import EnsembleType, AMICI_STATUS, AMICI_T, AMICI_X, AMICI_Y  # type: ignore
 from pypesto.predict import AmiciPredictor  # type: ignore
 from pypesto.problem import Problem as PypestoProblem  # type: ignore
 

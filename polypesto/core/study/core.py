@@ -1,11 +1,13 @@
 from __future__ import annotations
+
 from dataclasses import dataclass
-from typing import TypeVar, TypeAlias, Dict, List, Any
 from pathlib import Path
+from typing import Any, Dict, List, TypeAlias, TypeVar
 
 from polypesto.utils import filepath, read_json
-from ..pypesto import Result
+
 from ..problem.simulate import SimulatedProblem
+from ..pypesto import Result
 
 
 class StudyKey(str):
