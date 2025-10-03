@@ -43,7 +43,7 @@ class BinaryIrreversible(ModelBase):
         }
 
     def _default_sbml_model(self) -> sbml.ModelDefinition:
-        return irreversible_ode()
+        return irreversible_cpe()
 
     def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
         solver.setNewtonMaxSteps(10_000)
@@ -66,6 +66,7 @@ def irreversible_cpe() -> sbml.ModelDefinition:
     sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
 
     define_irreversible_k(model)
+    sbml.create_parameter(model, "eps", value=1e-10, units="dimensionless")
 
     # Define initial concenetrations.
     sbml.create_parameter(model, "A0", value=1.0, units="mole", constant=True)
@@ -93,6 +94,13 @@ def irreversible_cpe() -> sbml.ModelDefinition:
     sbml.create_rule(model, "fA", formula="A / (A + B + 1e-10)")
     sbml.create_parameter(model, "fB", value=0)
     sbml.create_rule(model, "fB", formula="1 - fA")
+
+    sbml.create_parameter(model, "FA", value=0)
+    sbml.create_parameter(model, "FB", value=0)
+    sbml.create_rule(
+        model, "FA", formula="(A0/(A0+B0) - (1 - time) * fA) / (time + eps)"
+    )
+    sbml.create_rule(model, "FB", formula="1 - FA")
 
     # Define dxA/dt (dX)
     sbml.create_rate_rule(

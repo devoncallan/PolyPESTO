@@ -171,13 +171,10 @@ cython_debug/
 .pypirc
 
 # Any PETAB data that is generated
-experiments/*/data/
-amici_models/
-.vscode/
-polypesto/_models/*
-_experiments/
-experiments/**/data/
-polypesto/**/data/
-Parker/
-polypesto/examples/**/*/
 **/.DS_Store
+.vscode/
+Parker/
+amici_models/
+polypesto/examples/**/*/
+!polypesto/examples/data/
+!polypesto/examples/data/**

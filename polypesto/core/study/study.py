@@ -81,7 +81,11 @@ class Study:
             print("\n\n")
             print(title_str)
             print(f" | Problem ID: {key.prob_id}")
+            print(
+                f" | - Simulation Condition: {problem.sim_conditions[0].conds.to_dict()}"
+            )
             print(f" | Parameter ID: {key.param_id}")
+            print(f" | - True Parameters: {problem.true_params.to_dict()}")
             print(f" | Problem directory: {self.paths.prob_dir(key)}")
             print("-" * len(title_str))
             result = run_parameter_estimation(problem, config, **kwargs)
