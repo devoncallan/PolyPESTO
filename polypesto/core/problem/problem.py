@@ -84,19 +84,15 @@ class Problem:
         model: ModelBase,
         experiments: List[Experiment],
         problem_id: Optional[str] = None,
-    ) -> "Problem":
+    ) -> Problem:
         print("Creating problem from experiments...")
         print(f"Output directory: {output_dir}")
 
         # Create PEtab problem from experiments
-        cond_df, meas_df = experiments_to_petab(experiments)
-        petab_data = pet.PetabData(
-            obs_df=model.get_obs_df(),
-            cond_df=cond_df,
-            param_df=model.get_param_df(),
-            meas_df=meas_df,
-            name=problem_id,
-        )
+        obs_df = model.get_obs_df()
+        param_df = model.get_param_df()
+        cond_df, meas_df = experiments_to_petab(experiments, model.obs_noise_map)
+        petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df, problem_id)
 
         problem = write_petab(output_dir, model, petab_data)
 
@@ -168,8 +164,8 @@ def write_petab(
 def run_parameter_estimation(
     prob: Problem,
     config: Optional[Dict[str, Any]] = None,
+    overwrite: bool = False,
     save: bool = True,
-    overwrite: bool = True,
     plot: bool = True,
 ) -> Result:
 
@@ -215,7 +211,8 @@ def run_parameter_estimation(
         )
 
     if result and plot:
-        prob.visualize_results()
+
+        prob.visualize_results(overwrite=overwrite)
 
     return result
 

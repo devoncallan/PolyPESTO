@@ -80,15 +80,6 @@ class Study:
 
             result = run_parameter_estimation(problem, config, **kwargs)
             self.results[key] = result
-            # if self.results.get(key, None) is None:
-            #     print(
-            #         f"Running parameter estimation for {key.param_id}, {key.param_id}..."
-            #     )
-            #     result = run_parameter_estimation(problem, config, **kwargs)
-            #     self.results[key] = result
-            #     print("Done.")
-            # else:
-            #     print(f"Found existing result for {key.param_id}, {key.param_id}.")
 
         return self.results
 

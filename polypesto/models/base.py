@@ -2,12 +2,15 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
+import numpy as np
 import pandas as pd
 from amici.amici import AmiciSolver  # type: ignore
 
 from polypesto.core import petab as pet
+from polypesto.utils import ID
 
 from . import sbml
+from .utils import parse_obs_noise
 
 AMICI_MODEL_DIR = Path(__file__).parent.parent / "amici_models"
 
@@ -16,26 +19,23 @@ class ModelBase(ABC):
 
     def __init__(
         self,
-        observables: Optional[List[str]] = None,
-        obs_noise_level: float = 0.02,
-        sbml_model: Optional[sbml.ModelDefinition] = None,
-        solver_options: Optional[Callable[[AmiciSolver], AmiciSolver]] = None,
+        observables: List[ID.StrObsName] | None = None,
+        obs_noise: float | List[float] | Dict[ID.StrObsName, float] | None = None,
+        sbml_model: sbml.ModelDefinition | None = None,
+        solver_options: Callable[[AmiciSolver], AmiciSolver] | None = None,
     ):
 
         self.name = self.__class__.__name__
 
-        self.observables = {o: o for o in (observables or self._default_obs())}
-        self.obs_noise_level = obs_noise_level
+        self.obs_names = observables or self._default_obs()
+        self.obs_formula_map = {o: o for o in self.obs_names}
+        self.obs_noise_map = parse_obs_noise(obs_noise, self.obs_names)
 
         self.fit_params = self._default_fit_params()
         self.sbml_model = sbml_model if sbml_model else self._default_sbml_model()
 
-        if solver_options is None:
+        if solver_options is None or not callable(solver_options):
             self.solver_options = self._default_solver_options
-        elif not callable(solver_options):
-            raise TypeError(
-                "solver_options must be a function that takes and returns an AmiciSolver."
-            )
         else:
             # Type assertion to help mypy understand the type after callable() check
             self.solver_options = solver_options  # type: ignore[assignment]
@@ -76,9 +76,7 @@ class ModelBase(ABC):
 
     def get_obs_df(self) -> pd.DataFrame:
         """Get observables dataframe"""
-        return pet.define_observables(
-            self.observables, noise_value=self.obs_noise_level
-        )
+        return pet.define_observables(self.obs_formula_map, self.obs_noise_map)
 
     def model_name_with_hash(self) -> str:
         """
@@ -88,13 +86,8 @@ class ModelBase(ABC):
             str: A unique model name.
         """
 
-        import hashlib
-
-        def get_hash(s: str) -> str:
-            return hashlib.md5(s.encode(), usedforsecurity=False).hexdigest()
-
-        obs_str = str(sorted(self.observables.keys()))
-        obs_hash_str = get_hash(obs_str)
+        obs_str = str(sorted(self.obs_names))
+        obs_hash_str = ID.get_hash(obs_str)
 
         # Fit parameter fields that affect model compilation
         fit_signature = {
@@ -102,9 +95,9 @@ class ModelBase(ABC):
             for param_id, param in self.fit_params.items()
         }
         fit_str = str(sorted(fit_signature.items()))
-        fit_hash_str = get_hash(fit_str)
+        fit_hash_str = ID.get_hash(fit_str)
 
         combined_str = f"{obs_hash_str}_{fit_hash_str}"
-        combined_hash_str = get_hash(combined_str)
+        combined_hash_str = ID.get_hash(combined_str)
 
         return f"{self.name}_{combined_hash_str}"

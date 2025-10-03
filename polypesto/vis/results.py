@@ -22,7 +22,10 @@ from .base import save_plot
 
 
 def plot_results(
-    result: Result, problem: Problem, true_params: Optional[Dict[str, float]] = None
+    result: Result,
+    problem: Problem,
+    true_params: Optional[Dict[str, float]] = None,
+    overwrite: bool = False,
 ) -> None:
     """Plots the results of the parameter estimation.
 
@@ -34,32 +37,32 @@ def plot_results(
 
     if has_problem_results(result):
 
-        with save_plot(problem.paths.measurements_fig):
+        with save_plot(problem.paths.measurements_fig, overwrite=overwrite):
             plot_all_measurements(problem.petab_problem.measurement_df)
 
     if has_optimization_results(result):
 
-        with save_plot(problem.paths.optimization_scatter_fig):
+        with save_plot(problem.paths.optimization_scatter_fig, overwrite=overwrite):
             plot_optimization_scatter(result, true_params)
 
-        with save_plot(problem.paths.waterfall_fig):
+        with save_plot(problem.paths.waterfall_fig, overwrite=overwrite):
             plot_waterfall(result)
 
-        with save_plot(problem.paths.model_fit_fig):
+        with save_plot(problem.paths.model_fit_fig, overwrite=overwrite):
             plot_optimized_model_fit(result, problem)
 
     if has_sampling_results(result):
 
-        with save_plot(problem.paths.sampling_scatter_fig):
+        with save_plot(problem.paths.sampling_scatter_fig, overwrite=overwrite):
             plot_sampling_scatter(result, true_params)
 
-        with save_plot(problem.paths.confidence_intervals_fig):
+        with save_plot(problem.paths.confidence_intervals_fig, overwrite=overwrite):
             plot_confidence_intervals(result, true_params)
 
-        with save_plot(problem.paths.sampling_trace_fig):
+        with save_plot(problem.paths.sampling_trace_fig, overwrite=overwrite):
             plot_parameter_traces(result, true_params)
 
     if has_profile_results(result):
 
-        with save_plot(problem.paths.profile_fig):
+        with save_plot(problem.paths.profile_fig, overwrite=overwrite):
             plot_profiles(result, true_params)

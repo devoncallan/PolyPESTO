@@ -1,11 +1,25 @@
-from typing import List
+from typing import List, TypeAlias, Tuple
+import hashlib
 
 
 class ID:
     """Namespace for ID generation functions."""
 
+    StrObsID: TypeAlias = str
+    StrObsName: TypeAlias = str
+    StrObsFormula: TypeAlias = str
+
+    StrCondID: TypeAlias = str
+    StrCondName: TypeAlias = str
+
+    ObsCondKey: TypeAlias = Tuple[StrObsID, StrCondID]
+
     @staticmethod
-    def obs_id(name: str) -> str:
+    def get_hash(s: str) -> str:
+        return hashlib.md5(s.encode(), usedforsecurity=False).hexdigest()
+
+    @staticmethod
+    def obs_id(name: StrObsID) -> str:
         """Generate a standard observable ID given a name."""
         return f"obs_{name}"
 
@@ -15,7 +29,7 @@ class ID:
         return f"p_{i:03d}"
 
     @staticmethod
-    def cond_id(name: str) -> str:
+    def cond_id(name: StrCondName) -> str:
         """Generate a standard condition ID given a name."""
         return f"c_{name}"
 

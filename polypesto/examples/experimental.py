@@ -12,9 +12,8 @@ from polypesto.models.binary.utils import (
     create_ensemble_pred_problem,
     modify_experiments,
 )
-from polypesto.vis import plot_ensemble_predictions
 
-OUTPUT_DIR, ENSEMBLE_DIR = output_dirs(Path(__file__).stem)
+OUTPUT_DIR = output_dirs(Path(__file__).stem)
 
 
 def main():
@@ -31,6 +30,7 @@ def main():
                 DATA_DIR / "data_3060.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
+                noise_map={"xA": 0.05, "xB": 0.10},
             )
         ],
     )
@@ -43,6 +43,7 @@ def main():
                 DATA_DIR / "data_5050.csv",
                 tkey="Time[min]",
                 obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
+                noise_map={"xA": 0.15, "xB": 0.20},
             )
         ],
     )

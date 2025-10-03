@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Sequence, Tuple, Optional
 
 import numpy as np
 from amici.petab.simulations import (  # type: ignore
@@ -13,7 +13,7 @@ from numpy.typing import ArrayLike
 from pypesto.objective import AmiciObjective  # type: ignore
 
 from polypesto.models import ModelBase
-from polypesto.utils import ID, read_json, write_json
+from polypesto.utils import ID, read_json, write_json, redirect_output_to_file
 
 from .. import petab as pet
 from ..params import ParameterSet
@@ -29,7 +29,7 @@ class SimConditions:
     true_params: ParameterSet
     conds: ParameterSet
     t_eval: np.ndarray
-    noise_level: float = 0.0
+    noise_level: float | Dict[ID.StrObsName, float] = 0.0
 
 
 def write_sim_conditions(
@@ -85,44 +85,68 @@ def load_sim_conditions(
     return true_params, sim_conds
 
 
-@dataclass
-class SimulatedProblem(Problem):
-    """A parameter estimation problem with simulated data."""
+def parse_noise_levels(
+    noise_levels: (
+        float
+        | List[float]
+        | Dict[ID.StrObsName, float]
+        | Dict[ID.StrObsName, List[float]]
+        | None
+    ),
+    n_conds: int,
+) -> List[float] | List[Dict[ID.StrObsName, float]]:
 
-    true_params: ParameterSet
-    sim_conditions: List[SimConditions]
+    def parse_list_or_int(noise: float | List[float], n: int) -> Optional[List[float]]:
+        if isinstance(noise, (float, int)):
+            return [float(noise)] * n
+        elif isinstance(noise, list):
+            if len(noise) != n:
+                raise ValueError(
+                    f"Length of noise_levels list ({len(noise)}) must match number of conditions ({n})."
+                )
+            return [float(n) for n in noise]
+        else:
+            return None
 
-    @staticmethod
-    def from_problem(
-        problem: Problem, true_params: ParameterSet, sim_conditions: List[SimConditions]
-    ) -> SimulatedProblem:
-        return SimulatedProblem(
-            model=problem.model,
-            petab_problem=problem.petab_problem,
-            pypesto_problem=problem.pypesto_problem,
-            paths=problem.paths,
-            experiments=problem.experiments,
-            true_params=true_params,
-            sim_conditions=sim_conditions,
+    if noise_levels is None:
+        return [0.0] * n_conds
+
+    noise_list = parse_list_or_int(noise_levels, n_conds)
+
+    if noise_list is not None:
+        return noise_list
+
+    elif isinstance(noise_levels, dict):
+        noise_dict_list: Dict[ID.StrObsName, List[float]] = {}
+        for obs_name, noise in noise_levels.items():
+            parsed_list = parse_list_or_int(noise, n_conds)
+            if parsed_list is None:
+                raise TypeError(
+                    "Values in noise_levels dict must be float or list of floats."
+                )
+            noise_dict_list[obs_name] = parsed_list
+
+        # Convert to a list of dictionaries
+        return [
+            {o: noise_dict_list[o][i] for o in noise_dict_list} for i in range(n_conds)
+        ]
+    else:
+        raise TypeError(
+            "noise_levels must be None, a float, a list of floats, or a dict."
         )
-
-    @staticmethod
-    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> SimulatedProblem:
-
-        problem = Problem.load(prob_dir, model, **kwargs)
-        true_params, sim_conditions = load_sim_conditions(problem.paths)
-        return SimulatedProblem.from_problem(problem, true_params, sim_conditions)
-
-    def visualize_results(self, **kwargs):
-        true_params = self.true_params.to_dict()
-        return super().visualize_results(true_params=true_params, **kwargs)
 
 
 def create_sim_conditions(
     conds: Mapping[str, ArrayLike],
     true_params: ParameterSet | Dict[str, float],
     t_evals: ArrayLike | List[ArrayLike],
-    noise_levels: float | List[float] = 0.0,
+    meas_noise: (
+        float
+        | List[float]
+        | Dict[ID.StrObsName, float]
+        | Dict[ID.StrObsName, List[float]]
+        | None
+    ) = 0.0,
 ) -> List[SimConditions]:
     """Create a list of SimConditions from the provided parameters.
 
@@ -133,7 +157,7 @@ def create_sim_conditions(
             e.g., `conds = {"A0": [0.25, 0.6], "B0": [0.75, 0.4]}`
         t_evals (ArrayLike | List[ArrayLike]): Time evaluation points.
             e.g., `t_evals = np.linspace(0, 10, 100)` or `t_evals = [np.linspace(0, 10, 100), np.linspace(0, 5, 50)]`
-        noise_levels (float | List[float]): Noise levels for the simulations. Defaults to 0.0.
+        meas_noise (float | List[float]): Noise levels for the simulations. Defaults to 0.0.
             e.g., `noise_levels = 0.1` or `noise_levels = [0.1, 0.2]`
 
     Returns:
@@ -166,17 +190,7 @@ def create_sim_conditions(
         )
     assert isinstance(t_evals_list, list) and len(t_evals_list) == n_conds
 
-    if isinstance(noise_levels, float):
-        noise_levels_list = [noise_levels] * n_conds
-    elif isinstance(noise_levels, list):
-        if len(noise_levels) != n_conds:
-            raise ValueError(
-                f"Length of noise_levels ({len(noise_levels)}) must match number of conditions ({n_conds})."
-            )
-        noise_levels_list = noise_levels
-    else:
-        raise TypeError("noise_levels must be a float or a list of floats.")
-    assert isinstance(noise_levels_list, list) and len(noise_levels_list) == n_conds
+    noise_levels = parse_noise_levels(meas_noise, n_conds)
 
     sim_conditions = []
     for i in range(n_conds):
@@ -185,11 +199,49 @@ def create_sim_conditions(
             true_params=true_params,
             conds=conds_list[i],
             t_eval=t_evals_list[i],
-            noise_level=noise_levels_list[i],
+            noise_level=noise_levels[i],
         )
         sim_conditions.append(sim_cond)
 
     return sim_conditions
+
+
+@dataclass
+class SimulatedProblem(Problem):
+    """A parameter estimation problem with simulated data."""
+
+    true_params: ParameterSet
+    sim_conditions: List[SimConditions]
+
+    @staticmethod
+    def from_problem(
+        problem: Problem, true_params: ParameterSet, sim_conditions: List[SimConditions]
+    ) -> SimulatedProblem:
+        return SimulatedProblem(
+            model=problem.model,
+            petab_problem=problem.petab_problem,
+            pypesto_problem=problem.pypesto_problem,
+            paths=problem.paths,
+            experiments=problem.experiments,
+            true_params=true_params,
+            sim_conditions=sim_conditions,
+        )
+
+    @staticmethod
+    def load(prob_dir: str | Path, model: ModelBase, **kwargs) -> SimulatedProblem:
+
+        paths = ProblemPaths(prob_dir)
+
+        msg = f"Loading simulated problem from {prob_dir}"
+        with redirect_output_to_file(paths.model_load_log, mode="a", message=msg):
+            problem = Problem.load(prob_dir, model, **kwargs)
+            true_params, sim_conditions = load_sim_conditions(problem.paths)
+
+        return SimulatedProblem.from_problem(problem, true_params, sim_conditions)
+
+    def visualize_results(self, **kwargs):
+        true_params = self.true_params.to_dict()
+        return super().visualize_results(true_params=true_params, **kwargs)
 
 
 def write_empty_problem(
@@ -211,18 +263,19 @@ def write_empty_problem(
     data_dict = {
         (ID.obs_id(obs_name), sim_cond.conds.id): sim_cond.t_eval
         for sim_cond in sim_conds
-        for obs_name in model.observables.keys()
+        for obs_name in model.obs_names
     }
     conds_list = [cond.conds.to_dict() for cond in sim_conds]
     cond_ids = [cond.conds.id for cond in sim_conds]
 
-    petab_data = pet.PetabData(
-        obs_df=model.get_obs_df(),
-        cond_df=pet.define_conditions(conds_list, ids=cond_ids),
-        param_df=model.get_param_df(),
-        meas_df=pet.define_empty_measurements(data_dict),
-    )
+    # Get PEtab data DataFrames
+    obs_df = model.get_obs_df()
+    cond_df = pet.define_conditions(conds_list, ids=cond_ids)
+    param_df = model.get_param_df()
+    meas_df = pet.define_empty_measurements(data_dict)
+    petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df)
 
+    # Write PEtab and load parameter estimation problem
     problem = write_petab(prob_dir, model, petab_data)
     true_params = write_sim_conditions(problem.paths, sim_conds)
 
@@ -246,7 +299,7 @@ def simulate_problem(
         overwrite (bool, optional): Whether to overwrite existing data. Defaults to False.
 
     Returns:
-        Problem: The problem instance containing the simulation results.
+        SimulatedProblem: The problem instance containing the simulation results.
     """
 
     if not overwrite and Path(prob_dir).exists():
@@ -284,7 +337,7 @@ def simulate_problem(
     )
 
     meas_df = pet.add_noise_to_measurements(
-        meas_df, noise_level=problem.model.obs_noise_level
+        meas_df, meas_noise=[cond.noise_level for cond in conds]
     )
 
     pet.write_measurement_df(meas_df, problem.paths.measurements)

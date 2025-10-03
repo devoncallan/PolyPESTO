@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, TypeAlias
 from uuid import uuid4
 
 import numpy as np
@@ -21,14 +21,17 @@ class Dataset:
         `id` (str): Identifier for the dataset (e.g., filename or descriptive name).
         `data` (pd.DataFrame): DataFrame containing the experimental data.
         `tkey` (str): Column name in `data` representing time points (or independent variable).
-        `obs_map` (Dict[str, str]): Mapping from DataFrame column names to model observable IDs.
+        `obs_map` (Dict[ID.StrObsName, str]): Mapping from DataFrame column names to model observable names.
             e.g., {"xA": "Conversion A", "xB": "Conversion B"}
+        `noise_map` (Optional[Dict[ID.StrObsName, float]]): Optional mapping from observable names to noise
+            e.g., {"xA": 0.1, "xB": 0.2}
     """
 
     id: str
     data: pd.DataFrame
     tkey: str
-    obs_map: Dict[str, str]
+    obs_map: Dict[ID.StrObsName, str]
+    noise_map: Optional[Dict[ID.StrObsName, float]] = None
 
     def __post_init__(self):
         """Validate that tkey and obs_map columns exist in the data."""
@@ -54,8 +57,12 @@ class Dataset:
 
     @staticmethod
     def load(
-        path_or_data: str | pd.DataFrame, tkey: str, obs_map: Dict[str, str], **kwargs
-    ) -> "Dataset":
+        path_or_data: str | pd.DataFrame,
+        tkey: str,
+        obs_map: Dict[ID.StrObsName, str],
+        noise_map: Optional[Dict[ID.StrObsName, float]] = None,
+        **kwargs,
+    ) -> Dataset:
         if isinstance(path_or_data, pd.DataFrame):
             id = str(uuid4())
             data = path_or_data
@@ -63,7 +70,9 @@ class Dataset:
             id = str(path_or_data)
             data = pd.read_csv(path_or_data, **kwargs)
 
-        return Dataset(id=id, data=data, tkey=tkey, obs_map=obs_map)
+        return Dataset(
+            id=id, data=data, tkey=tkey, obs_map=obs_map, noise_map=noise_map
+        )
 
 
 @dataclass
@@ -75,13 +84,16 @@ class Experiment:
     data: List[Dataset]
 
     @staticmethod
-    def load(id: str, conds: Dict[str, float], data: List[Dataset]) -> Experiment:
+    def load(
+        id: str, conds: Dict[ID.StrCondName, float], data: List[Dataset]
+    ) -> Experiment:
         conditions = ParameterSet.from_dict(conds, id=id)
         return Experiment(id=id, conds=conditions, data=data)
 
 
 def experiments_to_petab(
     experiments: List[Experiment],
+    obs_noise_map: Dict[ID.StrObsName, float] | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Convert a list of Experiment objects to PEtab format.
 
@@ -92,13 +104,18 @@ def experiments_to_petab(
         Tuple[pd.DataFrame, pd.DataFrame]: PEtab conditions and measurements dataframes.
     """
 
-    data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]] = {}
+    data_dict: Dict[ID.ObsCondKey, Tuple[np.ndarray, np.ndarray]] = {}
+    noise_map: Dict[ID.ObsCondKey, float] = {}
+
     conds = []
 
-    cond_ids = [ID.cond_id(exp.conds.id) for exp in experiments]
-    assert len(cond_ids) == len(
-        set(cond_ids)
-    ), f"Condition IDs must be unique. Found duplicates in {cond_ids}"
+    cond_names = [str(exp.conds.id) for exp in experiments]
+    cond_ids = [ID.cond_id(name) for name in cond_names]
+
+    if len(cond_ids) != len(set(cond_ids)):
+        raise ValueError(
+            f"Condition IDs must be unique. Found duplicates in {cond_ids}"
+        )
 
     for i, exp in enumerate(experiments):
         cond = exp.conds
@@ -124,45 +141,20 @@ def experiments_to_petab(
 
                 data_dict[key] = (t, y)
 
-    cond_df = pet.define_conditions(conds, cond_ids)
-    meas_df = pet.define_measurements(data_dict)
+                # Override noise map from observables if in experiments
+                if dataset.noise_map and obs_name in dataset.noise_map:
+                    noise_map[key] = dataset.noise_map[obs_name]
+                elif obs_noise_map and obs_name in obs_noise_map:
+                    noise_map[key] = obs_noise_map[obs_name]
+                else:
+                    noise_map[key] = 0.0
+
+    if all(v == 0.0 for v in noise_map.values()):
+        noise_map = None
+
+    cond_df = pet.define_conditions(conds, names=cond_names)
+    meas_df = pet.define_measurements(data_dict, noise_map)
     return cond_df, meas_df
-
-
-def meas_df_to_datasets(meas_df: pd.DataFrame) -> List[Dataset]:
-    """Convert a PEtab measurement dataframe to a list of Dataset objects.
-
-    Args:
-        meas_df (pd.DataFrame): PEtab measurement dataframe.
-
-    Returns:
-        List[Dataset]: List of Dataset objects.
-    """
-
-    obs_ids = meas_df[pet.C.OBSERVABLE_ID].unique()
-    obs_map = {obs_id: obs_id for obs_id in obs_ids}
-
-    wide = (
-        meas_df.pivot_table(
-            index=pet.C.TIME,
-            columns=pet.C.OBSERVABLE_ID,
-            values=pet.C.MEASUREMENT,
-        )
-        .rename(columns=obs_map)
-        .reset_index()
-        .sort_values(pet.C.TIME)
-    )
-    wide.columns.name = None
-
-    cond_id = str()
-
-    ds = Dataset(
-        id=f"Dataset_for_{cond_id}",
-        data=wide,
-        tkey=pet.C.TIME,
-        obs_map=obs_map,
-    )
-    return [ds]
 
 
 def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
@@ -182,6 +174,7 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
 
     experiments = []
     cond_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
+    cond_ids = [str(cid) for cid in cond_ids]
 
     cond_dict = cond_df.drop(columns=pet.C.CONDITION_NAME).to_dict(orient="index")
 
@@ -191,8 +184,44 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
 
         exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == cond_id]
 
-        data = meas_df_to_datasets(exp_meas_df)
-        exp = Experiment.load(cond_id, conds, data)
+        obs_ids = exp_meas_df[pet.C.OBSERVABLE_ID].unique()
+        obs_ids = [str(oid) for oid in obs_ids]
+
+        # Assume formula is just the observable ID for now
+        obs_map = {obs_id: obs_id for obs_id in obs_ids}
+
+        noise_map = None
+        if pet.C.NOISE_PARAMETERS in exp_meas_df.columns:
+            noise_map = {
+                obs_id: float(
+                    exp_meas_df[exp_meas_df[pet.C.OBSERVABLE_ID] == obs_id][
+                        pet.C.NOISE_PARAMETERS
+                    ].unique()[0]
+                )  # take first unique value
+                for obs_id in obs_ids
+            }
+
+        exp_wide_df = (
+            exp_meas_df.pivot_table(
+                index=pet.C.TIME,
+                columns=pet.C.OBSERVABLE_ID,
+                values=pet.C.MEASUREMENT,
+            )
+            .rename(columns=obs_map)
+            .reset_index()
+            .sort_values(pet.C.TIME)
+        )
+        exp_wide_df.columns.name = None
+
+        data = Dataset(
+            id=f"Dataset_for_{cond_id}",
+            data=exp_wide_df,
+            tkey=pet.C.TIME,
+            obs_map=obs_map,
+            noise_map=noise_map,
+        )
+
+        exp = Experiment.load(cond_id, conds, [data])
         experiments.append(exp)
 
     return experiments

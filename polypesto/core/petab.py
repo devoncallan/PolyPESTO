@@ -30,6 +30,20 @@ class PetabData:
     meas_df: pd.DataFrame
     name: Optional[str] = None
 
+    def __post_init__(self):
+        """Validate that the dataframes have the correct format."""
+        self.obs_df = PetabIO.format_obs_df(self.obs_df)
+        self.cond_df = PetabIO.format_cond_df(self.cond_df)
+        self.param_df = PetabIO.format_param_df(self.param_df)
+        self.meas_df = PetabIO.format_meas_df(self.meas_df)
+
+        # Ensure noise formula (required in obs_df) does not reference noiseParameter 
+        # if no noise parameters are provided in meas_df
+        if C.NOISE_PARAMETERS not in self.meas_df.columns:
+            values = [str(v) for v in self.obs_df[C.NOISE_FORMULA].values]
+            if any("noiseParameter" in v for v in values):
+                self.obs_df[C.NOISE_FORMULA] = [0.0] * len(values)
+
 
 @dataclass
 class FitParameter:
@@ -177,28 +191,49 @@ def define_parameters(params_dict: Dict[str, FitParameter]) -> pd.DataFrame:
 
 
 def define_observables(
-    observables: Dict[str, str], noise_value: float = 0.0
+    obs_formula_map: Dict[ID.StrObsName, ID.StrObsFormula],
+    obs_noise_map: Dict[ID.StrObsName, float] | None = None,
 ) -> pd.DataFrame:
 
-    observable_ids = list(observables.keys())
-    observable_formulas = list(observables.values())
+    obs_names = list(obs_formula_map.keys())
+    obs_formulas = list(obs_formula_map.values())
+    obs_ids = [ID.obs_id(name) for name in obs_names]
 
-    df = pd.DataFrame(
-        data={
-            C.OBSERVABLE_ID: [ID.obs_id(id) for id in observable_ids],
-            C.OBSERVABLE_FORMULA: observable_formulas,
-            C.NOISE_FORMULA: [noise_value] * len(observable_ids),
-        }
-    )
+    if obs_noise_map:
+        if set(obs_names) != set(obs_noise_map.keys()):
+            raise ValueError(
+                "Observable names in obs_formula_map and obs_noise_map must match."
+            )
+        noise_formulas = [obs_noise_map[name] for name in obs_names]
+    else:
+        noise_formulas = [f"noiseParameter1_{obs_id}" for obs_id in obs_ids]
+
+    data = {
+        C.OBSERVABLE_ID: obs_ids,
+        C.OBSERVABLE_NAME: obs_names,
+        C.OBSERVABLE_FORMULA: obs_formulas,
+        C.NOISE_FORMULA: noise_formulas,
+    }
+
+    df = pd.DataFrame(data)
     return PetabIO.format_obs_df(df)
 
 
 def define_conditions(
-    conds: List[Dict[str, float]], ids: Optional[List[str]] = None
+    conds: List[Dict[ID.StrCondName, float]],
+    names: Optional[List[ID.StrCondID]] = None,
+    ids: Optional[List[ID.StrCondID]] = None,
 ) -> pd.DataFrame:
 
-    ids = ids or ID.make_cond_ids(len(conds))
-    if len(ids) != len(conds):
+    if names is None and ids is not None:
+        names = ids
+    elif ids is None and names is not None:
+        ids = [ID.cond_id(name) for name in names]
+    else:
+        ids = ID.make_cond_ids(len(conds))
+        names = ids
+
+    if len(ids) != len(conds) or len(names) != len(conds):
         raise ValueError(
             f"Number of provided cond_ids ({len(ids)}) must match number of conditions ({len(conds)})."
         )
@@ -208,60 +243,72 @@ def define_conditions(
 
     df = pd.DataFrame(conds)
     df[C.CONDITION_ID] = ids
-    df[C.CONDITION_NAME] = ids
+    df[C.CONDITION_NAME] = names
 
     return PetabIO.format_cond_df(df)
 
 
 def define_measurements(
-    data_dict: Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]],
+    data_dict: Dict[ID.ObsCondKey, Tuple[np.ndarray, np.ndarray]],
+    meas_noise_map: Dict[ID.ObsCondKey, float] | None = None,
 ):
     """Define measurements DataFrame from a data dictionary.
 
     Args:
         data_dict (Dict[Tuple[str, str], Tuple[np.ndarray, np.ndarray]]): Mapping from (obs_id, cond_id) to (timepoints, measurements)
+        noise_maps (Optional[Dict[Tuple[str, str], float]]): Optional mapping from (obs_id, cond_id) to noise values
 
     Returns:
         pd.DataFrame: Formatted measurements DataFrame
     """
 
+    if meas_noise_map is not None:
+        if set(data_dict.keys()) != set(meas_noise_map.keys()):
+            raise ValueError(
+                "Keys of data_dict and meas_noise_map must match if meas_noise_map is provided."
+            )
+
     meas_dfs = []
-    for (obs_id, cond_id), (t, y) in data_dict.items():
-        df = pd.DataFrame(
-            {
-                C.OBSERVABLE_ID: [obs_id] * len(t),
-                C.SIMULATION_CONDITION_ID: [cond_id] * len(t),
-                C.TIME: t,
-                C.MEASUREMENT: y,
-            }
-        )
+    for key, (t, y) in data_dict.items():
+
+        obs_id, cond_id = key
+
+        data = {
+            C.OBSERVABLE_ID: obs_id,
+            C.SIMULATION_CONDITION_ID: cond_id,
+            C.TIME: t,
+            C.MEASUREMENT: y,
+        }
+
+        if meas_noise_map and key in meas_noise_map:
+            data[C.NOISE_PARAMETERS] = [meas_noise_map[key]] * len(t)
+
+        df = pd.DataFrame(data)
         meas_dfs.append(df)
+
     meas_df = pd.concat(meas_dfs)
     return PetabIO.format_meas_df(meas_df)
 
 
 def define_empty_measurements(
-    data_dict: Dict[Tuple[str, str], np.ndarray],
+    data_dict: Dict[ID.ObsCondKey, np.ndarray], **kwargs
 ) -> pd.DataFrame:
     """Define empty measurements DataFrame from a data dictionary.
 
     Args:
-        data_dict (Dict[Tuple[str, str], np.ndarray]): Mapping from (obs_id, cond_id) to timepoints
+        data_dict (Dict[ID.ObsCondKey, np.ndarray]): Mapping from (obs_id, cond_id) to timepoints
 
     Returns:
         pd.DataFrame: Formatted measurements DataFrame
     """
 
-    empty_data_dict = {
-        (obs_id, cond_id): (t, np.zeros_like(t))
-        for (obs_id, cond_id), t in data_dict.items()
-    }
-    return define_measurements(empty_data_dict)
+    empty_data_dict = {key: (t, np.zeros_like(t)) for key, t in data_dict.items()}
+    return define_measurements(empty_data_dict, **kwargs)
 
 
 def add_noise_to_measurements(
-    measurements_df: pd.DataFrame,
-    noise_level: float,
+    meas_df: pd.DataFrame,
+    meas_noise: List[float] | List[Dict[ID.StrObsName, float]],
 ) -> pd.DataFrame:
     """Add Gaussian noise to the measurements DataFrame.
 
@@ -269,13 +316,52 @@ def add_noise_to_measurements(
         measurements_df: DataFrame with measurements
         noise_level: Standard deviation of the Gaussian noise
     """
-    noisy_measurements = measurements_df.copy()
-    values = noisy_measurements[C.MEASUREMENT].values
 
-    noise = np.random.normal(0, noise_level * np.abs(values))
-    noisy_measurements[C.MEASUREMENT] = values + noise
+    noisy_meas_df = meas_df.copy()
+    obs_ids = list(set(noisy_meas_df[C.OBSERVABLE_ID].values))
+    obs_ids = [str(obs_id) for obs_id in obs_ids]
 
-    return noisy_measurements
+    cond_ids = list(set(noisy_meas_df[C.SIMULATION_CONDITION_ID].values))
+    cond_ids = [str(cond_id) for cond_id in cond_ids]
+    num_conds = len(cond_ids)
+
+    if not isinstance(meas_noise, list) or len(meas_noise) != num_conds:
+        raise ValueError(
+            f"meas_noise must be a list of length {num_conds}, got {type(meas_noise)} with length {len(meas_noise) if isinstance(meas_noise, list) else 'N/A'}"
+        )
+
+    for cond_id, noise in zip(cond_ids, meas_noise, strict=True):
+
+        if isinstance(noise, dict):
+            meas_noise_dict: Dict[ID.StrObsID, float] = {
+                ID.obs_id(obs_name): noise_val for obs_name, noise_val in noise.items()
+            }
+        elif isinstance(noise, (int, float)):
+            meas_noise_dict: Dict[ID.StrObsID, float] = {
+                obs_id: float(noise) for obs_id in obs_ids
+            }
+        else:
+            raise TypeError("meas_noise must be a float or a dict")
+
+        for obs_id, noise_val in meas_noise_dict.items():
+
+            mask = (noisy_meas_df[C.OBSERVABLE_ID] == obs_id) & (
+                noisy_meas_df[C.SIMULATION_CONDITION_ID] == cond_id
+            )
+
+            if not mask.any():
+                print(
+                    f"Warning: No measurements found for observable '{obs_id}' and condition '{cond_id}'"
+                )
+                continue
+
+            # values = noisy_meas_df[mask][C.MEASUREMENT].values
+            values = noisy_meas_df.loc[mask, C.MEASUREMENT].values
+            noise_array = np.random.normal(0, noise_val * np.abs(values))
+
+            noisy_meas_df.loc[mask, C.MEASUREMENT] = values + noise_array
+
+    return noisy_meas_df
 
 
 __all__ = [

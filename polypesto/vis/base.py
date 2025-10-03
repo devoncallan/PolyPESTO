@@ -31,14 +31,20 @@ from contextlib import contextmanager
 
 
 @contextmanager
-def save_plot(path: Optional[str | Path] = None, dpi: int = 300, close: bool = True):
+def save_plot(
+    path: Optional[str | Path] = None,
+    overwrite: bool = False,
+    dpi: int = 300,
+    close: bool = True,
+):
     """Context manager for creating and saving a plot."""
 
     try:
         yield
         if path:
             path = Path(path)
-            plt.gcf().savefig(path, dpi=dpi)
+            if overwrite and not path.exists():
+                plt.gcf().savefig(path, dpi=dpi)
     finally:
         if close:
             plt.close()

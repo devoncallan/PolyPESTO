@@ -63,6 +63,10 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
             ds.obs_map["fA"] = "fA"
             ds.obs_map["fB"] = "fB"
 
+            if ds.noise_map is not None:
+                ds.noise_map["fA"] = ds.noise_map.get("xA", 0.0) * fA0
+                ds.noise_map["fB"] = ds.noise_map.get("xB", 0.0) * fB0
+
             ds.data = new_data
 
             new_datasets.append(ds)

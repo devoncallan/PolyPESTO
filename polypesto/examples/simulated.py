@@ -29,7 +29,7 @@ def main():
             B0=[0.30, 0.50],
         ),
         t_evals=np.arange(0.05, 0.61, 0.05),
-        noise_levels=0.05,
+        meas_noise=0.00,
     )
 
     # Simulate problem and create parameter estimation problem
@@ -37,7 +37,7 @@ def main():
         prob_dir=OUTPUT_DIR,
         model=model,
         conds=sim_conds,
-        overwrite=False,
+        overwrite=True,
     )
 
     # Run parameter estimation (optimization + sampling)
@@ -46,7 +46,7 @@ def main():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10000, n_chains=3),
         ),
-        overwrite=False,
+        overwrite=True,
     )
     calculate_cis(result, ci_level=0.95)
 

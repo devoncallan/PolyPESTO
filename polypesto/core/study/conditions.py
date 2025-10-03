@@ -56,7 +56,7 @@ def _transpose_study_conditions(
 def create_study_conditions(
     conds: Mapping[str, List[ArrayLike]],
     t_evals: ArrayLike | List[ArrayLike],
-    noise_levels: float | List[float] = 0.0,
+    meas_noise: float | List[float] = 0.0,
 ) -> Dict[str, List[SimConditions]]:
 
     sim_conds: Dict[str, List[SimConditions]] = {}
@@ -73,7 +73,7 @@ def create_study_conditions(
             conds=raw_conds,
             true_params=ParameterSet.empty(),
             t_evals=t_evals,
-            noise_levels=noise_levels,
+            meas_noise=meas_noise,
         )
 
     return sim_conds

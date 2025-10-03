@@ -30,12 +30,12 @@ def main():
             B0=[[0.75, 0.50], [0.50, 0.25], [0.75, 0.25]],
         ),
         t_evals=np.linspace(0, 0.95, 20),
-        noise_levels=0.02,
+        meas_noise=0.02,
     )
-    for key, conds in conds_dict.items():
-        print(f"Conditions for problem {key}:")
-        for sim_cond in conds:
-            print(f"{key}: {sim_cond.conds.id}, {sim_cond.conds.to_dict()}")
+    # for key, conds in conds_dict.items():
+    #     print(f"Conditions for problem {key}:")
+    #     for sim_cond in conds:
+    #         print(f"{key}: {sim_cond.conds.id}, {sim_cond.conds.to_dict()}")
 
     study = Study.create(
         study_dir=OUTPUT_DIR,
