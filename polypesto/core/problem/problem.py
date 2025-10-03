@@ -60,8 +60,7 @@ class Problem:
 
         paths = ProblemPaths(prob_dir)
 
-        msg = f"Loading problem from {prob_dir}"
-        with redirect_output_to_file(paths.model_load_log, mode="a", message=msg):
+        with redirect_output_to_file(paths.model_load_log, mode="a"):
             model_name = model.model_name_with_hash()
             importer, pypesto_problem = load_pypesto_problem(
                 yaml_path=paths.petab_yaml, model_name=model_name, **kwargs
@@ -85,20 +84,17 @@ class Problem:
         experiments: List[Experiment],
         problem_id: Optional[str] = None,
     ) -> Problem:
-        print("Creating problem from experiments...")
-        print(f"Output directory: {output_dir}")
+        """Create a parameter estimation problem from experiments."""
 
-        # Create PEtab problem from experiments
         obs_df = model.get_obs_df()
         param_df = model.get_param_df()
         cond_df, meas_df = experiments_to_petab(experiments, model.obs_noise_map)
         petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df, problem_id)
+        petab_data.write(output_dir, model.sbml_model)
 
-        problem = write_petab(output_dir, model, petab_data)
+        return Problem.load(output_dir, model)
 
-        return problem
-
-    def get_results(self) -> Optional[Result]:
+    def get_results(self) -> Result | None:
 
         return load_result(self.paths.pypesto_results)
 
@@ -121,44 +117,43 @@ class Problem:
         return ensemble_prediction(self, ensemble_prob, **kwargs)
 
 
-def write_petab(
-    data_dir: str | Path,
-    model: ModelBase,
-    petab_data: pet.PetabData,
-) -> Problem:
-    """Write PEtab files to specified directory.
+# def write_petab(
+#     data_dir: str | Path,
+#     model: ModelBase,
+#     petab_data: pet.PetabData,
+# ) -> Problem:
+#     """Write PEtab files to specified directory.
 
-    Args:
-        data_dir (str | Path): Directory to write PEtab files to.
-        model (ModelBase): Model to use for simulation.
-        petab_data (PetabData): PEtab data to write.
-        true_params (Optional[ParameterSet]): True parameter values to write. Defaults to None.
+#     Args:
+#         data_dir (str | Path): Directory to write PEtab files to.
+#         model (ModelBase): Model to use for simulation.
+#         petab_data (PetabData): PEtab data to write.
+#         true_params (Optional[ParameterSet]): True parameter values to write. Defaults to None.
 
-    Returns:
-        Problem: Created problem instance.
-    """
+#     Returns:
+#         Problem: Created problem instance.
+#     """
 
-    paths = ProblemPaths(data_dir)
+#     paths = ProblemPaths(data_dir)
 
-    sbml_model = model.sbml_model
-    sbml.write_model(sbml_model, paths.sbml_model)
+#     sbml_model = model.sbml_model
+#     sbml.write_model(sbml_model, paths.sbml_model)
 
-    pet.write_observable_df(petab_data.obs_df, paths.observables)
-    pet.write_condition_df(petab_data.cond_df, paths.conditions)
-    pet.write_parameter_df(petab_data.param_df, paths.fit_parameters)
-    pet.write_measurement_df(petab_data.meas_df, paths.measurements)
+#     pet.write_observable_df(petab_data.obs_df, paths.observables)
+#     pet.write_condition_df(petab_data.cond_df, paths.conditions)
+#     pet.write_parameter_df(petab_data.param_df, paths.fit_parameters)
+#     pet.write_measurement_df(petab_data.meas_df, paths.measurements)
 
-    print("Writing PEtab files...")
-    pet.PetabIO.write_yaml(
-        yaml_filepath=paths.petab_yaml,
-        sbml_filepath=paths.sbml_model,
-        cond_filepath=paths.conditions,
-        meas_filepath=paths.measurements,
-        obs_filepath=paths.observables,
-        param_filepath=paths.fit_parameters,
-    )
+#     pet.PetabIO.write_yaml(
+#         yaml_filepath=paths.petab_yaml,
+#         sbml_filepath=paths.sbml_model,
+#         cond_filepath=paths.conditions,
+#         meas_filepath=paths.measurements,
+#         obs_filepath=paths.observables,
+#         param_filepath=paths.fit_parameters,
+#     )
 
-    return Problem.load(data_dir, model)
+#     return Problem.load(data_dir, model)
 
 
 def run_parameter_estimation(
@@ -184,18 +179,15 @@ def run_parameter_estimation(
             return _result
 
         if not overwrite and has_results(existing_result, key):
-            print(f"\tUsing existing `{key}` results - skipping")
+            # print(f"\tUsing existing `{key}` results - skipping")
             return _result
 
         kwargs = dict(problem=prob.pypesto_problem, **config[key])
         if key == "optimize":
-            print("\tRunning optimize_problem...")
             return optimize_problem(result=_result, **kwargs)
         elif key == "profile":
-            print("\tRunning profile_problem...")
             return profile_problem(result=_result, **kwargs)
         elif key == "sample":
-            print("\tRunning sample_problem...")
             return sample_problem(result=_result, **kwargs)
         else:
             raise ValueError(f"Unknown key: {key}")

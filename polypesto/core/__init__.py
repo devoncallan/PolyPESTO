@@ -10,7 +10,7 @@ from .problem import (
     run_parameter_estimation,
     simulate_problem,
     write_empty_problem,
-    write_petab,
+    # write_petab,
 )
 from .pypesto import (
     PypestoProblem,

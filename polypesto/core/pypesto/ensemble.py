@@ -84,6 +84,8 @@ def predict_with_ensemble(
     **kwargs,
 ) -> EnsemblePrediction:
 
+    print(f"\n==== Running ensemble predictions ====")
+
     predictor = create_predictor(pred_prob, output_type)
 
     engine = pypesto.engine.MultiProcessEngine(**kwargs)

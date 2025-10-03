@@ -44,7 +44,7 @@ def redirect_output_to_file(
 
     if message:
         print(message)
-    print(f"Redirecting logging to {log_file}")
+
     log_file = Path(log_file)
 
     original_stdout = sys.stdout if stdout else None
@@ -109,6 +109,27 @@ def redirect_output_to_file(
                     logger.setLevel(original_levels.get(logger.name, logging.WARNING))
                     logger.propagate = original_propagate.get(logger.name, True)
                 file_handler.close()
+
+
+@contextmanager
+def quiet():
+    """
+    Context manager to suppress all stdout and stderr output.
+
+    Example
+    -------
+    >>> with quiet():
+    ...     print("This will not be printed")
+    ...     some_noisy_function()
+    """
+    with redirect_output_to_file(
+        log_file=Path("/dev/null") if sys.platform != "win32" else Path("NUL"),
+        stdout=True,
+        stderr=True,
+        capture_logging=True,
+        mode="w",
+    ):
+        yield
 
 
 def get_log_file_path(

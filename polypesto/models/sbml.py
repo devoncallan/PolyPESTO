@@ -17,13 +17,13 @@ SBML_VERSION = 2
 def write_model(model_def: ModelDefinition, model_filepath: str | Path) -> None:
     """Writes an SBML model from the given file path."""
 
-    model_path = Path(model_filepath).resolve()
-    print(f"Writing SBML model ({str(model_def.model_id)}) to {str(model_path)}")
+    model_filepath = Path(model_filepath).resolve()
+    # print(f"Writing SBML model to {str(model_filepath)}")
 
-    os.makedirs(model_path.parent, exist_ok=True)
-    model_def.to_file(model_path)
+    os.makedirs(model_filepath.parent, exist_ok=True)
+    model_def.to_file(model_filepath)
 
-    validateSBML().validate(model_path)
+    validateSBML().validate(model_filepath)
 
 
 #####################################

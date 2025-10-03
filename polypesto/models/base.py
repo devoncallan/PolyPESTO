@@ -72,11 +72,11 @@ class ModelBase(ABC):
 
     def get_param_df(self) -> pd.DataFrame:
         """Get fit parameter dataframe"""
-        return pet.define_parameters(self.fit_params)
+        return pet.utils.param.define(self.fit_params)
 
     def get_obs_df(self) -> pd.DataFrame:
         """Get observables dataframe"""
-        return pet.define_observables(self.obs_formula_map, self.obs_noise_map)
+        return pet.utils.obs.define(self.obs_formula_map, self.obs_noise_map)
 
     def model_name_with_hash(self) -> str:
         """

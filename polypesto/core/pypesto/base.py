@@ -9,6 +9,8 @@ from pypesto import Result
 from pypesto.objective import AmiciObjective  # type: ignore
 from pypesto.petab import PetabImporter  # type: ignore
 
+from polypesto.utils import quiet
+
 
 def optimize_problem(
     problem: PypestoProblem, method: str = "Nelder-Mead", **kwargs
@@ -29,6 +31,8 @@ def optimize_problem(
     Result
         Optimization result object containing best parameters and history
     """
+
+    print(f"\n==== Running optimization ====")
 
     optimizer = pypesto.optimize.ScipyOptimizer(method=method)
     history_options = pypesto.HistoryOptions(trace_record=True)
@@ -67,6 +71,8 @@ def profile_problem(
     """
     import pypesto.profile as profile  # type: ignore
 
+    print(f"\n==== Running profiling ====")
+
     optimizer = pypesto.optimize.ScipyOptimizer(method=method)
     result = profile.parameter_profile(problem=problem, optimizer=optimizer, **kwargs)
     return result
@@ -96,6 +102,9 @@ def sample_problem(
     Result
         Updated result object containing parameter samples
     """
+
+    print(f"\n==== Running sampling ====")
+
     import pypesto.sample as sample  # type: ignore
 
     sampler = sample.AdaptiveParallelTemperingSampler(
@@ -107,7 +116,8 @@ def sample_problem(
         problem=problem, n_samples=n_samples, sampler=sampler, **kwargs
     )
 
-    sample.geweke_test(result)
+    with quiet():
+        sample.geweke_test(result)
 
     return result
 
@@ -115,12 +125,13 @@ def sample_problem(
 def save_result(result: Result, filepath: str | Path, **kwargs) -> None:
 
     filepath = Path(filepath)
-    try:
-        print(f"\tSaving results to {filepath}")
-        pypesto.store.write_result(result, filepath, **kwargs)
+    overwrite = kwargs.pop("overwrite", False)
+    if not filepath.exists() or overwrite:
+        try:
+            pypesto.store.write_result(result, filepath, overwrite=overwrite, **kwargs)
 
-    except RuntimeError as e:
-        print(f"\tError saving results from {filepath}: {e}")
+        except RuntimeError as e:
+            print(f"Error saving results: {e}")
 
 
 def load_result(filepath: str | Path, **kwargs) -> Optional[Result]:
@@ -130,7 +141,8 @@ def load_result(filepath: str | Path, **kwargs) -> Optional[Result]:
         return None
 
     try:
-        return pypesto.store.read_result(filepath, **kwargs)
+        with quiet():
+            return pypesto.store.read_result(filepath, **kwargs)
 
     except Exception as e:
         print(f"\tCould not load result from {str(filepath)}: {e}")

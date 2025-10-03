@@ -153,7 +153,8 @@ def calculate_cis(
         median = np.percentile(10**chain, 50)
         ci_results[name] = (lb, median, ub)
 
-    print(f"Parameter confidence intervals ({ci_level*100:.1f}%):")
+    # print(f"Parameter confidence intervals ({ci_level*100:.1f}%):")
+    print(f"\n==== Parameter confidence intervals ({ci_level*100:.1f}%) ====")
     for name, (lb, median, ub) in ci_results.items():
         print(f"  {name}: {median:.3f} [{lb:.3f}, {ub:.3f}]")
 

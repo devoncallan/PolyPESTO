@@ -13,13 +13,15 @@ from numpy.typing import ArrayLike
 from pypesto.objective import AmiciObjective  # type: ignore
 
 from polypesto.models import ModelBase
-from polypesto.utils import ID, read_json, write_json, redirect_output_to_file
+from polypesto.utils import ID, read_json, write_json, redirect_output_to_file, quiet
 
 from .. import petab as pet
 from ..params import ParameterSet
 from ..pypesto import PypestoProblem
 from .core import ProblemPaths
-from .problem import Problem, write_petab
+from .problem import Problem
+
+# from .problem import Problem, write_petab
 
 
 @dataclass
@@ -232,8 +234,7 @@ class SimulatedProblem(Problem):
 
         paths = ProblemPaths(prob_dir)
 
-        msg = f"Loading simulated problem from {prob_dir}"
-        with redirect_output_to_file(paths.model_load_log, mode="a", message=msg):
+        with redirect_output_to_file(paths.model_load_log, mode="a"):
             problem = Problem.load(prob_dir, model, **kwargs)
             true_params, sim_conditions = load_sim_conditions(problem.paths)
 
@@ -270,18 +271,17 @@ def write_empty_problem(
 
     # Get PEtab data DataFrames
     obs_df = model.get_obs_df()
-    cond_df = pet.define_conditions(conds_list, ids=cond_ids)
+    cond_df = pet.utils.cond.define(conds_list, ids=cond_ids)
     param_df = model.get_param_df()
-    meas_df = pet.define_empty_measurements(data_dict)
-    petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df)
+    meas_df = pet.utils.meas.define_empty(data_dict)
 
     # Write PEtab and load parameter estimation problem
-    problem = write_petab(prob_dir, model, petab_data)
+    petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df)
+    petab_data.write(prob_dir, model.sbml_model)
+    problem = Problem.load(prob_dir, model)
+
     true_params = write_sim_conditions(problem.paths, sim_conds)
-
-    problem = SimulatedProblem.from_problem(problem, true_params, sim_conds)
-
-    return problem
+    return SimulatedProblem.from_problem(problem, true_params, sim_conds)
 
 
 def simulate_problem(
@@ -303,17 +303,16 @@ def simulate_problem(
     """
 
     if not overwrite and Path(prob_dir).exists():
-        print(f"Data directory {prob_dir} already exists. Attempting to load problem.")
         try:
             problem = SimulatedProblem.load(prob_dir, model)
             # TODO: Check that conditions from loaded problem match provided conditions
-            print("Successfully loaded existing problem.")
             return problem
         except Exception as e:
             print(f"Failed to load problem: {e}")
             print("Proceeding to simulate new data.")
 
-    problem = write_empty_problem(prob_dir, model, conds)
+    with quiet():
+        problem = write_empty_problem(prob_dir, model, conds)
 
     pypesto_problem = problem.pypesto_problem
     petab_problem = problem.petab_problem
@@ -336,7 +335,7 @@ def simulate_problem(
         petab_problem.measurement_df,
     )
 
-    meas_df = pet.add_noise_to_measurements(
+    meas_df = pet.utils.meas.add_noise(
         meas_df, meas_noise=[cond.noise_level for cond in conds]
     )
 

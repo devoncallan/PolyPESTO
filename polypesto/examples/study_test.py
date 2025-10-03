@@ -26,23 +26,19 @@ def main():
 
     conds_dict = create_study_conditions(
         conds=dict(
-            A0=[[0.25, 0.50], [0.50, 0.75], [0.25, 0.75]],
-            B0=[[0.75, 0.50], [0.50, 0.25], [0.75, 0.25]],
+            A0=[[0.1], [0.3], [0.50], [0.7], [0.9]],
+            B0=[[0.9], [0.7], [0.50], [0.3], [0.1]],
         ),
-        t_evals=np.linspace(0, 0.95, 20),
-        meas_noise=0.02,
+        t_evals=np.linspace(0, 0.90, 15),
+        meas_noise=0.05,
     )
-    # for key, conds in conds_dict.items():
-    #     print(f"Conditions for problem {key}:")
-    #     for sim_cond in conds:
-    #         print(f"{key}: {sim_cond.conds.id}, {sim_cond.conds.to_dict()}")
 
     study = Study.create(
         study_dir=OUTPUT_DIR,
         model=model,
         true_params=true_params,
         sim_conds=conds_dict,
-        overwrite=False,
+        overwrite=True,
     )
     study = Study.load(OUTPUT_DIR, model)
 
@@ -51,7 +47,7 @@ def main():
             optimize=dict(n_starts=50, method="Nelder-Mead"),
             sample=dict(n_samples=10_000, n_chains=3),
         ),
-        overwrite=False,
+        overwrite=True,
     )
 
 

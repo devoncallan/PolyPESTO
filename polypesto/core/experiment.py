@@ -99,6 +99,8 @@ def experiments_to_petab(
 
     Args:
         experiments (List[Experiment]): List of Experiment objects.
+        obs_noise_map (Optional[Dict[ID.StrObsName, float]]): Optional mapping from observable names to noise
+            parameters to override dataset-specific noise maps. Defaults to None.
 
     Returns:
         Tuple[pd.DataFrame, pd.DataFrame]: PEtab conditions and measurements dataframes.
@@ -152,8 +154,8 @@ def experiments_to_petab(
     if all(v == 0.0 for v in noise_map.values()):
         noise_map = None
 
-    cond_df = pet.define_conditions(conds, names=cond_names)
-    meas_df = pet.define_measurements(data_dict, noise_map)
+    cond_df = pet.utils.cond.define(conds, names=cond_names)
+    meas_df = pet.utils.meas.define(data_dict, noise_map)
     return cond_df, meas_df
 
 
@@ -169,23 +171,23 @@ def petab_to_experiments(petab_problem: pet.PetabProblem) -> List[Experiment]:
 
     cond_df = petab_problem.condition_df
     meas_df = petab_problem.measurement_df
+    if cond_df is None or meas_df is None:
+        raise ValueError(
+            "PEtab problem must have condition and measurement dataframes."
+        )
 
-    assert cond_df is not None and meas_df is not None
-
-    experiments = []
-    cond_ids = meas_df[pet.C.SIMULATION_CONDITION_ID].unique()
-    cond_ids = [str(cid) for cid in cond_ids]
-
+    cond_ids = pet.utils.meas.cond_ids(meas_df)
     cond_dict = cond_df.drop(columns=pet.C.CONDITION_NAME).to_dict(orient="index")
 
+    #
+    experiments = []
     for cond_id in cond_ids:
 
         conds = cond_dict[cond_id]
 
         exp_meas_df = meas_df[meas_df[pet.C.SIMULATION_CONDITION_ID] == cond_id]
 
-        obs_ids = exp_meas_df[pet.C.OBSERVABLE_ID].unique()
-        obs_ids = [str(oid) for oid in obs_ids]
+        obs_ids = pet.utils.meas.obs_ids(exp_meas_df)
 
         # Assume formula is just the observable ID for now
         obs_map = {obs_id: obs_id for obs_id in obs_ids}

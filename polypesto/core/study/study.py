@@ -3,8 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pluggy import Result
-
 from polypesto.models import ModelBase
 from polypesto.utils import write_json
 
@@ -76,8 +74,16 @@ class Study:
     ) -> ResultsDict:
         """Run parameter estimation for all problems in the study."""
 
-        for key, problem in self.problems.items():
+        num_problems = len(self.problems)
+        for i, (key, problem) in enumerate(self.problems.items()):
 
+            title_str = f"Problem {i + 1}/{num_problems}" + "-" * 50
+            print("\n\n")
+            print(title_str)
+            print(f" | Problem ID: {key.prob_id}")
+            print(f" | Parameter ID: {key.param_id}")
+            print(f" | Problem directory: {self.paths.prob_dir(key)}")
+            print("-" * len(title_str))
             result = run_parameter_estimation(problem, config, **kwargs)
             self.results[key] = result
 

@@ -76,6 +76,8 @@ class ProblemPaths:
     @filepath
     def sim_conds(self) -> Path:
         return self.petab_dir / "sim_conds.json"
+    
+    
 
     #####################
     ### PyPESTO Files ###
