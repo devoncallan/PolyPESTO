@@ -15,7 +15,6 @@ from polypesto.vis import (
     plot_parameter_traces,
     plot_profiles,
     plot_optimized_model_fit,
-    plot_ensemble_predictions,
     plot_all_measurements,
 )
 from .base import save_plot
@@ -49,7 +48,7 @@ def plot_results(
             plot_waterfall(result)
 
         with save_plot(problem.paths.model_fit_fig, overwrite=overwrite):
-            plot_optimized_model_fit(result, problem)
+            plot_optimized_model_fit(problem, result)
 
     if has_sampling_results(result):
 

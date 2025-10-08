@@ -36,6 +36,7 @@ def save_plot(
     overwrite: bool = False,
     dpi: int = 300,
     close: bool = True,
+    safe: bool = True,
 ):
     """Context manager for creating and saving a plot."""
 
@@ -43,8 +44,14 @@ def save_plot(
         yield
         if path:
             path = Path(path)
-            if overwrite and not path.exists():
+            if overwrite or not path.exists():
                 plt.gcf().savefig(path, dpi=dpi)
+    except Exception as e:
+        if safe:
+            print(f"Error saving plot to {path}: {e}")
+            plt.figure()
+        else:
+            raise e
     finally:
         if close:
             plt.close()

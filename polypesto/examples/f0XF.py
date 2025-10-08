@@ -1,7 +1,7 @@
 from pathlib import Path
 
-import pandas as pd
 import matplotlib.pyplot as plt
+import pandas as pd
 
 from polypesto.core import Dataset, Experiment, Problem
 from polypesto.core.pypesto import calculate_cis, create_ensemble, predict_with_ensemble
@@ -9,10 +9,11 @@ from polypesto.examples.base import DATA_DIR, output_dirs
 
 # Model specific imports
 from polypesto.models.binary import BinaryIrreversible
-from polypesto.models.binary.utils import (
-    create_ensemble_pred_problem,
-    modify_experiments,
-)
+
+# from polypesto.models.binary.utils import (
+#     create_ensemble_pred_problem,
+#     modify_experiments,
+# )
 
 OUTPUT_DIR = output_dirs(Path(__file__).stem)
 
@@ -56,7 +57,7 @@ def main():
     result = problem.run_parameter_estimation(
         config=dict(
             optimize=dict(n_starts=50, method="Nelder-Mead"),
-            sample=dict(n_samples=1000, n_chains=3),
+            sample=dict(n_samples=10000, n_chains=3),
         ),
         overwrite=True,
     )

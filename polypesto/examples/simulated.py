@@ -18,7 +18,7 @@ OUTPUT_DIR = output_dirs(Path(__file__).stem)
 def main():
 
     # Initialize model with observables
-    model = BinaryIrreversible(observables=["xA", "xB", "fA", "fB", "FA", "FB"])
+    model = BinaryIrreversible(observables=["xA", "FA"], obs_noise={"xA": 0.01, "FA": 0.01})
 
     # Define true parameters and simulation conditions
     true_params = {"rA": 2.0, "rB": 1.0}
@@ -29,7 +29,7 @@ def main():
             B0=[0.30, 0.50],
         ),
         t_evals=np.arange(0.05, 0.61, 0.05),
-        meas_noise=0.00,
+        meas_noise=0.01,
     )
 
     # Simulate problem and create parameter estimation problem
@@ -50,9 +50,8 @@ def main():
     )
 
     # Predict using parameter ensemble from sampling
-    ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
-
-    problem.ensemble_prediction(ensemble_prob)
+    # ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
+    # problem.ensemble_prediction(ensemble_prob)
 
     calculate_cis(result, ci_level=0.95)
 

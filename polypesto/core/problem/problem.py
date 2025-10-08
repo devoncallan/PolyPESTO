@@ -117,45 +117,6 @@ class Problem:
         return ensemble_prediction(self, ensemble_prob, **kwargs)
 
 
-# def write_petab(
-#     data_dir: str | Path,
-#     model: ModelBase,
-#     petab_data: pet.PetabData,
-# ) -> Problem:
-#     """Write PEtab files to specified directory.
-
-#     Args:
-#         data_dir (str | Path): Directory to write PEtab files to.
-#         model (ModelBase): Model to use for simulation.
-#         petab_data (PetabData): PEtab data to write.
-#         true_params (Optional[ParameterSet]): True parameter values to write. Defaults to None.
-
-#     Returns:
-#         Problem: Created problem instance.
-#     """
-
-#     paths = ProblemPaths(data_dir)
-
-#     sbml_model = model.sbml_model
-#     sbml.write_model(sbml_model, paths.sbml_model)
-
-#     pet.write_observable_df(petab_data.obs_df, paths.observables)
-#     pet.write_condition_df(petab_data.cond_df, paths.conditions)
-#     pet.write_parameter_df(petab_data.param_df, paths.fit_parameters)
-#     pet.write_measurement_df(petab_data.meas_df, paths.measurements)
-
-#     pet.PetabIO.write_yaml(
-#         yaml_filepath=paths.petab_yaml,
-#         sbml_filepath=paths.sbml_model,
-#         cond_filepath=paths.conditions,
-#         meas_filepath=paths.measurements,
-#         obs_filepath=paths.observables,
-#         param_filepath=paths.fit_parameters,
-#     )
-
-#     return Problem.load(data_dir, model)
-
-
 def run_parameter_estimation(
     prob: Problem,
     config: Optional[Dict[str, Any]] = None,

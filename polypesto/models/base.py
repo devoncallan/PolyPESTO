@@ -86,6 +86,9 @@ class ModelBase(ABC):
             str: A unique model name.
         """
 
+        sbml_str = str(self.sbml_model.model_id)
+        sbml_hash_str = ID.get_hash(sbml_str)
+
         obs_str = str(sorted(self.obs_names))
         obs_hash_str = ID.get_hash(obs_str)
 
@@ -97,7 +100,7 @@ class ModelBase(ABC):
         fit_str = str(sorted(fit_signature.items()))
         fit_hash_str = ID.get_hash(fit_str)
 
-        combined_str = f"{obs_hash_str}_{fit_hash_str}"
+        combined_str = f"{sbml_hash_str}_{obs_hash_str}_{fit_hash_str}"
         combined_hash_str = ID.get_hash(combined_str)
 
         return f"{self.name}_{combined_hash_str}"

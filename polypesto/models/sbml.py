@@ -1,7 +1,7 @@
-from pathlib import Path
-from typing import Dict, Tuple, TypeAlias, Optional, cast
 import os
 import time
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, TypeAlias, cast
 
 import libsbml  # type: ignore
 from petab.v1.models.sbml_model import SbmlModel  # type: ignore
@@ -70,6 +70,7 @@ def init_model(name: str) -> Tuple[Document, Model]:
     model: Model = document.createModel()
     _check(model, "create model")
     _check(model.setName(name), "set model name")
+    _check(model.setId(name), "set model id")
     _check(model.setTimeUnits("second"), "set model-wide time units")
     _check(model.setExtentUnits("mole"), "set model units of extent")
     _check(model.setSubstanceUnits("mole"), "set model substance units")
@@ -141,6 +142,10 @@ def create_species(
     return s1
 
 
+def create_all_species(model: Model, ids: List[str], **kwargs) -> List[libsbml.Species]:
+    return [create_species(model, id, **kwargs) for id in ids]
+
+
 def create_parameter(
     model: Model,
     id: str,
@@ -158,6 +163,12 @@ def create_parameter(
     _check(k.setUnits(units), "set parameter k units")
 
     return k
+
+
+def create_all_parameters(
+    model: Model, ids: List[str], **kwargs
+) -> List[libsbml.Parameter]:
+    return [create_parameter(model, id, **kwargs) for id in ids]
 
 
 def create_initial_assignment(

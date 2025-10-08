@@ -21,8 +21,6 @@ from ..pypesto import PypestoProblem
 from .core import ProblemPaths
 from .problem import Problem
 
-# from .problem import Problem, write_petab
-
 
 @dataclass
 class SimConditions:
