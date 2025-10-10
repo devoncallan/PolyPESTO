@@ -59,6 +59,7 @@ class BinaryIrreversible(ModelBase):
         # solver.setLinearMultistepMethod(2)
         return solver
 
+
 def irr_cpe() -> sbml.ModelDefinition:
 
     document, model = sbml.init_model("irr_cpe")

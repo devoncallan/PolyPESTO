@@ -178,3 +178,4 @@ amici_models/
 polypesto/examples/**/*/
 !polypesto/examples/data/
 !polypesto/examples/data/**
+jobs/**
