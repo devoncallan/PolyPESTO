@@ -123,6 +123,12 @@ class Problem:
     ) -> Optional[Result]:
         return run_parameter_estimation(self, config, **kwargs)
 
+    def get_ensemble(self) -> Ensemble | None:
+        result = self.get_results()
+        if result is None:
+            return None
+        return create_ensemble(self.pypesto_problem, result)
+
     def ensemble_prediction(
         self, ensemble_prob: Problem, **kwargs
     ) -> Tuple[Ensemble, EnsemblePrediction] | None:

@@ -8,6 +8,7 @@ from polypesto.utils import filepath, read_json
 
 from ..problem.simulate import SimulatedProblem
 from ..pypesto import Result
+from ..pypesto import Ensemble
 
 
 class StudyKey(str):
@@ -32,6 +33,7 @@ class StudyKey(str):
 T = TypeVar("T")
 StudyDict: TypeAlias = Dict[StudyKey, T]
 ResultsDict: TypeAlias = StudyDict[Result]
+EnsembleDict: TypeAlias = StudyDict[Ensemble]
 SimulatedProblemDict: TypeAlias = StudyDict[SimulatedProblem]
 
 

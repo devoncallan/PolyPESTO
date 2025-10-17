@@ -16,6 +16,7 @@ from ..problem import (
 from .core import (
     filter_study_dict,
     ResultsDict,
+    EnsembleDict,
     SimulatedProblemDict,
     StudyKey,
     StudyMetadata,
@@ -32,12 +33,14 @@ class Study:
         problems: SimulatedProblemDict,
         paths: StudyPaths,
         results: Optional[ResultsDict] = None,
+        ensembles: Optional[EnsembleDict] = None,
     ):
         self.model = model
         self.true_params = true_params
         self.problems = problems
         self.paths = paths
         self.results = results
+        self.ensembles = ensembles
 
     @staticmethod
     def create(
@@ -66,6 +69,16 @@ class Study:
                 "No results available. Please run parameter estimation first."
             )
         return filter_study_dict(self.results, prob_id, param_id)
+    
+    def get_ensembles(
+        self, prob_id: Optional[str] = None, param_id: Optional[str] = None
+    ) -> EnsembleDict:
+        
+        if self.ensembles is None:
+            raise ValueError(
+                "No ensembles available. Please run parameter estimation first."
+            )
+        return filter_study_dict(self.ensembles, prob_id, param_id)
 
     def run_parameter_estimation(
         self,
@@ -156,10 +169,12 @@ def load_study(study_dir: str | Path, model: ModelBase) -> Study:
 
     problems: SimulatedProblemDict = {}
     results: ResultsDict = {}
+    ensembles: EnsembleDict = {}
     for key, prob_dir in metadata.problem_dirs.items():
 
         problem = SimulatedProblem.load(prob_dir, model)
         problems[key] = problem
         results[key] = problem.get_results()
+        ensembles[key] = problem.get_ensemble()
 
     return Study(model, true_params, problems, paths, results=results)
