@@ -177,4 +177,4 @@ def load_study(study_dir: str | Path, model: ModelBase) -> Study:
         results[key] = problem.get_results()
         ensembles[key] = problem.get_ensemble()
 
-    return Study(model, true_params, problems, paths, results=results)
+    return Study(model, true_params, problems, paths, results=results, ensembles=ensembles)
