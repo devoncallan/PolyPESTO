@@ -3,7 +3,7 @@ from typing import Callable, Optional, Tuple
 
 import pypesto  # type: ignore
 import pypesto.optimize  # type: ignore
-from amici.amici import Solver  # type: ignore
+from amici.amici import Solver, Model  # type: ignore
 from pypesto import Problem as PypestoProblem  # type: ignore
 from pypesto import Result
 from pypesto.objective import AmiciObjective  # type: ignore
@@ -163,9 +163,11 @@ def set_solver_options(
     """
 
     assert isinstance(problem.objective, AmiciObjective)
+    assert isinstance(problem.objective.amici_model, Model)
     assert isinstance(problem.objective.amici_solver, Solver)
 
     problem.objective.amici_solver = solver_options(problem.objective.amici_solver)
+    problem.objective.amici_model.amici_solver = problem.objective.amici_solver
 
     return problem
 

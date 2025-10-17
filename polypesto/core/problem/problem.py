@@ -66,6 +66,18 @@ class Problem:
                 yaml_path=paths.petab_yaml, model_name=model_name, **kwargs
             )
             pypesto_problem = set_solver_options(pypesto_problem, model.solver_options)
+            
+            # print("MODEL PARAMS in Problem.load:")
+            # print(pypesto_problem.objective.amici_model.getSolver().getSensitivityMethod())
+            # print(pypesto_problem.objective.amici_model.getSolver().getSensitivityOrder())
+            # print(pypesto_problem.objective.amici_model.getSolver().getReturnDataReportingMode())
+            # print("==========")
+            
+            # print("MODEL PARAMS from MODEL in Problem.load:")
+            # print(pypesto_problem.objective.amici_solver.getSensitivityMethod())
+            # print(pypesto_problem.objective.amici_solver.getSensitivityOrder())
+            # print(pypesto_problem.objective.amici_solver.getReturnDataReportingMode())
+            # print("==========")
 
         experiments = petab_to_experiments(importer.petab_problem)
 
@@ -113,7 +125,7 @@ class Problem:
 
     def ensemble_prediction(
         self, ensemble_prob: Problem, **kwargs
-    ) -> Tuple[Ensemble, EnsemblePrediction]:
+    ) -> Tuple[Ensemble, EnsemblePrediction] | None:
         return ensemble_prediction(self, ensemble_prob, **kwargs)
 
 
@@ -143,13 +155,14 @@ def run_parameter_estimation(
             # print(f"\tUsing existing `{key}` results - skipping")
             return _result
 
-        kwargs = dict(problem=prob.pypesto_problem, **config[key])
+        problem = prob.pypesto_problem
+        kwargs = dict(result=_result, **config[key])
         if key == "optimize":
-            return optimize_problem(result=_result, **kwargs)
+            return optimize_problem(problem=problem, **kwargs)
         elif key == "profile":
-            return profile_problem(result=_result, **kwargs)
+            return profile_problem(problem=problem, **kwargs)
         elif key == "sample":
-            return sample_problem(result=_result, **kwargs)
+            return sample_problem(problem=problem, **kwargs)
         else:
             raise ValueError(f"Unknown key: {key}")
 
@@ -172,7 +185,7 @@ def run_parameter_estimation(
 
 def ensemble_prediction(
     prob: Problem, ensemble_prob: Problem, plot: bool = True
-) -> Tuple[Ensemble, EnsemblePrediction]:
+) -> Tuple[Ensemble, EnsemblePrediction] | None:
 
     result = prob.get_results()
     if result is None:

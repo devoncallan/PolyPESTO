@@ -5,10 +5,12 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence, Tuple, Optional
 
 import numpy as np
+from numpy.typing import NDArray
 from amici.petab.simulations import (  # type: ignore
     rdatas_to_measurement_df,
     simulate_petab,
 )
+from amici.petab.simulator import PetabSimulator # type: ignore
 from numpy.typing import ArrayLike
 from pypesto.objective import AmiciObjective  # type: ignore
 
@@ -28,7 +30,7 @@ class SimConditions:
 
     true_params: ParameterSet
     conds: ParameterSet
-    t_eval: np.ndarray
+    t_eval: NDArray[np.floating]
     noise_level: float | Dict[ID.StrObsName, float] = 0.0
 
 
@@ -318,26 +320,33 @@ def simulate_problem(
     assert isinstance(pypesto_problem, PypestoProblem)
     assert isinstance(pypesto_problem.objective, AmiciObjective)
 
-    # Simulate experiment
-    sim_data = simulate_petab(
-        petab_problem=petab_problem,
-        amici_model=pypesto_problem.objective.amici_model,
-        solver=pypesto_problem.objective.amici_solver,
-        problem_parameters=problem.true_params.to_dict(),
-    )
-
-    # Create measurement DataFrame
-    meas_df = rdatas_to_measurement_df(
-        sim_data["rdatas"],
-        pypesto_problem.objective.amici_model,
-        petab_problem.measurement_df,
-    )
-
-    meas_df = pet.utils.meas.add_noise(
-        meas_df, meas_noise=[cond.noise_level for cond in conds]
-    )
-
+    from amici.petab.simulator import PetabSimulator
+    
+    petab_problem.parameter_df.update({pet.C.NOMINAL_VALUE: problem.true_params.to_dict()})
+    simulator = PetabSimulator(petab_problem, amici_model=pypesto_problem.objective.amici_model)
+    meas_df = simulator.simulate(noise=False, as_measurement=True)
     pet.write_measurement_df(meas_df, problem.paths.measurements)
+
+    # # Simulate experiment
+    # sim_data = simulate_petab(
+    #     petab_problem=petab_problem,
+    #     amici_model=pypesto_problem.objective.amici_model,
+    #     solver=pypesto_problem.objective.amici_solver,
+    #     problem_parameters=problem.true_params.to_dict(),
+    # )
+
+    # # Create measurement DataFrame
+    # meas_df = rdatas_to_measurement_df(
+    #     sim_data["rdatas"],
+    #     pypesto_problem.objective.amici_model,
+    #     petab_problem.measurement_df,
+    # )
+
+    # meas_df = pet.utils.meas.add_noise(
+    #     meas_df, meas_noise=[cond.noise_level for cond in conds]
+    # )
+
+    # pet.write_measurement_df(meas_df, problem.paths.measurements)
 
     return SimulatedProblem.load(
         prob_dir=prob_dir,

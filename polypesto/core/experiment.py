@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, TypeAlias
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, TypeAlias
 from uuid import uuid4
 
 import numpy as np
@@ -57,11 +58,11 @@ class Dataset:
 
     @staticmethod
     def load(
-        path_or_data: str | pd.DataFrame,
+        path_or_data: Path | str | pd.DataFrame,
         tkey: str,
         obs_map: Dict[ID.StrObsName, str],
         noise_map: Optional[Dict[ID.StrObsName, float]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Dataset:
         if isinstance(path_or_data, pd.DataFrame):
             id = str(uuid4())

@@ -24,7 +24,7 @@ def create_ensemble(prob: PypestoProblem, result: Result) -> Ensemble:
     ensemble = Ensemble.from_sample(
         result=result,
         remove_burn_in=True,
-        chain_slice=slice(None, None, 10),
+        chain_slice=slice(None, None, 1),
         x_names=x_names,
         ensemble_type=EnsembleType.sample,
         lower_bound=result.problem.lb,
@@ -44,6 +44,18 @@ def create_predictor(prob: PypestoProblem, output_type: str) -> AmiciPredictor:
         output_ids = obj.amici_model.getStateIds()
     else:
         raise ValueError(f"Unknown output type: {output_type}")
+
+    # print("AMICI MODEL PARAMS in create_predictor:")
+    # print(obj.amici_model.getSolver().getSensitivityMethod())
+    # print(obj.amici_model.getSolver().getSensitivityOrder())
+    # print(obj.amici_model.getSolver().getReturnDataReportingMode())
+    # print("==========")
+
+    # print("AMICI MODEL PARAMS in create_predictor (direct):")
+    # print(obj.amici_solver.getSensitivityMethod())
+    # print(obj.amici_solver.getSensitivityOrder())
+    # print(obj.amici_solver.getReturnDataReportingMode())
+    # print("==========")
 
     # This post_processor will transform the output of the simulation tool
     # such that the output is compatible with the next steps.
@@ -93,5 +105,8 @@ def predict_with_ensemble(
         predictor=predictor,
         prediction_id=output_type,
         engine=engine,
+        sensi_orders=(0, 1),
+        include_llh_weights=True,
+        include_sigmay=True,
     )
     return ensemble_pred

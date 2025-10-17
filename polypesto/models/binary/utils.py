@@ -1,4 +1,5 @@
 from typing import List
+from pathlib import Path
 
 import numpy as np
 
@@ -82,7 +83,7 @@ def modify_experiments(experiments: List[Experiment]) -> List[Experiment]:
 
 
 def create_ensemble_pred_problem(
-    data_dir: str, model: BinaryIrreversible | BinaryReversible
+    data_dir: Path | str, model: BinaryIrreversible | BinaryReversible
 ) -> SimulatedProblem:
 
     fA0s = np.array([0.1, 0.3, 0.5, 0.7, 0.9])

@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from amici import AmiciSolver  # type: ignore
+from amici import AmiciSolver, Solver  # type: ignore
 
 from polypesto.core import petab as pet
 from polypesto.models import ModelBase, sbml
@@ -46,17 +46,25 @@ class BinaryIrreversible(ModelBase):
         return irr_cpe()
 
     def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
-        # solver.setNewtonMaxSteps(10_000)
-        # solver.setNewtonDampingFactorMode(1)
-        # solver.setAbsoluteTolerance(1e-10)
-        # solver.setRelativeTolerance(1e-6)
-        # solver.setMaxSteps(10_000)
-        # solver.setMaxConvFails(1_000)
-        # solver.setMaxNonlinIters(10_000)
-        # solver.setLinearSolver(9)
-        # solver.setStabilityLimitFlag(True)
-        # solver.setReturnDataReportingMode(0)
-        # solver.setLinearMultistepMethod(2)
+        
+        # print("SOLVER OPTIONS in _default_solver_options (before):")
+        # print(solver.getSensitivityMethod())
+        # print(solver.getSensitivityOrder())
+        # print(solver.getReturnDataReportingMode())
+        # print("END SOLVER OPTIONS")
+        
+        solver.setSensitivityMethod(1)
+        solver.setSensitivityOrder(1)
+        solver.setReturnDataReportingMode(0)
+        solver.setRelativeTolerance(1e-6)
+        solver.setAbsoluteTolerance(1e-8)
+        
+        # print("SOLVER OPTIONS in _default_solver_options:")
+        # print(solver.getSensitivityMethod())
+        # print(solver.getSensitivityOrder())
+        # print(solver.getReturnDataReportingMode())
+        # print("END SOLVER OPTIONS")
+
         return solver
 
 
