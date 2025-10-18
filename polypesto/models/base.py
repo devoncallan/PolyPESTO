@@ -1,6 +1,7 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import numpy as np
 import pandas as pd
@@ -105,3 +106,51 @@ class ModelBase(ABC):
         combined_hash_str = ID.get_hash(combined_str)
 
         return f"{self.name}_{combined_hash_str}"
+
+    def to_config(self) -> Dict[str, Any]:
+        """
+        Serialize model configuration to a dictionary.
+
+        Returns JSON-serializable dict containing model class and instantiation parameters.
+        Does not serialize sbml_model or solver_options (uses defaults on reconstruction).
+        """
+        return {
+            "model_class": self.__class__.__name__,
+            "model_module": self.__class__.__module__,
+            "observables": self.obs_names,
+            "obs_noise": self.obs_noise_map,
+        }
+
+    def _serialize_obs_noise(self) -> float | List[float] | Dict[str, float]:
+        """Convert obs_noise_map back to constructor format."""
+        # Check if all values are the same
+        values = list(self.obs_noise_map.values())
+        if len(set(values)) == 1:
+            return values[0]  # Single float
+        return self.obs_noise_map  # Dict
+
+    @staticmethod
+    def from_config(config: Dict[str, Any]) -> ModelBase:
+        """
+        Reconstruct a model from a configuration dictionary.
+
+        Args:
+            config: Dictionary from to_config()
+
+        Returns:
+            Instantiated model object
+        """
+        import importlib
+
+        # Import the model class dynamically
+        module_name = config["model_module"]
+        class_name = config["model_class"]
+
+        module = importlib.import_module(module_name)
+        model_class: Type[ModelBase] = getattr(module, class_name)
+
+        # Instantiate with config parameters (uses default sbml_model and solver_options)
+        return model_class(
+            observables=config["observables"],
+            obs_noise=config["obs_noise"],
+        )

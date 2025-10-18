@@ -14,6 +14,7 @@ from .ensemble import (
     create_ensemble,
     create_predictor,
     predict_with_ensemble,
+    summarize_ensemble,
 )
 from .results import (
     Result,
@@ -39,6 +40,7 @@ __all__ = [
     "create_ensemble",
     "create_predictor",
     "predict_with_ensemble",
+    "summarize_ensemble",
     "Result",
     "save_result",
     "load_result",

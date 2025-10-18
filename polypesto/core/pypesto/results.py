@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Literal
 
 import numpy as np
 from petab.v1.parameters import scale  # type: ignore
@@ -6,6 +6,8 @@ from pypesto import Problem as PypestoProblem  # type: ignore
 from pypesto import Result
 from pypesto.sample.util import geweke_test  # type: ignore
 
+
+# PEOP = Literal["optimize", "profile", "sample"]
 
 def has_problem_results(result: Result) -> bool:
     return result is not None and result.problem is not None

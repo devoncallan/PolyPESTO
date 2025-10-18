@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Sequence, Tuple, Optional
 
 import numpy as np
+import pandas as pd
 from numpy.typing import NDArray
 from amici.petab.simulations import (  # type: ignore
     rdatas_to_measurement_df,
@@ -32,6 +33,12 @@ class SimConditions:
     conds: ParameterSet
     t_eval: NDArray[np.floating]
     noise_level: float | Dict[ID.StrObsName, float] = 0.0
+    
+    def print_summary(self):
+        print(f"Condition ID: {self.conds.id}")
+        print(f"Conditions: {self.conds.to_dict()}")
+        print(f"Num time points: {len(self.t_eval)}")
+        print(f"Noise level: {self.noise_level}")
 
 
 def write_sim_conditions(
@@ -243,6 +250,27 @@ class SimulatedProblem(Problem):
     def visualize_results(self, **kwargs):
         true_params = self.true_params.to_dict()
         return super().visualize_results(true_params=true_params, **kwargs)
+    
+    def results_summary(self) -> pd.DataFrame:
+        df = super().results_summary()
+
+        # Add true parameter values for each parameter
+        true_params_dict = self.true_params.to_dict()
+        df["true_value"] = df.index.map(lambda param_id: true_params_dict.get(param_id, np.nan))
+
+        # Optionally add sim conditions as a column (same for all parameters)
+        sim_conds = {}
+        for i, cond in enumerate(self.sim_conditions):
+            for name, value in cond.conds.to_dict().items():
+                if name not in sim_conds:
+                    sim_conds[name] = []
+                sim_conds[name].append(value)
+                
+        df_sim_conds = pd.DataFrame(sim_conds)
+        for col in df_sim_conds.columns:
+            df[col] = str(df_sim_conds[col].tolist())
+
+        return df
 
 
 def write_empty_problem(

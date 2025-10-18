@@ -66,6 +66,11 @@ class StudyPaths:
         """Path to all study true parameters (ParameterGroup) JSON file."""
         return self.study_dir / "true_params.json"
 
+    @filepath
+    def model_config(self) -> Path:
+        """Path to model configuration JSON file."""
+        return self.study_dir / "model_config.json"
+
     @property
     def logs_dir(self) -> Path:
         return self.study_dir / "logs"
@@ -84,50 +89,38 @@ class StudyMetadata:
     model_name: str
     prob_ids: List[str]
     param_ids: List[str]
-
-    problem_dirs: Dict[StudyKey, str]
+    keys: List[StudyKey]
 
     def __post_init__(self):
         """Validate metadata consistency."""
-        required_keys = {
-            StudyKey(prob_id, param_id)
-            for prob_id in self.prob_ids
-            for param_id in self.param_ids
-        }
-        actual_keys = set(self.problem_dirs.keys())
-        if required_keys != actual_keys:
-            raise ValueError(
-                "Inconsistent problem directories. "
-                f"Expected keys: {required_keys}, "
-                f"but got: {actual_keys}."
-            )
-        self._keys = list(actual_keys)
-
-    def get_all_keys(self) -> List[StudyKey]:
-        return self._keys
+        
+        for key in self.keys:
+            if key.prob_id not in self.prob_ids:
+                raise ValueError(
+                    f"Inconsistent prob_id in keys: {key.prob_id} not in prob_ids."
+                )
+            if key.param_id not in self.param_ids:
+                raise ValueError(
+                    f"Inconsistent param_id in keys: {key.param_id} not in param_ids."
+                )
 
     def to_dict(self) -> Dict[Any, Any]:
         return {
             "model_name": self.model_name,
             "prob_ids": self.prob_ids,
             "param_ids": self.param_ids,
-            "problem_dirs": {
-                str(key): value for key, value in self.problem_dirs.items()
-            },
+            "keys": [str(key) for key in self.keys],
         }
 
     @staticmethod
     def from_dict(data: Dict[Any, Any]) -> StudyMetadata:
         # Convert string keys back to StudyKey objects
-        problem_dirs = {
-            StudyKey.from_string(key_str): value
-            for key_str, value in data["problem_dirs"].items()
-        }
+        keys = [StudyKey.from_string(key_str) for key_str in data["keys"]]
         return StudyMetadata(
             model_name=data["model_name"],
             prob_ids=data["prob_ids"],
             param_ids=data["param_ids"],
-            problem_dirs=problem_dirs,
+            keys=keys,
         )
 
     @staticmethod

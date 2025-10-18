@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
+
+import pandas as pd
 
 from polypesto.models import ModelBase
-from polypesto.utils import write_json
+from polypesto.utils import write_json, read_json
 
-from ..params import ParameterGroup
+from ..params import ParameterGroup, ParameterSet
 from ..problem import (
     SimConditions,
     SimulatedProblem,
+    ProblemPaths,
     run_parameter_estimation,
     simulate_problem,
 )
@@ -30,8 +33,10 @@ class Study:
         self,
         model: ModelBase,
         true_params: ParameterGroup,
+        metadata: StudyMetadata,
         problems: SimulatedProblemDict,
         paths: StudyPaths,
+        keys: Optional[Sequence[StudyKey]] = None,
         results: Optional[ResultsDict] = None,
         ensembles: Optional[EnsembleDict] = None,
     ):
@@ -39,8 +44,13 @@ class Study:
         self.true_params = true_params
         self.problems = problems
         self.paths = paths
+        self.metadata = metadata
+
+        self.keys = keys
         self.results = results
         self.ensembles = ensembles
+
+        self.name = paths.study_dir.stem
 
     @staticmethod
     def create(
@@ -53,8 +63,18 @@ class Study:
         return create_study(study_dir, model, true_params, sim_conds, **kwargs)
 
     @staticmethod
-    def load(study_dir: str | Path, model: ModelBase) -> Study:
+    def load(study_dir: str | Path, model: Optional[ModelBase] = None) -> Study:
         return load_study(study_dir, model)
+
+    def get_conditions(self, prob_id: str) -> List[SimConditions]:
+        prob_dict = self.get_problems(prob_id=prob_id)
+        ref_prob = next(iter(prob_dict.values()))
+        return ref_prob.sim_conditions
+
+    def get_true_params(self, param_id: str) -> ParameterSet:
+        if param_id not in self.true_params:
+            raise KeyError(f"Parameter ID '{param_id}' not found in true parameters.")
+        return self.true_params.get(param_id)
 
     def get_problems(
         self, prob_id: Optional[str] = None, param_id: Optional[str] = None
@@ -69,11 +89,11 @@ class Study:
                 "No results available. Please run parameter estimation first."
             )
         return filter_study_dict(self.results, prob_id, param_id)
-    
+
     def get_ensembles(
         self, prob_id: Optional[str] = None, param_id: Optional[str] = None
     ) -> EnsembleDict:
-        
+
         if self.ensembles is None:
             raise ValueError(
                 "No ensembles available. Please run parameter estimation first."
@@ -106,6 +126,26 @@ class Study:
 
         return self.results
 
+    def results_summary(self) -> pd.DataFrame:
+        """
+        Summarize results for all problems in the study.
+
+        Returns a DataFrame with MultiIndex (problem_key, parameterId).
+        """
+        if self.results is None:
+            raise ValueError(
+                "No results available. Please run parameter estimation first."
+            )
+
+        summaries = {}
+        for key, prob in self.problems.items():
+            # key is already a StudyKey (string with format "prob_id | param_id")
+            df = prob.results_summary()
+            summaries[key] = df
+
+        combined = pd.concat(summaries, names=["problem_key", "parameterId"])
+        return combined
+
 
 def create_study(
     study_dir: str | Path,
@@ -119,8 +159,8 @@ def create_study(
     paths = StudyPaths(study_dir)
 
     problems = {}
-    problem_dirs = {}
     all_sim_conds = {}
+    keys = []
 
     prob_ids = list(sim_conds.keys())
     param_ids = true_params.get_ids()
@@ -130,9 +170,9 @@ def create_study(
         for prob_id in prob_ids:
 
             key = StudyKey(prob_id, param_id)
+            keys.append(key)
 
             prob_dir = paths.prob_dir(key)
-            problem_dirs[key] = str(prob_dir)
 
             sim_conds_list = sim_conds[prob_id]
             for sim_cond in sim_conds_list:
@@ -149,15 +189,16 @@ def create_study(
         model_name=model.name,
         prob_ids=prob_ids,
         param_ids=param_ids,
-        problem_dirs=problem_dirs,
+        keys=keys,
     )
     write_json(paths.metadata, metadata.to_dict())
     write_json(paths.true_params, true_params.to_dict())
+    write_json(paths.model_config, model.to_config())
 
-    return Study(model, true_params, problems, paths)
+    return Study(model, true_params, metadata, problems, paths)
 
 
-def load_study(study_dir: str | Path, model: ModelBase) -> Study:
+def load_study(study_dir: str | Path, model: Optional[ModelBase] = None) -> Study:
 
     paths = StudyPaths(study_dir)
 
@@ -167,14 +208,28 @@ def load_study(study_dir: str | Path, model: ModelBase) -> Study:
     metadata = StudyMetadata.load(paths.metadata)
     true_params = ParameterGroup.load(paths.true_params)
 
+    # Load model from config if not provided
+    if model is None:
+        model_config = read_json(paths.model_config)
+        model = ModelBase.from_config(model_config)
+
     problems: SimulatedProblemDict = {}
     results: ResultsDict = {}
     ensembles: EnsembleDict = {}
-    for key, prob_dir in metadata.problem_dirs.items():
 
-        problem = SimulatedProblem.load(prob_dir, model)
-        problems[key] = problem
-        results[key] = problem.get_results()
-        ensembles[key] = problem.get_ensemble()
+    for key in metadata.keys:
 
-    return Study(model, true_params, problems, paths, results=results, ensembles=ensembles)
+        prob = SimulatedProblem.load(paths.prob_dir(key), model)
+        problems[key] = prob
+        results[key] = prob.get_results()
+        ensembles[key] = prob.get_ensemble()
+
+    return Study(
+        model,
+        true_params,
+        metadata,
+        problems,
+        paths,
+        results=results,
+        ensembles=ensembles,
+    )

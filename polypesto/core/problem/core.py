@@ -1,7 +1,21 @@
+from __future__ import annotations
 import os
 from pathlib import Path
+from enum import Enum
 
 from polypesto.utils.file import filepath
+
+
+class ProblemFigure(Enum):
+    measurements = "measurements.png"
+    waterfall = "waterfall.png"
+    profile = "profile.png"
+    sampling_trace = "sampling_trace.png"
+    confidence_intervals = "confidence_intervals.png"
+    sampling_scatter = "sampling_scatter.png"
+    optimization_scatter = "optimization_scatter.png"
+    ensemble_predictions = "ensemble_predictions.png"
+    model_fit = "model_fit.png"
 
 
 class ProblemPaths:
@@ -34,7 +48,7 @@ class ProblemPaths:
         os.makedirs(self.petab_dir, exist_ok=True)
 
     @staticmethod
-    def from_yaml(yaml_path: str | Path) -> "ProblemPaths":
+    def from_yaml(yaml_path: str | Path) -> ProblemPaths:
         yaml_path = Path(yaml_path)
 
         data_dir = yaml_path.parent.parent
@@ -76,8 +90,6 @@ class ProblemPaths:
     @filepath
     def sim_conds(self) -> Path:
         return self.petab_dir / "sim_conds.json"
-    
-    
 
     #####################
     ### PyPESTO Files ###
@@ -109,39 +121,39 @@ class ProblemPaths:
 
     @filepath
     def measurements_fig(self) -> Path:
-        return self.figures_dir / "measurements.png"
+        return self.figures_dir / ProblemFigure.measurements.value
 
     @filepath
     def waterfall_fig(self) -> Path:
-        return self.figures_dir / "waterfall.png"
+        return self.figures_dir / ProblemFigure.waterfall.value
 
     @filepath
     def profile_fig(self) -> Path:
-        return self.figures_dir / "profile.png"
+        return self.figures_dir / ProblemFigure.profile.value
 
     @filepath
     def sampling_trace_fig(self) -> Path:
-        return self.figures_dir / "sampling_trace.png"
+        return self.figures_dir / ProblemFigure.sampling_trace.value
 
     @filepath
     def confidence_intervals_fig(self) -> Path:
-        return self.figures_dir / "confidence_intervals.png"
+        return self.figures_dir / ProblemFigure.confidence_intervals.value
 
     @filepath
     def sampling_scatter_fig(self) -> Path:
-        return self.figures_dir / "sampling_scatter.png"
+        return self.figures_dir / ProblemFigure.sampling_scatter.value
 
     @filepath
     def optimization_scatter_fig(self) -> Path:
-        return self.figures_dir / "optimization_scatter.png"
+        return self.figures_dir / ProblemFigure.optimization_scatter.value
 
     @filepath
     def ensemble_predictions_fig(self) -> Path:
-        return self.figures_dir / "ensemble_predictions.png"
+        return self.figures_dir / ProblemFigure.ensemble_predictions.value
 
     @filepath
     def model_fit_fig(self) -> Path:
-        return self.figures_dir / "model_fit.png"
+        return self.figures_dir / ProblemFigure.model_fit.value
 
     #################
     ### Log Files ###
