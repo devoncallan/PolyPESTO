@@ -39,6 +39,16 @@ class SimConditions:
         print(f"Conditions: {self.conds.to_dict()}")
         print(f"Num time points: {len(self.t_eval)}")
         print(f"Noise level: {self.noise_level}")
+        
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, SimConditions):
+            return False
+        return (
+            self.true_params == other.true_params
+            and self.conds.to_dict() == other.conds.to_dict()
+            and np.array_equal(self.t_eval, other.t_eval)
+            and self.noise_level == other.noise_level
+        )
 
 
 def write_sim_conditions(
@@ -92,6 +102,30 @@ def load_sim_conditions(
         sim_conds.append(sim_cond)
 
     return true_params, sim_conds
+
+
+def check_sim_conditions_consistency(
+    sim_conds_1: List[SimConditions],
+    sim_conds_2: List[SimConditions],
+) -> bool:
+    """Check if two lists of SimConditions are consistent.
+
+    Args:
+        sim_conds_1 (List[SimConditions]): First list of simulation conditions.
+        sim_conds_2 (List[SimConditions]): Second list of simulation conditions.
+
+    Returns:
+        bool: True if the lists are consistent, False otherwise.
+    """
+
+    if len(sim_conds_1) != len(sim_conds_2):
+        return False
+
+    for sc1, sc2 in zip(sim_conds_1, sim_conds_2, strict=True):
+        if sc1 != sc2:
+            return False
+
+    return True
 
 
 def parse_noise_levels(

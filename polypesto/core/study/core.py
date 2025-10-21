@@ -81,6 +81,17 @@ class StudyPaths:
 
     def prob_dir(self, key: StudyKey) -> Path:
         return self.study_dir / key.param_id / key.prob_id
+    
+    def exists(self) -> bool:
+        if not self.study_dir.exists():
+            return False
+        if not self.metadata.exists():
+            return False
+        if not self.true_params.exists():
+            return False
+        if not self.model_config.exists():
+            return False
+        return True
 
 
 @dataclass
