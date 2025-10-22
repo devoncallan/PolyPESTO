@@ -2,7 +2,17 @@ from __future__ import annotations
 
 import itertools
 from pathlib import Path
-from typing import Callable, Dict, List, Mapping, NamedTuple, Optional, Set, Tuple, TypeAlias
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Mapping,
+    NamedTuple,
+    Optional,
+    Set,
+    Tuple,
+    TypeAlias,
+)
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -56,6 +66,9 @@ class ParameterSet(Dict[ParamID, float]):
 
     def to_dict(self) -> Dict[ParamID, float]:
         return dict(self)
+    
+    def to_string(self) -> str:
+        return ", ".join(f"{k}: {v}" for k, v in self.items())
 
     def as_parameters(self) -> List[Parameter]:
         return [Parameter(id, value) for id, value in self.items()]
@@ -112,46 +125,35 @@ class ParameterGroup(Dict[ParamSetID, ParameterSet]):
     def get_ids(self) -> List[ParamSetID]:
         return list(self.keys())
 
-    # def transpose_values(self) -> Tuple[List[ParamSetID], Dict[ParamID, List[float]]]:
-    #     param_values: Dict[ParamID, List[float]] = {}
-    #     ids = self.get_ids()
+    def get_param_ids(self) -> List[ParamID]:
+        return self[self.get_ids()[0]].get_ids()
 
-    #     ref_set = self[ids[0]]
-    #     for param_id in ref_set.get_ids():
-    #         param_values[param_id] = []
-    #         for param_set in self.values():
-    #             param_values[param_id].append(param_set[param_id])
-
-    #     return ids, param_values
-    
-    # def crazy_dict(self) -> Dict[ParamID, Tuple[List[float], ]]
-    
-    def map_values(self) -> Dict[ParamID, Dict[float, Set[ParamSetID]]]:
-        
-        vals: Dict[ParamID, Dict[float, Set[ParamSetID]]] = {}
-        
+    def filter_by_values(
+        self, values: Mapping[ParamID, float | None]
+    ) -> List[ParamSetID]:
+        matching_ids = []
         for pset_id, param_set in self.items():
-            for param_id in param_set.keys():
-                if param_id not in vals:
-                    vals[param_id] = {}
-                param_value = param_set[param_id]
-                if param_value not in vals[param_id]:
-                    vals[param_id][param_value] = set()
-                vals[param_id][param_value].add(pset_id)
+            if all(
+                param_set[param_id] == value
+                for param_id, value in values.items()
+                if value is not None
+            ):
+                matching_ids.append(pset_id)
+        return matching_ids
+    
 
-        return vals
 
-    # def transpose_values(self) -> Dict[ParamID, Dict[ParamSetID, float]]:
-
-    #     vals: Dict[ParamID, Dict[ParamSetID, float]] = {}
-    #     added_vals: Dict[ParamID, List[float]] = {}
-    #     for pset_id, param_set in self.items():
-    #         for param_id in param_set.keys():
-    #             if param_id not in vals:
-    #                 vals[param_id] = {}
-    #             vals[param_id][pset_id] = param_set[param_id]
-
-    #     return vals
+    def unique_values_by_param_id(self) -> Dict[ParamID, Dict[float, List[ParamSetID]]]:
+        values = {}
+        for param_id in self.get_param_ids():
+            inner_dict = {}
+            for pset in self.values():
+                val = pset[param_id]
+                if val not in inner_dict:
+                    inner_dict[val] = []
+                inner_dict[val].append(pset.id)
+            values[param_id] = inner_dict
+        return values
 
     @classmethod
     def from_dict(

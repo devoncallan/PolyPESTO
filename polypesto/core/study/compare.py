@@ -20,6 +20,9 @@ class StudyComparison(Dict[str, Study]):
         self.ref_study_key = next(iter(self.keys()))
         self._validate()
 
+    def get_ref_study(self) -> Study:
+        return self[self.ref_study_key]
+
     @classmethod
     def load(cls, study_dirs: List[str | Path], **kwargs) -> StudyComparison:
 
@@ -43,15 +46,20 @@ class StudyComparison(Dict[str, Study]):
         for name, study in self.items():
 
             if study.metadata.keys != ref_keys:
-                print(f"Study '{name}' has inconsistent keys compared to the reference study.")
-                
+                print(
+                    f"Study '{name}' has inconsistent keys compared to the reference study."
+                )
 
             for key in ref_keys:
                 ref_problem = ref_study.problems[key]
                 comp_problem = study.problems[key]
 
-                if not check_sim_conditions_consistency(ref_problem.sim_conditions, comp_problem.sim_conditions):
-                    print(f"Study '{name}' has inconsistent simulation conditions for problem '{key}'.")
+                if not check_sim_conditions_consistency(
+                    ref_problem.sim_conditions, comp_problem.sim_conditions
+                ):
+                    print(
+                        f"Study '{name}' has inconsistent simulation conditions for problem '{key}'."
+                    )
                     # raise ValueError(
                     #     f"""
                     #     Study '{name}' has inconsistent simulation conditions for problem '{key}'.
@@ -60,8 +68,13 @@ class StudyComparison(Dict[str, Study]):
                     #     """
                     # )
 
-                if ref_problem.true_params.to_dict() != comp_problem.true_params.to_dict():
-                    print(f"Study '{name}' has inconsistent true parameters for problem '{key}'.")
+                if (
+                    ref_problem.true_params.to_dict()
+                    != comp_problem.true_params.to_dict()
+                ):
+                    print(
+                        f"Study '{name}' has inconsistent true parameters for problem '{key}'."
+                    )
                     # raise ValueError(
                     #     f"""
                     #     Study '{name}' has inconsistent true parameters for problem '{key}'.
@@ -71,26 +84,17 @@ class StudyComparison(Dict[str, Study]):
                     # )
 
     def get_keys(self) -> List[StudyKey]:
-        return self[self.ref_study_key].metadata.keys
+        return self.get_ref_study().metadata.keys
 
     def get_conds_dict(self) -> Dict[str, List[SimConditions]]:
-        ref_study = self[self.ref_study_key]
+        ref_study = self.get_ref_study()
         return {
             key.prob_id: ref_study.get_conditions(key.prob_id)
             for key in ref_study.metadata.keys
         }
 
     def get_true_params(self) -> ParameterGroup:
-        ref_study = self[self.ref_study_key]
-        return ref_study.true_params
-
-
-    # def get_true_params(self) -> Dict[str, ParameterGroup]:
-    #     ref_study = self[self.ref_study_key]
-    #     return {
-    #         key.param_id: ref_study.get_true_params(key.param_id)
-    #         for key in ref_study.metadata.keys
-    #     }
+        return self.get_ref_study().true_params
 
     def get_problems(self, key: StudyKey) -> Dict[str, SimulatedProblem]:
 
@@ -138,6 +142,3 @@ class StudyComparison(Dict[str, Study]):
             figs[name] = fig_path
 
         return figs
-
-
-# class Study

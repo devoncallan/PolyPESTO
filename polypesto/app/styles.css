@@ -1,0 +1,13 @@
+.stMainBlockContainer {
+    padding-left: 2rem;
+    padding-right: 1rem;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+.stAppHeader {
+    background-color: rgba(255, 255, 255, 0.0);
+    visibility: visible;
+}
+[data-testid = "stSidebarHeader"] {
+    height: 2rem;
+}

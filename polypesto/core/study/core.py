@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, TypeAlias, TypeVar
+from typing import Any, Dict, List, TypeAlias, TypeVar, Mapping
 
 from polypesto.utils import filepath, read_json
 
+from ..params import ParamID
 from ..problem.simulate import SimulatedProblem
 from ..pypesto import Result
 from ..pypesto import Ensemble
@@ -51,6 +52,13 @@ def filter_study_dict(
     return filtered_dict
 
 
+def filter_study_dict_by_values(
+    data: StudyDict[T], param_values: Mapping[ParamID, float | None] | None = None
+) -> StudyDict[T]:
+    if param_values is None:
+        return data
+
+
 class StudyPaths:
 
     def __init__(self, study_dir: str | Path):
@@ -81,7 +89,7 @@ class StudyPaths:
 
     def prob_dir(self, key: StudyKey) -> Path:
         return self.study_dir / key.param_id / key.prob_id
-    
+
     def exists(self) -> bool:
         if not self.study_dir.exists():
             return False
@@ -104,7 +112,7 @@ class StudyMetadata:
 
     def __post_init__(self):
         """Validate metadata consistency."""
-        
+
         for key in self.keys:
             if key.prob_id not in self.prob_ids:
                 raise ValueError(
