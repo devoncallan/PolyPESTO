@@ -55,17 +55,18 @@ if study_key is None:
     st.stop()
 
 c2.write("##### Select Figure")
-fig_type = c2.selectbox(
+fig_types = c2.multiselect(
     "Select figure type",
     options=[ft for ft in ProblemFigure],
     format_func=lambda x: x.name,
-    index=4,
     label_visibility="collapsed",
 )
-fig_paths = study_comp.get_figure_paths(study_key, fig_type=fig_type)
 
-cols = st.columns(len(fig_paths) + 2)
-for (study_name, fig_path), col in zip(fig_paths.items(), cols):
-    col.markdown(f"### {study_name}")
-    image = fig_path.read_bytes()
-    col.image(image, caption=f"{study_name} - {fig_path.name}")
+for fig_type in fig_types:
+    fig_paths = study_comp.get_figure_paths(study_key, fig_type=fig_type)
+
+    cols = st.columns(len(fig_paths) + 1)
+    for (study_name, fig_path), col in zip(fig_paths.items(), cols):
+        col.markdown(f"### {study_name}")
+        image = fig_path.read_bytes()
+        col.image(image, caption=f"{study_name} - {fig_path.name}")

@@ -93,12 +93,16 @@ study = Study.create(
 
 study = Study.load(output_dir, model)
 
+import sys
+sys.stdout = sys.__stdout__
+sys.stderr = sys.__stderr__
+
 study.run_parameter_estimation(
     config=dict(
         optimize=dict(n_starts=n_starts, method="Nelder-Mead"),
         sample=dict(n_samples=n_samples, n_chains=3),
     ),
-    overwrite=True,
+    overwrite=False,
 )
 
 st.success("success!")
