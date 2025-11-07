@@ -23,7 +23,7 @@ def main():
     # Initialize model with observables
     model = BinaryIrreversible(observables=["FA"])
 
-    df = pd.read_csv(DATA_DIR / "f0XF_APSA_Vim.csv")
+    df = pd.read_csv(DATA_DIR / "f0XF_test.csv")
     unique_conds = [float(c) for c in df["fA0"].unique()]
 
     exps = []

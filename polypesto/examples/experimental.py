@@ -69,9 +69,9 @@ def main():
     )
 
     # Predict using parameter ensemble from sampling
-    ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
+    # ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
 
-    problem.ensemble_prediction(ensemble_prob)
+    # problem.ensemble_prediction(ensemble_prob)
 
     calculate_cis(result, ci_level=0.95)
 
