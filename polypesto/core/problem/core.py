@@ -118,6 +118,9 @@ class ProblemPaths:
     @property
     def figures_dir(self) -> Path:
         return self.base_dir / "figures"
+    
+    def get_figure_path(self, fig_type: ProblemFigure) -> Path:
+        return self.figures_dir / fig_type.value
 
     @filepath
     def measurements_fig(self) -> Path:
