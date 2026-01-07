@@ -45,20 +45,36 @@ class BinaryReversible(ModelBase):
                 scale=pet.C.LOG10,
                 bounds=(1e-2, 1e2),
                 nominal_value=1.0,
-                estimate=False,
+                estimate=True,
             ),
+            # "KAA": pet.FitParameter(
+            #     id="KAA",
+            #     scale=pet.C.LOG10,
+            #     bounds=(1e-2, 1e2),
+            #     nominal_value=0.8,
+            #     estimate=False,
+            # ),
+            # "KAA": pet.FitParameter(
+            #     id="KAA",
+            #     scale=pet.C.LIN,
+            #     bounds=(0, 1),
+            #     nominal_value=0.37,
+            #     estimate=True,
+            # ),
             "KAB": pet.FitParameter(
                 id="KAB",
                 scale=pet.C.LIN,
                 bounds=(0, 1),
                 nominal_value=0.0,
+                # nominal_value=0.99,
                 estimate=False,
             ),
             "KBA": pet.FitParameter(
                 id="KBA",
                 scale=pet.C.LIN,
-                bounds=(0, 1),
+                bounds=(0, 5),
                 nominal_value=0.0,
+                # nominal_value=3.99,
                 estimate=False,
             ),
             "KBB": pet.FitParameter(
@@ -66,21 +82,46 @@ class BinaryReversible(ModelBase):
                 scale=pet.C.LIN,
                 bounds=(0, 1),
                 nominal_value=0.0,
+                # nominal_value=0.74,
                 estimate=False,
             ),
+            # "KAB": pet.FitParameter(
+            #     id="KAB",
+            #     scale=pet.C.LOG10,
+            #     bounds=(1e-2, 1e2),
+            #     nominal_value=1.0,
+            #     estimate=True,
+            # ),
+            # "KBA": pet.FitParameter(
+            #     id="KBA",
+            #     scale=pet.C.LOG10,
+            #     bounds=(1e-2, 1e2),
+            #     nominal_value=1.0,
+            #     # nominal_value=3.99,
+            #     estimate=True,
+            # ),
+            # "KBB": pet.FitParameter(
+            #     id="KBB",
+            #     scale=pet.C.LOG10,
+            #     bounds=(1e-2, 1e2),
+            #     nominal_value=1.0,
+            #     # nominal_value=0.74,
+            #     estimate=True,
+            # ),
         }
 
     def _default_sbml_model(self) -> sbml.ModelDefinition:
-        return reversible_ode()
+        return rev_ode()
 
     def _default_solver_options(self, solver: AmiciSolver) -> AmiciSolver:
-        solver.setNewtonMaxSteps(10_000)
+        solver.setNewtonMaxSteps(1_000)
         solver.setNewtonDampingFactorMode(1)
-        solver.setAbsoluteTolerance(1e-10)
+        # solver.setAbsoluteTolerance(1e-10)
+        solver.setAbsoluteTolerance(1e-8)
         solver.setRelativeTolerance(1e-6)
         solver.setMaxSteps(10_000)
         solver.setMaxConvFails(1_000)
-        solver.setMaxNonlinIters(10_000)
+        solver.setMaxNonlinIters(10)
         solver.setLinearSolver(9)
         solver.setStabilityLimitFlag(True)
         solver.setReturnDataReportingMode(0)
@@ -206,6 +247,197 @@ def reversible_ode() -> sbml.ModelDefinition:
     sbml.create_rate_rule(model, "PAB", formula="dPAB_dt/(dx_dt+eps)")
     sbml.create_rate_rule(model, "PBA", formula="dPBA_dt/(dx_dt+eps)")
     sbml.create_rate_rule(model, "PBB", formula="dPBB_dt/(dx_dt+eps)")
+
+    return sbml.create_model(model, document)
+
+
+def rev_ode() -> sbml.ModelDefinition:
+    """
+    Cleaner reversible ODE model mirroring irr_ode helper patterns.
+    """
+
+    document, model = sbml.init_model("rev_ode")
+    sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+
+    sbml.create_parameter(model, "eps", value=1e-10)
+
+    # Define reaction rate parameters
+    define_reversible_k(model, kpAA_constant=True)
+
+    # Initialize all species and parameters
+    sbml.create_all_species(
+        model,
+        ["RA", "RB", "PAA", "PAB", "PBA", "PBB", "PA", "PB", "xA", "xB"],
+        initialAmount=0.0,
+    )
+
+    # Helper parameters
+    sbml.create_all_parameters(
+        model,
+        ["A", "B", "fA", "fB", "FA", "FB", "fPAA", "fPAB", "fPBA", "fPBB"],
+        value=0.0,
+    )
+    sbml.create_all_parameters(
+        model,
+        [
+            "dR_dt",
+            "dRA_dt",
+            "dRB_dt",
+            "dA_dt",
+            "dB_dt",
+            "dPAA_dt",
+            "dPAB_dt",
+            "dPBA_dt",
+            "dPBB_dt",
+            "dxA_dt",
+            "dxB_dt",
+            "dx_dt",
+        ],
+        value=0.0,
+    )
+
+    # Define initial species
+    sbml.create_species(model, "R", initialAmount=0.001)
+    sbml.create_parameter(model, "A0", value=1.0, constant=True)
+    sbml.create_parameter(model, "B0", value=1.0, constant=True)
+
+    # Define species and parameters
+    sbml.create_rule(model, "A", "A0 * (1 - xA)")
+    sbml.create_rule(model, "B", "(A0 + B0) * (1 - time) - A")
+
+    sbml.create_rule(model, "PA", "PAA + PBA + RA")
+    sbml.create_rule(model, "PB", "PAB + PBB + RB")
+
+    sbml.create_rule(model, "fA", "A / (A + B + eps)")
+    sbml.create_rule(model, "fB", "1 - fA")
+
+    sbml.create_rule(model, "FA", "(A0/(A0+B0) - (1-time)*fA)/(time+eps)")
+    sbml.create_rule(model, "FB", "1-FA")
+
+    sbml.create_rule(model, "fPAA", "PAA / (PA + eps)")
+    sbml.create_rule(model, "fPAB", "PAB / (PB + eps)")
+    sbml.create_rule(model, "fPBA", "PBA / (PA + eps)")
+    sbml.create_rule(model, "fPBB", "PBB / (PB + eps)")
+
+    # Define rates of change
+    sbml.create_rule(model, "dR_dt", "-R*(kpAA*A + kpBB*B)")
+    sbml.create_rule(model, "dRA_dt", "R*(kpAA*A) - RA*(kpAA*A + kpAB*B)")
+    sbml.create_rule(model, "dRB_dt", "R*(kpBB*B) - RB*(kpBB*B + kpBA*A)")
+
+    sbml.create_rule(
+        model,
+        "dA_dt",
+        "-A*(kpAA*(R + PA) + kpBA*(R + PB)) + kdAA*PAA + kdBA*PBA",
+    )
+    sbml.create_rule(
+        model,
+        "dB_dt",
+        "-B*(kpBB*(R + PB) + kpAB*(R + PA)) + kdBB*PBB + kdAB*PAB",
+    )
+
+    sbml.create_rule(
+        model,
+        "dPAA_dt",
+        "kpAA*PA*A - PAA*(kpAA*A + kpAB*B) + kdAA*fPAA*PAA + kdAB*fPAA*PAB - kdAA*PAA",
+    )
+    sbml.create_rule(
+        model,
+        "dPAB_dt",
+        "kpAB*PA*B - PAB*(kpBA*A + kpBB*B) + kdBA*fPAB*PBA + kdBB*fPAB*PBB - kdAB*PAB",
+    )
+    sbml.create_rule(
+        model,
+        "dPBA_dt",
+        "kpBA*PB*A - PBA*(kpAB*B + kpAA*A) + kdAB*fPBA*PAB + kdAA*fPBA*PAA - kdBA*PBA",
+    )
+    sbml.create_rule(
+        model,
+        "dPBB_dt",
+        "kpBB*PB*B - PBB*(kpBB*B + kpBA*A) + kdBB*fPBB*PBB + kdBA*fPBB*PBA - kdBB*PBB",
+    )
+
+    sbml.create_rule(model, "dxA_dt", "-1 / A0 * dA_dt")
+    sbml.create_rule(model, "dxB_dt", "-1 / B0 * dB_dt")
+    sbml.create_rule(model, "dx_dt", "-1 / (A0 + B0) * (dA_dt + dB_dt)")
+
+    # Define differential equations
+    sbml.create_rate_rule(model, "xA", "dxA_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "xB", "dxB_dt/(dx_dt+eps)")
+
+    sbml.create_rate_rule(model, "R", "dR_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "RA", "dRA_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "RB", "dRB_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "PAA", "dPAA_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "PAB", "dPAB_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "PBA", "dPBA_dt/(dx_dt+eps)")
+    sbml.create_rate_rule(model, "PBB", "dPBB_dt/(dx_dt+eps)")
+
+    return sbml.create_model(model, document)
+
+
+def rev_cpe() -> sbml.ModelDefinition:
+    """
+    Conversion-based reversible model mirroring irr_cpe helper patterns.
+    """
+
+    document, model = sbml.init_model("rev_cpe")
+    sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+    sbml.create_parameter(model, "eps", value=1e-10)
+
+    # Define reaction rate parameters
+    define_reversible_k(model, kpAA_constant=True)
+
+    # Initialize all species and parameters
+    sbml.create_all_species(model, ["A", "B", "xA", "xB"], initialAmount=0.0)
+    sbml.create_all_parameters(model, ["fA", "fB", "FA", "FB", "dA", "dB"], value=0.0)
+
+    # Define initial species
+    sbml.create_parameter(model, "A0", value=1.0, constant=True)
+    sbml.create_parameter(model, "B0", value=1.0, constant=True)
+
+    sbml.create_species(model, "pA", initialAmount=0.5)
+    sbml.create_species(model, "pB", initialAmount=0.5)
+
+    sbml.create_species(model, "pAA", initialAmount=0.5)
+    sbml.create_species(model, "pAB", initialAmount=0.5)
+    sbml.create_species(model, "pBA", initialAmount=0.5)
+    sbml.create_species(model, "pBB", initialAmount=0.5)
+
+    # Define species and parameters
+    sbml.create_rule(model, "A", "A0*(1-xA)")
+    sbml.create_rule(model, "B", "(A0+B0)*(1-time)-A")
+    sbml.create_rule(model, "xB", "1-B/B0")
+
+    sbml.create_rule(model, "pA", "1 - pB")
+    sbml.create_rule(model, "pAA", "1 - pBA")
+    sbml.create_rule(model, "pBB", "1 - pAB")
+
+    sbml.create_rule(model, "fA", "A/(A+B+eps)")
+    sbml.create_rule(model, "fB", "1-fA")
+    sbml.create_rule(model, "FA", "(A0/(A0+B0) - (1-time)*fA)/(time+eps)")
+    sbml.create_rule(model, "FB", "1-FA")
+
+    # Define chain-end dyad balances (algebraic)
+    sbml.create_algebraic_rule(
+        model, formula="kpAA*pBA*pA*A + kdAB*pAA*pAB*pB - pAA*pA*(kpAB*B + kdAA*pBA)"
+    )
+    sbml.create_algebraic_rule(
+        model, formula="kpBB*pAB*pB*B + kdBA*pBB*pBA*pA - pBB*pB*(kpBA*A + kdBB*pAB)"
+    )
+    sbml.create_algebraic_rule(
+        model, formula="kpAB*pA*B + kdBA*pBA*pA - kpBA*pB*A - kdAB*pAB*pB"
+    )
+
+    # Define rates of change of monomer concentration
+    sbml.create_rule(
+        model, "dA", "-A*(kpAA*pA + kpBA*pB) + pA*(kdAA*pAA + kdBA*pBA)"
+    )
+    sbml.create_rule(
+        model, "dB", "-B*(kpBB*pB + kpAB*pA) + pB*(kdBB*pBB + kdAB*pAB)"
+    )
+
+    # Define differential equation
+    sbml.create_rate_rule(model, "xA", "(A0+B0)/A0 * ((dA+eps)/(dA+dB+eps))")
 
     return sbml.create_model(model, document)
 

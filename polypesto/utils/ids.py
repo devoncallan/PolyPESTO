@@ -11,6 +11,9 @@ class ID:
 
     StrCondID: TypeAlias = str
     StrCondName: TypeAlias = str
+    
+    StrParamName: TypeAlias = str
+    StrParamId: TypeAlias = str
 
     ObsCondKey: TypeAlias = Tuple[StrObsID, StrCondID]
 

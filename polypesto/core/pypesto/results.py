@@ -150,17 +150,18 @@ def calculate_cis(
         lower = (1.0 - ci_level) / 2.0
         upper = 1.0 - lower
 
-        # lb = np.percentile(10**chain, lower * 100)
-        # ub = np.percentile(10**chain, upper * 100)
-        # median = np.percentile(10**chain, 50)
-        lb = np.percentile(chain, lower * 100)
-        ub = np.percentile(chain, upper * 100)
-        median = np.percentile(chain, 50)
+        lb = np.percentile(10**chain, lower * 100)
+        ub = np.percentile(10**chain, upper * 100)
+        median = np.percentile(10**chain, 50)
+        # lb = np.percentile(chain, lower * 100)
+        # ub = np.percentile(chain, upper * 100)
+        # median = np.percentile(chain, 50)
         ci_results[name] = (lb, median, ub)
 
     # print(f"Parameter confidence intervals ({ci_level*100:.1f}%):")
     print(f"\n==== Parameter confidence intervals ({ci_level*100:.1f}%) ====")
     for name, (lb, median, ub) in ci_results.items():
         print(f"  {name}: {median:.3f} [{lb:.3f}, {ub:.3f}]")
+        
 
     return ci_results

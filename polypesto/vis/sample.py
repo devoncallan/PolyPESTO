@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
 import matplotlib.pyplot as plt
+from matplotlib.ticker import FuncFormatter
 import numpy as np
 import pypesto.visualize as vis  # type: ignore
 import seaborn as sns  # type: ignore
@@ -139,14 +140,50 @@ def plot_sampling_scatter(
     grid = vis.sampling_scatter(result=result, **kwargs)
     fig = plt.gcf()
 
+    def log_to_actual(x, pos):
+        return f"{10**x:.3f}"
+
     # Return if no true values or no valid grid
-    if not true_params or not hasattr(grid, "axes") or len(grid.axes) == 0:
-        plt.tight_layout()
-        return fig, grid
+    # if not true_params or not hasattr(grid, "axes") or len(grid.axes) == 0:
+    #     # print("Hiya")
+    #     # print("Formatting axes...")
+    #     # grid.axes[1,0].set_xlim(np.log10([0.35, 0.45]))
+    #     # grid.axes[1,0].set_ylim(np.log10([0.5, 0.7]))
+    #     # grid.axes[1,0].xaxis.set_major_formatter(FuncFormatter(log_to_actual))
+    #     # grid.axes[1,0].yaxis.set_major_formatter(FuncFormatter(log_to_actual))
+    #     grid.axes[1, 0].set_xticks(np.log10([0.3, 0.35, 0.4, 0.45, 0.5]))
+    #     grid.axes[1, 0].set_yticks(np.log10([0.5, 0.55, 0.6, 0.65, 0.7]))
+    #     grid.axes[0, 1].set_xticks(np.log10([0.5, 0.55, 0.6, 0.65, 0.7]))
+    #     grid.axes[0, 1].set_yticks(np.log10([0.3, 0.35, 0.4, 0.45, 0.5]))
+    #     # print("Formatting axes...")
+
+    #     for ax in grid.axes.flatten():
+    #         ax: Axes = ax
+    #         # ax.xaxis.set_ticks(np.log10([0.32, 0.34, 0.36, 0.38, 0.40, 0.42, 0.44, 0.46, 0.48, 0.50]))
+    #         # ax.xaxis.set_ticks(np.log10([0.3, 0.35, 0.4, 0.45, 0.5]))
+    #         ax.xaxis.set_major_formatter(FuncFormatter(log_to_actual))
+    #         ax.yaxis.set_major_formatter(FuncFormatter(log_to_actual))
+        #     print("Axes:", ax)
+
+        # ax.set_xlim(np.log10([0.3, 0.7]))
+        # ax.set_ylim(np.log10([0.3, 0.7]))
+        # ax.set_xlim(0.30, 0.70)
+        # ax.set_ylim(0.30, 0.70)
+        # ax.set_xticks([0.35, ])
+        # plt.tight_layout()
+        # return fig, grid
 
     true_values = get_true_param_values(result, true_params, scaled=True)
 
     plot_true_params_on_pairgrid(grid, true_values)
+
+    # Flatten the 2D array of axes
+    # print("Formatting axes...")
+    # for ax in grid.axes.flatten():
+    #     ax: Axes = ax
+    #     print("Axes:", ax)
+    #     ax.xaxis.set_major_formatter(FuncFormatter(log_to_actual))
+    #     ax.yaxis.set_major_formatter(FuncFormatter(log_to_actual))
 
     plt.tight_layout()
     return fig, grid

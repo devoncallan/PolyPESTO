@@ -1,3 +1,4 @@
+import shutil
 from typing import Dict, Optional
 
 from polypesto.core import Result, Problem
@@ -36,6 +37,12 @@ def plot_results(
 
     if has_problem_results(result):
 
+        if overwrite:
+            fig_dir = problem.paths.figures_dir
+            if fig_dir.exists():
+                shutil.rmtree(fig_dir)
+            fig_dir.mkdir(parents=True, exist_ok=True)
+
         with save_plot(problem.paths.measurements_fig, overwrite=overwrite):
             plot_all_measurements(problem.petab_problem.measurement_df)
 
@@ -53,7 +60,9 @@ def plot_results(
     if has_sampling_results(result):
 
         with save_plot(problem.paths.sampling_scatter_fig, overwrite=overwrite):
-            plot_sampling_scatter(result, true_params)
+            # print("Plotting sampling scatter...")
+            plot_sampling_scatter(result, true_params, show_bounds=True)
+            # plot_sampling_scatter
 
         with save_plot(problem.paths.confidence_intervals_fig, overwrite=overwrite):
             plot_confidence_intervals(result, true_params)

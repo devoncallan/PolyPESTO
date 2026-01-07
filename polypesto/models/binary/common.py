@@ -35,3 +35,13 @@ def define_reversible_k(model: sbml.Model, **kwargs):
     sbml.create_rule(model, "kdAB", formula=f"kpAB*KAB")
     sbml.create_rule(model, "kdBA", formula=f"kpBA*KBA")
     sbml.create_rule(model, "kdBB", formula=f"kpBB*KBB")
+
+
+def define_Lowry_I(model: sbml.Model, **kwargs):
+
+    define_irreversible_k(model, **kwargs)
+
+    sbml.create_parameter(model, "kdAA", value=0)
+    sbml.create_parameter(model, "KAA", value=0)
+
+    sbml.create_rule(model, "kdAA", formula=f"kpAA*KAA")

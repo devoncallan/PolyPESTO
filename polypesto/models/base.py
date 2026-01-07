@@ -23,6 +23,7 @@ class ModelBase(ABC):
         observables: List[ID.StrObsName] | None = None,
         obs_noise: float | List[float] | Dict[ID.StrObsName, float] | None = None,
         sbml_model: sbml.ModelDefinition | None = None,
+        # fit_params: Dict[ID.StrParamId, pet.FitParameter] | None = None,
         solver_options: Callable[[AmiciSolver], AmiciSolver] | None = None,
     ):
 
@@ -32,6 +33,7 @@ class ModelBase(ABC):
         self.obs_formula_map = {o: o for o in self.obs_names}
         self.obs_noise_map = parse_obs_noise(obs_noise, self.obs_names)
 
+        # self.fit_params = fit_params if fit_params else self._default_fit_params()
         self.fit_params = self._default_fit_params()
         self.sbml_model = sbml_model if sbml_model else self._default_sbml_model()
 

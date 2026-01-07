@@ -53,7 +53,7 @@ def plot_true_params_on_pairgrid(grid: sns.PairGrid, true_params: Dict[str, floa
     # assert param names are in true_params
     param_names = list(true_params.keys())
     if len(param_names) == 0:
-        print("No true values to plot.")
+        # print("No true values to plot.")
         return
 
     for i, param_y in enumerate(param_names):

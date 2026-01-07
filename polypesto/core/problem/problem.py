@@ -96,7 +96,8 @@ class Problem:
 
         obs_df = model.get_obs_df()
         param_df = model.get_param_df()
-        cond_df, meas_df = experiments_to_petab(experiments, model.obs_noise_map)
+        cond_df, meas_df = experiments_to_petab(experiments, model.obs_names, model.obs_noise_map)
+        
         petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df, problem_id)
         petab_data.write(output_dir, model.sbml_model)
 
@@ -211,7 +212,6 @@ def run_parameter_estimation(
         )
 
     if result and plot:
-
         prob.visualize_results(overwrite=overwrite)
 
     return result

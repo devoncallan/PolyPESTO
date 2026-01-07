@@ -1,7 +1,5 @@
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import matplotlib.cm as cm
-import matplotlib.colors as colors
 import pandas as pd
 import petab.v1.C as C
 from matplotlib import pyplot as plt
@@ -32,10 +30,10 @@ GRID_LUT = {
 # Function for plotting all measurements data
 def plot_all_measurements(
     meas_df: pd.DataFrame,
-    group_by: str = C.SIMULATION_CONDITION_ID,
+    group_by: str = C.OBSERVABLE_ID,
     axes: List[Axes] = None,
     format_axes_kwargs: Optional[Dict[str, Any]] = None,
-    plot_style: str = "scatter",
+    plot_style: str = "both",
     dpi=150,
     **kwargs,
 ) -> List[Axes]:
@@ -166,7 +164,34 @@ def plot_measurements(
 
     x = meas_df[C.TIME]
     y = meas_df[C.MEASUREMENT]
-    ax.plot(x, y, **kwargs)
+
+    # Prefer per-point noise if available
+    yerr = None
+    if C.NOISE_PARAMETERS in meas_df.columns:
+        noise = pd.to_numeric(meas_df[C.NOISE_PARAMETERS], errors="coerce")
+        if noise.notna().any():
+            yerr = noise.to_numpy()
+
+    # Pull linestyle once to avoid duplicate kwargs to errorbar/plot
+    ls = kwargs.pop("linestyle", "None")
+
+    if yerr is not None:
+        ax.errorbar(
+            x,
+            y,
+            yerr=yerr,
+            capsize=3,
+            capthick=1,
+            elinewidth=1,
+            alpha=0.7,
+            linestyle=ls,
+            **kwargs,
+        )
+        kwargs.pop("marker")
+        ax.plot(x, y, "^", linestyle="None", **kwargs)
+    else:
+        ax.plot(x, y, linestyle=ls, **kwargs)
+
     format_axes(ax, **format_axes_kwargs)
 
 
@@ -222,45 +247,23 @@ def get_plot_formatting(
         A dictionary mapping (observable, condition) pairs to a tuple of
         (color, marker, linestyle). The values depend on the selected plot style.
     """
-    markers = ["^", "^", "^", "^", "^", "^", "^", "^"]
-    colormap_names = ["Blues", "Reds", "Greens", "Purples", "Oranges", "Greys"]
+    markers = ["o", "s", "^", "v", "D", "P", "X", "*"]
+    # Color by condition for clarity when plotting all conditions together
+    cond_colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+    cond_color_map = {
+        cond: cond_colors[i % len(cond_colors)] for i, cond in enumerate(conditions)
+    }
+    obs_markers = {obs: markers[i % len(markers)] for i, obs in enumerate(observables)}
 
     format_dict = {}
 
-    # Determine linestyle based on plot_style
-    if plot_style == "lines":
-        linestyle = "-"
-    elif plot_style == "scatter":
-        linestyle = "None"
-    elif plot_style == "both":
-        linestyle = "-"
-    else:
-        raise ValueError(f"Unknown plot_style: {plot_style}")
+    # Always use markers only; no connecting lines
+    linestyle = "None"
 
-    # For each (obs, cond) pair, assign a color, marker, and linestyle
-    # colors = ["#60A88D", "#2D69B2"]
-    colors = [
-        "tab:blue",
-        "tab:orange",
-        "tab:green",
-        "tab:red",
-        "tab:purple",
-        "tab:pink",
-        "tab:olive",
-        "tab:cyan",
-    ]
-    for i, obs in enumerate(observables):
-        obs_colormap_name = colormap_names[i % len(colormap_names)]
-        # Generate enough color shades for all conditions
-        obs_colormap = get_color_shades(obs_colormap_name, len(conditions))
-
-        for j, cond in enumerate(conditions):
-            obs_color = obs_colormap[j]
-            # Use markers for scatter or both styles
-            obs_marker = (
-                markers[j % len(markers)] if plot_style in ["scatter", "both"] else None
-            )
-            obs_color = colors[i]
+    for obs in observables:
+        for cond in conditions:
+            obs_color = cond_color_map[cond]
+            obs_marker = obs_markers[obs]
             format_dict[(obs, cond)] = (obs_color, obs_marker, linestyle)
 
     return format_dict

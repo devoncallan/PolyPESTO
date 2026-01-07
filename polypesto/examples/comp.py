@@ -1,0 +1,95 @@
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+
+from polypesto.core import Dataset, Experiment, Problem
+from polypesto.core.pypesto import calculate_cis, create_ensemble, predict_with_ensemble
+from polypesto.examples.base import DATA_DIR, output_dirs
+
+# Model specific imports
+from polypesto.models.binary import BinaryIrreversible
+from polypesto.models.binary.utils import (
+    create_ensemble_pred_problem,
+    modify_experiments,
+)
+
+OUTPUT_DIR = output_dirs(Path(__file__).stem)
+
+
+def main():
+
+    # Initialize model with observables
+    model = BinaryIrreversible(observables=["FA", "FB", "xA", "xB"])
+
+    # Load experimental data from `data/` directory
+    exp1 = Experiment.load(
+        id="ELpMMA_3070",
+        conds={"A0": 0.30, "B0": 0.70},  # Define initial conditions
+        data=[  # Load conversion data and map to observables
+            Dataset.load(
+                DATA_DIR / "data_3060.csv",
+                tkey="Time[min]",
+                obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
+                noise_map={"xA": 0.05, "xB": 0.10},
+            )
+        ],
+    )
+
+    exp2 = Experiment.load(
+        id="ELpMMA_5050",
+        conds={"A0": 0.50, "B0": 0.50},  # Define initial conditions
+        data=[  # Load conversion data and map to observables
+            Dataset.load(
+                DATA_DIR / "data_5050.csv",
+                tkey="Time[min]",
+                obs_map={"xA": "Conversion ELp", "xB": "Conversion MMA"},
+                noise_map={"xA": 0.15, "xB": 0.20},
+            )
+        ],
+    )
+
+    # Format experiments for parameter estimation
+    exps = [exp1, exp2]
+    exps = modify_experiments(exps)
+
+    # Create parameter estimation problem from experiments
+    problem = Problem.from_experiments(
+        output_dir=OUTPUT_DIR,
+        model=model,
+        experiments=exps,
+    )
+
+    # Run parameter estimation (optimization + sampling)
+    result = problem.run_parameter_estimation(
+        config=dict(
+            optimize=dict(n_starts=50, method="Nelder-Mead"),
+            sample=dict(n_samples=10000, n_chains=3),
+        ),
+        overwrite=True,
+    )
+    
+    # Create sim conditions
+    """
+    Create candidate conditions (sim_conds)
+    Create a simulated problem (simulate_problem)
+    Predict using parameter ensemble from sampling
+    
+    Extract each simulated experiment
+    Add to main problem list of experiments
+    Rerun parameter estimation
+    
+    
+    
+    """
+    
+
+    # Predict using parameter ensemble from sampling
+    # ensemble_prob = create_ensemble_pred_problem(problem.paths.ensemble_dir, model)
+
+    # problem.ensemble_prediction(ensemble_prob)
+
+    calculate_cis(result, ci_level=0.95)
+
+
+if __name__ == "__main__":
+    main()

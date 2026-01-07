@@ -24,15 +24,16 @@ class Dataset:
         `tkey` (str): Column name in `data` representing time points (or independent variable).
         `obs_map` (Dict[ID.StrObsName, str]): Mapping from DataFrame column names to model observable names.
             e.g., {"xA": "Conversion A", "xB": "Conversion B"}
-        `noise_map` (Optional[Dict[ID.StrObsName, float]]): Optional mapping from observable names to noise
-            e.g., {"xA": 0.1, "xB": 0.2}
+        `noise_map` (Optional[Dict[ID.StrObsName, float | str]]): Optional mapping from observable names to noise
+            values (floats) or column names in `data` providing per-measurement noise
+            e.g., {"xA": 0.1, "xB": "dXB"}
     """
 
     id: str
     data: pd.DataFrame
     tkey: str
     obs_map: Dict[ID.StrObsName, str]
-    noise_map: Optional[Dict[ID.StrObsName, float]] = None
+    noise_map: Optional[Dict[ID.StrObsName, float | str]] = None
 
     def __post_init__(self):
         """Validate that tkey and obs_map columns exist in the data."""
@@ -56,14 +57,34 @@ class Dataset:
                 f"Observable columns {missing_cols} not found in data columns ({self.data.columns.tolist()})."
             )
 
+        if self.noise_map:
+            invalid_noise_cols = [
+                col
+                for col in self.noise_map.values()
+                if isinstance(col, str) and col not in self.data.columns
+            ]
+            if invalid_noise_cols:
+                raise KeyError(
+                    "Noise columns %s not found in data columns (%s)."
+                    % (invalid_noise_cols, self.data.columns.tolist())
+                )
+
+        # Add obs_map keys as columns in data
+        for obs_name, col_name in self.obs_map.items():
+            if obs_name not in self.data.columns:
+                self.data[obs_name] = self.data[col_name]
+
     @staticmethod
     def load(
         path_or_data: Path | str | pd.DataFrame,
         tkey: str,
         obs_map: Dict[ID.StrObsName, str],
-        noise_map: Optional[Dict[ID.StrObsName, float]] = None,
+        noise_map: Optional[
+            Dict[ID.StrObsName, float] | Dict[ID.StrObsName, str]
+        ] = None,
         **kwargs: Any,
     ) -> Dataset:
+
         if isinstance(path_or_data, pd.DataFrame):
             id = str(uuid4())
             data = path_or_data
@@ -94,6 +115,7 @@ class Experiment:
 
 def experiments_to_petab(
     experiments: List[Experiment],
+    observables: List[ID.StrObsName],
     obs_noise_map: Dict[ID.StrObsName, float] | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Convert a list of Experiment objects to PEtab format.
@@ -108,7 +130,7 @@ def experiments_to_petab(
     """
 
     data_dict: Dict[ID.ObsCondKey, Tuple[np.ndarray, np.ndarray]] = {}
-    noise_map: Dict[ID.ObsCondKey, float] = {}
+    noise_map: Dict[ID.ObsCondKey, float | np.ndarray] = {}
 
     conds = []
 
@@ -127,32 +149,65 @@ def experiments_to_petab(
         for dataset in exp.data:
 
             for obs_name, col_name in dataset.obs_map.items():
+                
+                print(obs_name, col_name)
+                if obs_name not in observables:
+                    print(f"Skipping observable {obs_name} not in model observables. {observables}")
+                    continue
+                print(f"Processing observable {obs_name}")
 
                 key = (ID.obs_id(obs_name), cond_ids[i])
-                t = np.array(dataset.data[dataset.tkey])
-                y = np.array(dataset.data[col_name])
+                t_vals = np.array(dataset.data[dataset.tkey])
+                y_vals = np.array(dataset.data[col_name])
 
                 # Remove nans
-                mask = ~np.isnan(y)
-                t = t[mask]
-                y = y[mask]
+                mask = ~np.isnan(y_vals)
+                t_segment = t_vals[mask]
+                y_segment = y_vals[mask]
 
+                prev_len = 0
                 if key in data_dict:
                     t_existing, y_existing = data_dict[key]
-                    t = np.concatenate([t_existing, t])
-                    y = np.concatenate([y_existing, y])
+                    prev_len = len(t_existing)
+                    t = np.concatenate([t_existing, t_segment])
+                    y = np.concatenate([y_existing, y_segment])
+                else:
+                    t = t_segment
+                    y = y_segment
 
                 data_dict[key] = (t, y)
 
-                # Override noise map from observables if in experiments
+                noise_values: float | np.ndarray | None = None
                 if dataset.noise_map and obs_name in dataset.noise_map:
-                    noise_map[key] = dataset.noise_map[obs_name]
+                    noise_spec = dataset.noise_map[obs_name]
+                    if isinstance(noise_spec, str):
+                        values = np.array(dataset.data[noise_spec])[mask]
+                        noise_values = values
+                    else:
+                        noise_values = float(noise_spec)
                 elif obs_noise_map and obs_name in obs_noise_map:
-                    noise_map[key] = obs_noise_map[obs_name]
-                else:
-                    noise_map[key] = 0.0
+                    noise_values = float(obs_noise_map[obs_name])
 
-    if all(v == 0.0 for v in noise_map.values()):
+                existing_noise = noise_map.get(key)
+                if existing_noise is None:
+                    noise_map[key] = noise_values if noise_values is not None else 0.0
+                else:
+                    if isinstance(existing_noise, np.ndarray):
+                        prefix = existing_noise
+                    else:
+                        # Existing noise was scalar; expand to match stored data length
+                        prefix = np.full(prev_len, float(existing_noise))
+
+                    if noise_values is None:
+                        suffix = np.zeros(len(t_segment))
+                    elif isinstance(noise_values, np.ndarray):
+                        suffix = noise_values
+                    else:
+                        suffix = np.full(len(t_segment), float(noise_values))
+
+                    noise_map[key] = np.concatenate([prefix, suffix])
+
+    if noise_map and all(isinstance(v, float) and v == 0.0 for v in noise_map.values()):
         noise_map = None
 
     cond_df = pet.utils.cond.define(conds, names=cond_names)

@@ -4,7 +4,8 @@ import tempfile
 import pandas as pd
 import pytest
 
-from polypesto.core.experiment import Dataset
+from polypesto.core import petab as pet
+from polypesto.core.experiment import Dataset, Experiment, experiments_to_petab
 
 
 @pytest.fixture
@@ -107,3 +108,26 @@ def test_dataset_load_from_nonexistent_file():
     """Test Dataset.load() fails gracefully with bad file path."""
     with pytest.raises(FileNotFoundError):
         Dataset.load("nonexistent_file.csv", tkey="time", obs_map={"x": "y"})
+
+
+def test_dataset_load_noise_column_propagates_to_petab():
+    df = pd.DataFrame(
+        {
+            "time": [0.0, 1.0, 2.0],
+            "signal": [0.1, 0.2, 0.3],
+            "noise": [0.01, 0.02, 0.03],
+        }
+    )
+
+    dataset = Dataset.load(
+        df,
+        tkey="time",
+        obs_map={"x": "signal"},
+        noise_map={"x": "noise"},
+    )
+
+    exp = Experiment.load(id="exp1", conds={"A0": 1.0}, data=[dataset])
+    _, meas_df = experiments_to_petab([exp])
+
+    assert pet.C.NOISE_PARAMETERS in meas_df.columns
+    assert meas_df[pet.C.NOISE_PARAMETERS].tolist() == df["noise"].tolist()

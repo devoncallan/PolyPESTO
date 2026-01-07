@@ -41,10 +41,10 @@ class PetabData:
 
         # Ensure noise formula (required in obs_df) does not reference noiseParameter
         # if no noise parameters are provided in meas_df
-        if C.NOISE_PARAMETERS not in self.meas_df.columns:
-            values = [str(v) for v in self.obs_df[C.NOISE_FORMULA].values]
-            if any("noiseParameter" in v for v in values):
-                self.obs_df[C.NOISE_FORMULA] = [0.0] * len(values)
+        # if C.NOISE_PARAMETERS not in self.meas_df.columns:
+        #     values = [str(v) for v in self.obs_df[C.NOISE_FORMULA].values]
+        #     if any("noiseParameter" in v for v in values):
+        #         self.obs_df[C.NOISE_FORMULA] = [0.0] * len(values)
 
     def write(self, data_dir: str | Path, model: ModelDefinition) -> None:
 
@@ -155,7 +155,7 @@ class utils:
         @staticmethod
         def define(
             data_dict: Dict[ID.ObsCondKey, Tuple[np.ndarray, np.ndarray]],
-            meas_noise_map: Dict[ID.ObsCondKey, float] | None = None,
+            meas_noise_map: Dict[ID.ObsCondKey, float | np.ndarray] | None = None,
         ):
             """Define measurements DataFrame from a data dictionary.
 
@@ -166,6 +166,10 @@ class utils:
             Returns:
                 pd.DataFrame: Formatted measurements DataFrame
             """
+            
+            print("Defining measurements with utils.meas.define")  # Debug statement
+            print(data_dict)
+            print(meas_noise_map)
 
             if meas_noise_map is not None:
                 if set(data_dict.keys()) != set(meas_noise_map.keys()):
@@ -186,7 +190,15 @@ class utils:
                 }
 
                 if meas_noise_map and key in meas_noise_map:
-                    data[C.NOISE_PARAMETERS] = [meas_noise_map[key]] * len(t)
+                    noise_val = meas_noise_map[key]
+                    if isinstance(noise_val, np.ndarray):
+                        if len(noise_val) != len(t):
+                            raise ValueError(
+                                f"Noise array for key {key} has length {len(noise_val)} but expected {len(t)}."
+                            )
+                        data[C.NOISE_PARAMETERS] = noise_val
+                    else:
+                        data[C.NOISE_PARAMETERS] = [float(noise_val)] * len(t)
 
                 df = pd.DataFrame(data)
                 meas_dfs.append(df)
@@ -366,6 +378,7 @@ class utils:
                 )
 
             if len({frozenset(c.keys()) for c in conds}) != 1:
+                print([c.keys() for c in conds])
                 raise ValueError("All condition dictionaries must have the same keys")
 
             df = pd.DataFrame(conds)

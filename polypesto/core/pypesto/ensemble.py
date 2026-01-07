@@ -18,7 +18,7 @@ from pypesto.predict import AmiciPredictor  # type: ignore
 from pypesto.problem import Problem as PypestoProblem  # type: ignore
 
 
-def create_ensemble(result: Result) -> Ensemble:
+def create_ensemble(result: Result, unscale_params: bool = False) -> Ensemble:
 
     from petab.v1.parameters import map_unscale, unscale
 
@@ -36,8 +36,10 @@ def create_ensemble(result: Result) -> Ensemble:
         upper_bound=np.array(list(map_unscale(prob.ub, x_scales))),
     )
 
-    for ix, name in enumerate(ens.x_names):
-        ens.x_vectors[ix, :] = unscale(ens.x_vectors[ix, :], x_scales[ix])
+    if unscale_params:
+        print("Unscaling ensemble parameter vectors...")
+        for ix, name in enumerate(ens.x_names):
+            ens.x_vectors[ix, :] = unscale(ens.x_vectors[ix, :], x_scales[ix])
 
     return ens
 

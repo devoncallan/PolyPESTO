@@ -128,6 +128,26 @@ def check_sim_conditions_consistency(
     return True
 
 
+def build_meas_noise_map(
+    sim_conds: List[SimConditions], obs_names: List[ID.StrObsName]
+) -> Dict[Tuple[str, str], float]:
+    """
+    Build a measurement noise map keyed by (obs_id, cond_id) with numeric noise.
+    """
+    meas_noise_map: Dict[Tuple[str, str], float] = {}
+    for sim_cond in sim_conds:
+        cond_id = sim_cond.conds.id
+        noise_spec = sim_cond.noise_level
+        for obs_name in obs_names:
+            obs_id = ID.obs_id(obs_name)
+            if isinstance(noise_spec, dict):
+                noise_val = float(noise_spec.get(obs_name, 0.0))
+            else:
+                noise_val = float(noise_spec)
+            meas_noise_map[(obs_id, cond_id)] = noise_val
+    return meas_noise_map
+
+
 def parse_noise_levels(
     noise_levels: (
         float
@@ -189,7 +209,7 @@ def create_sim_conditions(
         | Dict[ID.StrObsName, float]
         | Dict[ID.StrObsName, List[float]]
         | None
-    ) = 0.0,
+    ) = None,
 ) -> List[SimConditions]:
     """Create a list of SimConditions from the provided parameters.
 
@@ -335,7 +355,8 @@ def write_empty_problem(
     obs_df = model.get_obs_df()
     cond_df = pet.utils.cond.define(conds_list, ids=cond_ids)
     param_df = model.get_param_df()
-    meas_df = pet.utils.meas.define_empty(data_dict)
+    meas_noise_map = build_meas_noise_map(sim_conds, model.obs_names)
+    meas_df = pet.utils.meas.define_empty(data_dict, meas_noise_map=meas_noise_map)
 
     # Write PEtab and load parameter estimation problem
     petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df)
@@ -386,8 +407,8 @@ def simulate_problem(
     
     petab_problem.parameter_df.update({pet.C.NOMINAL_VALUE: problem.true_params.to_dict()})
     simulator = PetabSimulator(petab_problem, amici_model=pypesto_problem.objective.amici_model)
-    meas_df = simulator.simulate(noise=False, as_measurement=True)
-    pet.write_measurement_df(meas_df, problem.paths.measurements)
+    meas_df = simulator.simulate(noise=True, as_measurement=True)
+    # pet.write_measurement_df(meas_df, problem.paths.measurements)
 
     # # Simulate experiment
     # sim_data = simulate_petab(
@@ -404,11 +425,15 @@ def simulate_problem(
     #     petab_problem.measurement_df,
     # )
 
-    # meas_df = pet.utils.meas.add_noise(
-    #     meas_df, meas_noise=[cond.noise_level for cond in conds]
-    # )
+    meas_noise_map = build_meas_noise_map(conds, model.obs_names)
+    meas_df[pet.C.NOISE_PARAMETERS] = meas_df.apply(
+        lambda row: meas_noise_map[
+            (row[pet.C.OBSERVABLE_ID], row[pet.C.SIMULATION_CONDITION_ID])
+        ],
+        axis=1,
+    )
 
-    # pet.write_measurement_df(meas_df, problem.paths.measurements)
+    pet.write_measurement_df(meas_df, problem.paths.measurements)
 
     return SimulatedProblem.load(
         prob_dir=prob_dir,
