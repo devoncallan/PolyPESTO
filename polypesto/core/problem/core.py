@@ -103,6 +103,20 @@ class ProblemPaths:
     def pypesto_results(self) -> Path:
         return self.pypesto_dir / "results.hdf5"
 
+    @filepath
+    def model_fit_measurements(self) -> Path:
+        """
+        Predicted measurements from the model-fit run (tsv) stored next to results.hdf5.
+        """
+        return self.pypesto_dir / "model_fit_measurements.tsv"
+
+    @filepath
+    def sampling_trace(self) -> Path:
+        """
+        Full sampling trace (per-chain, per-iteration, per-parameter) as a CSV.
+        """
+        return self.pypesto_dir / "sampling_trace.csv"
+
     ####################
     ### Ensemble Dir ###
     ####################

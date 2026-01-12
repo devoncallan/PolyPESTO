@@ -45,3 +45,13 @@ def define_Lowry_I(model: sbml.Model, **kwargs):
     sbml.create_parameter(model, "KAA", value=0)
 
     sbml.create_rule(model, "kdAA", formula=f"kpAA*KAA")
+
+def define_Lowry_I_Temp(model: sbml.Model, **kwargs):
+
+    define_irreversible_k(model, **kwargs)
+
+    sbml.create_parameter(model, "kdAA", value=0)
+    sbml.create_parameter(model, "KAA", value=0)
+
+    sbml.create_rule(model, "KAA", formula=f"exp(6.21 - 1898.0/T_K)")
+    sbml.create_rule(model, "kdAA", formula=f"kpAA*KAA")

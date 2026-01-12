@@ -21,6 +21,8 @@ from .results import (
     calculate_cis,
     get_best_optimization_params,
     get_true_param_values,
+    sampling_trace_dataframe,
+    save_sampling_trace,
     has_optimization_results,
     has_profile_results,
     has_results,
@@ -52,4 +54,6 @@ __all__ = [
     "get_true_param_values",
     "get_best_optimization_params",
     "calculate_cis",
+    "sampling_trace_dataframe",
+    "save_sampling_trace",
 ]

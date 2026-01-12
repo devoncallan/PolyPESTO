@@ -325,9 +325,6 @@ def create_condition_grid_pred_problem(
     if not cond_ids:
         raise ValueError("No conditions found in measurement_df.")
 
-    print(cond_df)
-    # cond_df = cond_df.set_index(C.CONDITION_ID)
-
     # Per-condition grids and condition values (numeric only)
     t_evals: list[np.ndarray] = []
     cond_rows: list[dict] = []
@@ -356,6 +353,13 @@ def create_condition_grid_pred_problem(
     sim_conds = create_sim_conditions(
         true_params={}, conds=conds, t_evals=t_evals, meas_noise=0.05
     )
+    # Preserve original condition IDs so predictions align with measurement IDs
+    if len(sim_conds) != len(cond_ids):
+        raise ValueError(
+            f"Mismatch between sim conditions ({len(sim_conds)}) and measurement condition IDs ({len(cond_ids)})."
+        )
+    for i, cid in enumerate(cond_ids):
+        sim_conds[i].conds = sim_conds[i].conds.set_id(cid)
 
     pred_dir = output_dir or prob.paths.ensemble_dir / "grid_pred"
     pred_problem = write_empty_problem(pred_dir, prob.model, sim_conds)

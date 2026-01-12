@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 import seaborn as sns
+import pandas as pd
 
 import pypesto.visualize as vis
 from pypesto.visualize import model_fit
 from pypesto.result import Result
+from pypesto.C import RDATAS  # type: ignore
+from amici.petab.simulations import rdatas_to_measurement_df  # type: ignore
 
 from polypesto.core.problem import Problem
 from polypesto.core.pypesto import has_optimization_results, get_true_param_values
@@ -80,13 +83,20 @@ def plot_optimization_scatter(
 
 
 def plot_optimized_model_fit(
-    problem: Problem, result: Result, **kwargs
+    problem: Problem,
+    result: Result,
+    overwrite: bool = False,
+    write_measurement_df: bool = False,
+    **kwargs,
 ) -> Tuple[Figure, Axes]:
     """Plots the model fit after optimization.
 
     Args:
         problem (Problem): The problem object containing the problem definition.
         result (Result): The result object containing the optimization results.
+        overwrite (bool): Whether to overwrite an existing predictions file.
+        write_measurement_df (bool): If True, also write the predicted measurements
+            (PEtab-style measurement dataframe) next to results.hdf5.
 
     Returns:
         (Figure, Axes): The figure and axes objects.
@@ -95,12 +105,38 @@ def plot_optimized_model_fit(
     if not has_optimization_results(result):
         return plt.subplots()
 
-    ax = model_fit.visualize_optimized_model_fit(
+    fit_out = model_fit.visualize_optimized_model_fit(
         petab_problem=problem.petab_problem,
         result=result,
         pypesto_problem=problem.pypesto_problem,
+        return_dict=True,
         **kwargs,
     )
+
+    # Extract axes from return_dict payload
+    ax = fit_out["axes"] if isinstance(fit_out, dict) else fit_out
+
+    if write_measurement_df:
+        # Convert AMICI rdatas back into a PEtab measurement-style dataframe and persist
+        payloads = fit_out if isinstance(fit_out, list) else [fit_out]
+        dfs = []
+        for ix, payload in enumerate(payloads):
+            rdatas = payload["objective_result"][RDATAS]
+            df = rdatas_to_measurement_df(
+                rdatas,
+                problem.pypesto_problem.objective.amici_model,
+                problem.petab_problem.measurement_df,
+            )
+            if len(payloads) > 1:
+                df.insert(0, "model_index", ix)
+            dfs.append(df)
+
+        if dfs:
+            pred_df = pd.concat(dfs, ignore_index=True)
+            out_path = problem.paths.model_fit_measurements
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            if overwrite or not out_path.exists():
+                pred_df.to_csv(out_path, sep="\t", index=False)
 
     fig = plt.gcf()
     plt.tight_layout()

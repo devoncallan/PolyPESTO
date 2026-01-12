@@ -7,6 +7,7 @@ from polypesto.core.pypesto import (
     has_profile_results,
     has_sampling_results,
     has_problem_results,
+    save_sampling_trace,
 )
 from polypesto.vis import (
     plot_optimization_scatter,
@@ -55,7 +56,12 @@ def plot_results(
             plot_waterfall(result)
 
         with save_plot(problem.paths.model_fit_fig, overwrite=overwrite):
-            plot_optimized_model_fit(problem, result)
+            plot_optimized_model_fit(
+                problem,
+                result,
+                overwrite=overwrite,
+                write_measurement_df=True,
+            )
 
     if has_sampling_results(result):
 
@@ -69,6 +75,17 @@ def plot_results(
 
         with save_plot(problem.paths.sampling_trace_fig, overwrite=overwrite):
             plot_parameter_traces(result, true_params)
+
+        # Persist full sampling trace as a CSV next to results.hdf5
+        save_sampling_trace(
+            result,
+            out_path=problem.paths.sampling_trace,
+            overwrite=overwrite,
+            exclude_burn_in=True,
+            unscale_params=True,
+            chain=0,
+            wide=True,
+        )
 
     if has_profile_results(result):
 

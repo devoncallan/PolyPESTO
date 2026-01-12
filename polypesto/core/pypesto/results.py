@@ -1,7 +1,10 @@
-from typing import Dict, Optional, Tuple, Literal
+from typing import Dict, Optional, Tuple, Literal, List
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 from petab.v1.parameters import scale  # type: ignore
+from petab.v1.parameters import unscale  # type: ignore
 from pypesto import Problem as PypestoProblem  # type: ignore
 from pypesto import Result
 from pypesto.sample.util import geweke_test  # type: ignore
@@ -165,3 +168,139 @@ def calculate_cis(
         
 
     return ci_results
+
+
+def sampling_trace_dataframe(
+    result: Result,
+    problem: Optional[PypestoProblem] = None,
+    exclude_burn_in: bool = True,
+    unscale_params: bool = True,
+    chain: int = 0,
+    wide: bool = True,
+) -> pd.DataFrame:
+    """
+    Convert the stored sampling trace into a DataFrame.
+
+    If `wide=True` (default) and `chain` is set, returns one row per iteration for that
+    chain with parameter columns (unscaled) and *_scaled companions, plus chain,
+    iteration, neglogpost, neglogprior.
+
+    If `wide=False`, returns the long/tidy format (one row per parameter per iteration).
+    """
+
+    if not has_sampling_results(result):
+        return pd.DataFrame()
+
+    prob: PypestoProblem = problem or result.problem
+    sr = result.sample_result
+
+    if exclude_burn_in:
+        if sr.burn_in is None:
+            geweke_test(result)
+        burn_in = sr.burn_in or 0
+    else:
+        burn_in = 0
+
+    x = sr.trace_x
+    n_chain, n_iter, n_par = x.shape
+    if chain < 0 or chain >= n_chain:
+        raise ValueError(f"Requested chain {chain}, but only {n_chain} chains present")
+
+    # Normalize burn-in to per-chain array
+    if np.isscalar(burn_in):
+        burn_in_arr = np.full(n_chain, int(burn_in))
+    else:
+        burn_in_arr = np.asarray(burn_in, dtype=int)
+        if burn_in_arr.size != n_chain:
+            raise ValueError("burn_in length does not match number of chains")
+
+    param_names: List[str] = prob.get_reduced_vector(prob.x_names)
+    param_scales: List[str] = prob.get_reduced_vector(prob.x_scales)
+
+    neglogpost = getattr(sr, "trace_neglogpost", None)
+    neglogprior = getattr(sr, "trace_neglogprior", None)
+
+    if wide:
+        rows = []
+        start = min(max(burn_in_arr[chain], 0), n_iter)
+        for it in range(start, n_iter):
+            row = {
+                "chain": chain,
+                "iteration": it,
+                "neglogpost": float(neglogpost[chain, it]) if neglogpost is not None else None,
+                "neglogprior": float(neglogprior[chain, it]) if neglogprior is not None else None,
+            }
+            for p in range(n_par):
+                val_scaled = float(x[chain, it, p])
+                if unscale_params:
+                    val = float(unscale(val_scaled, param_scales[p]))
+                else:
+                    val = val_scaled
+                name = param_names[p]
+                row[name] = val
+                row[f"{name}_scaled"] = val_scaled
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    # long / tidy format
+    rows = []
+    for chain in range(n_chain):
+        start = min(max(burn_in_arr[chain], 0), n_iter)
+        for it in range(start, n_iter):
+            nlpost = (
+                float(neglogpost[chain, it]) if neglogpost is not None else None
+            )
+            nlprior = (
+                float(neglogprior[chain, it]) if neglogprior is not None else None
+            )
+            for p in range(n_par):
+                val_scaled = float(x[chain, it, p])
+                if unscale_params:
+                    val = float(unscale(val_scaled, param_scales[p]))
+                else:
+                    val = val_scaled
+                rows.append(
+                    {
+                        "chain": chain,
+                        "iteration": it,
+                        "parameter": param_names[p],
+                        "value_scaled": val_scaled,
+                        "value": val,
+                        "neglogpost": nlpost,
+                        "neglogprior": nlprior,
+                    }
+                )
+
+    return pd.DataFrame(rows)
+
+
+def save_sampling_trace(
+    result: Result,
+    out_path,
+    problem: Optional[PypestoProblem] = None,
+    overwrite: bool = False,
+    exclude_burn_in: bool = True,
+    unscale_params: bool = True,
+    chain: int = 0,
+    wide: bool = True,
+) -> None:
+    """Persist the sampling trace to CSV."""
+
+    out_path = Path(out_path)
+    if out_path.exists() and not overwrite:
+        return
+
+    df = sampling_trace_dataframe(
+        result,
+        problem=problem,
+        exclude_burn_in=exclude_burn_in,
+        unscale_params=unscale_params,
+        chain=chain,
+        wide=wide,
+    )
+
+    if df.empty:
+        return
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.to_csv(out_path, index=False)
