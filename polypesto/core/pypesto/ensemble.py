@@ -144,11 +144,23 @@ def summarize_ensemble(
     from pypesto.C import PERCENTILE
     from petab.v1.C import PARAMETER_ID
 
-    # Compute ensemble summary statistics
+    # Empty ensemble (e.g. Geweke flagged the whole chain as burn-in):
+    # still emit one row per parameter with bounds + NaN stats so that
+    # Study.results_summary() can tell "did not converge" from "not run".
     if ens.x_vectors.size == 0:
-        print("Ensemble is empty - cannot summarize")
-        return pd.DataFrame()  # Return an empty DataFrame if ensemble is empty
-    
+        print("Ensemble is empty - emitting placeholder rows with converged=False")
+        result_df = pd.DataFrame(
+            {
+                PARAMETER_ID: list(ens.x_names),
+                "lowerBound": np.asarray(ens.lower_bound),
+                "upperBound": np.asarray(ens.upper_bound),
+                "converged": False,
+            },
+            index=list(ens.x_names),
+        )
+        result_df.index.name = PARAMETER_ID
+        return result_df
+
     summary_dict = ens.compute_summary(percentiles_list=percentiles)
 
     # Convert summary dict to DataFrame
@@ -172,6 +184,7 @@ def summarize_ensemble(
     result_df = ens.check_identifiability()
     for col in percentile_cols:
         result_df[col] = summary_df[col]
+    result_df["converged"] = True
 
     return result_df
 
