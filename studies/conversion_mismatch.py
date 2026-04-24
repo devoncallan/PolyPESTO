@@ -52,7 +52,7 @@ def main(output_dir: Path, overwrite: bool = False):
     sim_conds = create_study_conditions(
         conds=dict(A0=[list(fA)], B0=[list(1 - fA)]),
         t_evals=np.array([TRUE_X]),
-        meas_noise=0.02,
+        meas_noise=0.05,
     )
 
     Study.create(
