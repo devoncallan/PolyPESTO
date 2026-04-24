@@ -21,10 +21,7 @@ DEFAULT_OUTPUT_DIR = HERE / "output" / "sanity_check"
 
 def main(output_dir: Path, overwrite: bool = False):
 
-    # Leave obs_noise unset so noiseFormula uses a placeholder; per-measurement
-    # noise values come from `meas_noise` at the sim-conditions level below.
-    # (Passing obs_noise here hardcodes noiseFormula and trips PEtab 0.8.2 lint.)
-    model = BinaryIrreversible(observables=["xA", "FA"])
+    model = BinaryIrreversible(observables=["FA"])
 
     # Two true-parameter sets (one asymmetric, one "neutral").
     true_params = ParameterGroup.from_dict(
