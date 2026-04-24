@@ -11,8 +11,8 @@ requires-python = ">=3.10"
 authors = [{name = "Your Name"}]
 
 dependencies = [
-  "pypesto[amici,petab,fides]",
-  "python-libsbml>=5.17.0",
+  "pypesto[amici,petab,fides]>=0.5.6,<0.6.0",  # Pin major.minor
+  "python-libsbml>=5.20.0,<6.0.0",
   "h5py",
   "SBMLDiagrams",
   "plotly",
