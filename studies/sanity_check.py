@@ -15,6 +15,7 @@ from polypesto.core.study import Study, create_study_conditions
 from polypesto.models.binary import BinaryIrreversible
 
 from helpers.metrics import recovery_metrics, study_summary
+from helpers.plots import plot_rA_rB_posteriors
 
 
 HERE = Path(__file__).parent.resolve()
@@ -80,6 +81,13 @@ def main(output_dir: Path, overwrite: bool = False):
     metrics_path = Path(output_dir) / "recovery_metrics.csv"
     metrics.to_csv(metrics_path)
     print(f"\nWrote metrics to {metrics_path}")
+
+    import matplotlib.pyplot as plt
+    fig, _ = plot_rA_rB_posteriors(study, level=0.95, show_nonconverged=True)
+    fig_path = Path(output_dir) / "posteriors_rA_rB.png"
+    fig.savefig(fig_path, dpi=150, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Wrote posterior plot to {fig_path}")
 
 
 if __name__ == "__main__":
