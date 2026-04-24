@@ -55,8 +55,8 @@ def main(output_dir: Path, overwrite: bool = False):
 
     study.run_parameter_estimation(
         config=dict(
-            optimize=dict(n_starts=10, method="Nelder-Mead"),
-            sample=dict(n_samples=1000, n_chains=3),
+            optimize=dict(n_starts=25, method="Nelder-Mead"),
+            sample=dict(n_samples=10000, n_chains=3),
         ),
         overwrite=overwrite,
     )
