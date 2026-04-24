@@ -14,6 +14,8 @@ from polypesto.core import ParameterGroup
 from polypesto.core.study import Study, create_study_conditions
 from polypesto.models.binary import BinaryIrreversible
 
+from helpers.metrics import recovery_metrics, study_summary
+
 
 HERE = Path(__file__).parent.resolve()
 DEFAULT_OUTPUT_DIR = HERE / "output" / "sanity_check"
@@ -60,12 +62,24 @@ def main(output_dir: Path, overwrite: bool = False):
     )
 
     summary = study.results_summary()
-    print("\n\n==== Study results summary ====")
-    print(summary)
+    metrics = recovery_metrics(summary, study=study)
+    agg = study_summary(metrics)
 
-    summary_path = Path(output_dir) / "results_summary.csv"
-    summary.to_csv(summary_path)
-    print(f"\nWrote summary to {summary_path}")
+    print("\n\n==== Per-row recovery metrics ====")
+    cols = [
+        "true_value", "ensemble_median", "bias", "ci_width_90",
+        "covers_true_90", "covers_true_50", "converged",
+        "burn_in", "n_samples", "ess",
+    ]
+    cols = [c for c in cols if c in metrics.columns]
+    print(metrics[cols].to_string())
+
+    print("\n==== Study-level aggregate ====")
+    print(agg.to_string())
+
+    metrics_path = Path(output_dir) / "recovery_metrics.csv"
+    metrics.to_csv(metrics_path)
+    print(f"\nWrote metrics to {metrics_path}")
 
 
 if __name__ == "__main__":
