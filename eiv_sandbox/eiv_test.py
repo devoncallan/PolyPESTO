@@ -49,8 +49,8 @@ class EivToyModel(ModelBase):
     def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
         # Placeholder; real parameter table is written per-variant.
         return {
-            "k": pet.FitParameter(
-                id="k",
+            "k_rate": pet.FitParameter(
+                id="k_rate",
                 scale=PC.LIN,
                 bounds=(0.01, 10.0),
                 nominal_value=1.0,
@@ -72,10 +72,13 @@ class EivToyModel(ModelBase):
 def _eiv_toy_sbml() -> sbml.ModelDefinition:
     document, model = sbml.init_model("eiv_toy")
     sbml.create_compartment(model, "env", spatialDimensions=0, units="dimensionless")
-    sbml.create_parameter(model, "k", value=1.0, constant=False)
+    # NOTE: AMICI treats single-letter ids `k`, `y`, `t`, `p`, `x`, `w`, `h`
+    # as reserved and silently prefixes them with `amici_`, which breaks
+    # pypesto's parameter mapping. We use multi-char ids to avoid this.
+    sbml.create_parameter(model, "k_rate", value=1.0, constant=False)
     sbml.create_parameter(model, "c", value=1.0, constant=True)
     sbml.create_species(model, "y", initialAmount=0.0)
-    sbml.create_rate_rule(model, "y", "k * c")
+    sbml.create_rate_rule(model, "y", "k_rate * c")
     return sbml.create_model(model, document)
 
 
@@ -135,8 +138,8 @@ def build_petab_dfs(
 
     # Parameter table
     params: Dict[str, pet.FitParameter] = {
-        "k": pet.FitParameter(
-            id="k",
+        "k_rate": pet.FitParameter(
+            id="k_rate",
             scale=PC.LIN,
             bounds=(0.01, 10.0),
             nominal_value=k_init,
@@ -265,9 +268,9 @@ def main() -> None:
             sigma_c_prior=sigma_c,
         )
         write_problem_dir(prob_dir, model, dfs)
-        out = fit_variant(prob_dir, model, n_starts=20)
+        out = fit_variant(prob_dir, model, n_starts=50)
 
-        k_hat = out["x"]["k"]
+        k_hat = out["x"]["k_rate"]
         summary_rows.append(
             {
                 "variant": variant,
@@ -278,6 +281,12 @@ def main() -> None:
                 "fval": round(out["fval"], 4),
             }
         )
+        if variant == "c_estimated":
+            c_hat = [out["x"][f"c_cond{i + 1}"] for i in range(c_true.size)]
+            print(f"\nc_estimated fit details:")
+            print(f"  c_true   = {[round(v, 4) for v in c_true.tolist()]}")
+            print(f"  c_obs    = {[round(v, 4) for v in c_obs.tolist()]}")
+            print(f"  c_hat    = {[round(v, 4) for v in c_hat]}")
 
     print()
     print("=" * 60)
