@@ -1,3 +1,4 @@
 _results/
+_mm_results/
 __pycache__/
 *.pyc
