@@ -369,7 +369,7 @@ def _fa_curve(
         true_params={"rA": rA, "rB": rB, "rX": 1.0},
         conds={"A0": A0.tolist(), "B0": B0.tolist(), "xf": xf_grid.tolist()},
         t_evals=np.array([1.0]),
-        meas_noise=0.0,
+        meas_noise=1e-6,  # AMICI requires sigma > 0; effectively zero noise.
     )
     sim_problem = simulate_problem(
         prob_dir=str(tmp_dir),
