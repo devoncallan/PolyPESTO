@@ -1,4 +1,7 @@
 _results/
 _mm_results/
+_cpe_results/
+_cpe_truth/
+_cpe_curvebuf/
 __pycache__/
 *.pyc
