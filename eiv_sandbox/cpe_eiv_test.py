@@ -215,9 +215,14 @@ def fit_variant(
     if n_samples > 0:
         import pypesto.sample as sample  # type: ignore
 
+        # warm_start_parallel_chains=1.0 disables prior-sample warm start,
+        # which has a bug in pypesto 0.5.9 when problems have a mix of priored
+        # and non-priored estimated parameters together with fixed parameters
+        # (PriorStartpoints uses full-vector indices into a reduced array).
         sampler = sample.AdaptiveParallelTemperingSampler(
             internal_sampler=sample.AdaptiveMetropolisSampler(),
             n_chains=3,
+            options={"warm_start_parallel_chains": 1.0},
         )
         sample_result = sample.sample(
             problem=prob.pypesto_problem,
