@@ -83,6 +83,8 @@ class FitParameter:
     bounds: Tuple[float, float]
     nominal_value: float
     estimate: bool
+    prior_type: Optional[str] = None
+    prior_params: Optional[str] = None
 
     def set(
         self,
@@ -90,6 +92,8 @@ class FitParameter:
         bounds: Optional[Tuple[float, float]] = None,
         nominal_value: Optional[float] = None,
         estimate: Optional[bool] = None,
+        prior_type: Optional[str] = None,
+        prior_params: Optional[str] = None,
     ):
         if scale is not None:
             self.scale = scale
@@ -99,6 +103,10 @@ class FitParameter:
             self.nominal_value = nominal_value
         if estimate is not None:
             self.estimate = estimate
+        if prior_type is not None:
+            self.prior_type = prior_type
+        if prior_params is not None:
+            self.prior_params = prior_params
 
 
 class utils:
@@ -335,8 +343,9 @@ class utils:
 
         @staticmethod
         def define(params: Dict[str, FitParameter]) -> pd.DataFrame:
-            data = [
-                {
+            data = []
+            for param in params.values():
+                row = {
                     C.PARAMETER_ID: param.id,
                     C.PARAMETER_SCALE: param.scale,
                     C.LOWER_BOUND: param.bounds[0],
@@ -344,8 +353,13 @@ class utils:
                     C.NOMINAL_VALUE: param.nominal_value,
                     C.ESTIMATE: param.estimate,
                 }
-                for param in params.values()
-            ]
+                # Add prior columns if specified
+                if param.prior_type is not None:
+                    row[C.OBJECTIVE_PRIOR_TYPE] = param.prior_type
+                if param.prior_params is not None:
+                    row[C.OBJECTIVE_PRIOR_PARAMETERS] = param.prior_params
+                data.append(row)
+
             df = pd.DataFrame(data)
             df = utils.param.format(df)
             utils.param.check(df)

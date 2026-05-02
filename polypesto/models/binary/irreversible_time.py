@@ -12,11 +12,10 @@ from .common import define_irreversible_k
 ############################################
 
 
-class BinaryIrreversible(ModelBase):
+class BinaryIrreversibleTime(ModelBase):
 
     def _default_obs(self) -> List[str]:
         return ["FA"]
-        # return ["xA", "xB"]
 
     def _default_fit_params(self) -> Dict[str, pet.FitParameter]:
         return {
@@ -80,27 +79,32 @@ def irr_cpe() -> sbml.ModelDefinition:
 
     # Initialize all species and parameters
     sbml.create_all_species(model, ["A", "B", "xA", "xB"], initialAmount=0.0)
-    sbml.create_all_parameters(model, ["fA", "fB", "FA", "FB", "dA", "dB"])
+    sbml.create_all_parameters(model, ["fA", "fB", "FA", "FB", "dA", "dB", "x"])
 
     # Define initial species
     sbml.create_parameter(model, "A0", value=1.0, constant=True)
     sbml.create_parameter(model, "B0", value=1.0, constant=True)
+    sbml.create_parameter(model, "xf", value=1.0, constant=True)
+    
+    # x = time * conv
+    # sbml.create_rule(model, "t")
+    sbml.create_rule(model, "x", "time*xf")
 
     # Define species and parameters
     sbml.create_rule(model, "A", "A0*(1-xA)")
-    sbml.create_rule(model, "B", "(A0+B0)*(1-time)-A")
+    sbml.create_rule(model, "B", "(A0+B0)*(1-x)-A")
     sbml.create_rule(model, "xB", "1-B/B0")
 
     sbml.create_rule(model, "fA", "A/(A+B+eps)")
     sbml.create_rule(model, "fB", "1-fA")
-    sbml.create_rule(model, "FA", "(A0/(A0+B0) - (1-time)*fA)/(time+eps)")
+    sbml.create_rule(model, "FA", "(A0/(A0+B0) - (1-x)*fA)/(x+eps)")
     sbml.create_rule(model, "FB", "1-FA")
 
     sbml.create_rule(model, "dA", "-A*(rA*A+B)")
     sbml.create_rule(model, "dB", "-B*(rB*B+A)")
 
     # Define differential equation
-    sbml.create_rate_rule(model, "xA", "(A0+B0)/A0 * ((dA+eps)/(dA+dB+eps))")
+    sbml.create_rate_rule(model, "xA", "xf * (A0+B0)/A0 * ((dA+eps)/(dA+dB+eps))")
 
     return sbml.create_model(model, document)
 

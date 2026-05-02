@@ -281,23 +281,54 @@ def save_sampling_trace(
     overwrite: bool = False,
     exclude_burn_in: bool = True,
     unscale_params: bool = True,
-    chain: int = 0,
+    chain: int | str = 0,
     wide: bool = True,
 ) -> None:
-    """Persist the sampling trace to CSV."""
+    """Persist the sampling trace to CSV.
+
+    If `chain == "all"`, concatenates all chains (wide mode loops per chain).
+    """
 
     out_path = Path(out_path)
     if out_path.exists() and not overwrite:
         return
 
-    df = sampling_trace_dataframe(
-        result,
-        problem=problem,
-        exclude_burn_in=exclude_burn_in,
-        unscale_params=unscale_params,
-        chain=chain,
-        wide=wide,
-    )
+    if chain == "all":
+        sr = result.sample_result
+        n_chain = sr.trace_x.shape[0]
+        if wide:
+            dfs = []
+            for ch in range(n_chain):
+                dfs.append(
+                    sampling_trace_dataframe(
+                        result,
+                        problem=problem,
+                        exclude_burn_in=exclude_burn_in,
+                        unscale_params=unscale_params,
+                        chain=ch,
+                        wide=wide,
+                    )
+                )
+            df = pd.concat(dfs, ignore_index=True)
+        else:
+            # long format already iterates over all chains internally
+            df = sampling_trace_dataframe(
+                result,
+                problem=problem,
+                exclude_burn_in=exclude_burn_in,
+                unscale_params=unscale_params,
+                chain=0,
+                wide=wide,
+            )
+    else:
+        df = sampling_trace_dataframe(
+            result,
+            problem=problem,
+            exclude_burn_in=exclude_burn_in,
+            unscale_params=unscale_params,
+            chain=chain,
+            wide=wide,
+        )
 
     if df.empty:
         return

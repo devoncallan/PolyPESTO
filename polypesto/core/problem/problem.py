@@ -39,7 +39,7 @@ class Problem:
     pypesto_problem: PypestoProblem
     paths: ProblemPaths
     experiments: List[Experiment]
-    
+
     def __post_init__(self):
         self.result: Result | None = None
         self.ensemble: Ensemble | None = None
@@ -80,9 +80,9 @@ class Problem:
             paths=paths,
             experiments=experiments,
         )
-        
+
         prob.load_results()
-        
+
         return prob
 
     @staticmethod
@@ -96,23 +96,24 @@ class Problem:
 
         obs_df = model.get_obs_df()
         param_df = model.get_param_df()
-        cond_df, meas_df = experiments_to_petab(experiments, model.obs_names, model.obs_noise_map)
-        
+        cond_df, meas_df = experiments_to_petab(
+            experiments, model.obs_names, model.obs_noise_map
+        )
+
         petab_data = pet.PetabData(obs_df, cond_df, param_df, meas_df, problem_id)
         petab_data.write(output_dir, model.sbml_model)
 
         return Problem.load(output_dir, model)
 
     def load_results(self) -> None:
-        
+
         if not self.paths.pypesto_results.exists():
             return None
-        
+
         self.result = load_result(self.paths.pypesto_results)
-        
+
         if self.result is not None:
             self.ensemble = create_ensemble(deepcopy(self.result))
-
 
     def get_results(self) -> Result | None:
 

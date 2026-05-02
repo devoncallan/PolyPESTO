@@ -162,12 +162,19 @@ def set_solver_options(
         PypestoProblem: The updated Pypesto problem.
     """
 
-    assert isinstance(problem.objective, AmiciObjective)
-    assert isinstance(problem.objective.amici_model, Model)
-    assert isinstance(problem.objective.amici_solver, Solver)
+    # Get the AmiciObjective (may be wrapped in AggregatedObjective if priors exist)
+    from pypesto.objective import AggregatedObjective
 
-    problem.objective.amici_solver = solver_options(problem.objective.amici_solver)
-    problem.objective.amici_model.amici_solver = problem.objective.amici_solver
+    obj = problem.objective
+    if isinstance(obj, AggregatedObjective):
+        obj = next(o for o in obj._objectives if isinstance(o, AmiciObjective))
+
+    assert isinstance(obj, AmiciObjective)
+    assert isinstance(obj.amici_model, Model)
+    assert isinstance(obj.amici_solver, Solver)
+
+    obj.amici_solver = solver_options(obj.amici_solver)
+    obj.amici_model.amici_solver = obj.amici_solver
 
     return problem
 

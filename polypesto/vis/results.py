@@ -83,7 +83,7 @@ def plot_results(
             overwrite=overwrite,
             exclude_burn_in=True,
             unscale_params=True,
-            chain=0,
+            chain="all",
             wide=True,
         )
 

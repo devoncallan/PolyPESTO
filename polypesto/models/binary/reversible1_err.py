@@ -47,7 +47,7 @@ class BinaryReversible1(ModelBase):
                 bounds=(1e-2, 1e2),
                 nominal_value=1.0,
                 estimate=True,
-            ), 
+            ),
         }
 
     def _default_sbml_model(self) -> sbml.ModelDefinition:

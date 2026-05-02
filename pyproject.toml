@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 authors = [{name = "Your Name"}]
 
 dependencies = [
-  "pypesto[amici,petab,fides]",
+  "pypesto[amici,petab,fides]<0.6.0",
   "python-libsbml>=5.17.0",
   "h5py",
   "SBMLDiagrams",
