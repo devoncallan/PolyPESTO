@@ -191,11 +191,14 @@ def fit_variant(
         progress_bar=False,
     )
     best = result.optimize_result.list[0]
-    x_names = list(prob.pypesto_problem.x_names)
+    pp = prob.pypesto_problem
+    free_idx = list(pp.x_free_indices)
+    # pypesto's x_names and x_scales include fixed params too -- reduce to free.
+    x_names = [pp.x_names[i] for i in free_idx]
+    scales = [pp.x_scales[i] for i in free_idx]
     # best.x is the FULL parameter vector (incl. fixed params); reduce to estimated.
     x_full = np.asarray(best.x)
-    x_reduced = prob.pypesto_problem.get_reduced_vector(x_full)
-    scales = list(prob.pypesto_problem.x_scales)
+    x_reduced = pp.get_reduced_vector(x_full)
 
     x_lin = {}
     for name, val, scale in zip(x_names, x_reduced, scales):
