@@ -46,18 +46,25 @@ the only one that covers the truth.
 
 ## Michaelis-Menten: `dS/dt = -Vmax·S/(Km+S)`
 
-| variant | Vmax mean (std) | Vmax 95% CI | Km mean (std) | Km 95% CI |
-|---|---|---|---|---|
-| S0_measured  | 1.28 (0.065) | [1.17, 1.42] **✗** | 0.72 (0.085) | [0.57, 0.89] **✗** |
-| S0_oracle    | 0.95 (0.040) | [0.87, 1.03] ✓ | 0.41 (0.051) | [0.31, 0.51] ✓ |
-| S0_estimated | 0.93 (0.055) | [0.83, 1.04] ✓ | 0.42 (0.060) | [0.31, 0.55] ✓ |
-
 (truth: `Vmax=1.0`, `Km=0.5`)
 
-Without EIV, **both parameters are biased and their 95% CIs miss the truth.**
-EIV recovers parameter means close to oracle and CIs cover truth. Joint MAP
-for the EIV variant is severely biased here too (Vmax MAP=0.49, Km MAP=0.06)
-— use MCMC posterior mean/median, not the optimizer's MAP.
+| variant | Vmax mean (std) | Vmax 95% CI | Km mean (std) | Km 95% CI |
+|---|---|---|---|---|
+| S0_measured  | 1.29 (0.068) | [1.17, 1.43] **✗** | 0.73 (0.088) | [0.57, 0.90] **✗** |
+| S0_oracle    | 0.95 (0.038) | [0.88, 1.02] ✓ | 0.40 (0.049) | [0.32, 0.50] ✓ |
+| S0_estimated | 0.66 (0.16) | [0.50, 0.95] **✗** | 0.13 (0.15) | [0.01, 0.42] **✗** |
+
+Without EIV, **both parameters are biased and their 95% CIs miss the truth**.
+The EIV variant's chain in this run got stuck near the (biased) joint MAP
+(Vmax≈0.40, Km≈0.001) and didn't escape — its mean/CI also miss the truth.
+A previous run found the marginal mode near truth (Vmax mean ≈ 0.93, Km
+mean ≈ 0.42 with CIs covering the truth) — same data, same script,
+different MCMC realization.
+
+**Implication: EIV in 10-dim (2 global + 8 nuisance S0) is fragile under
+AdaptiveMetropolis-PT with 10k samples.** Single-run results are not
+trustworthy here — needs more samples, more PT chains, or a stronger
+sampler (NUTS / emcee) to be reliable for actual reporting.
 
 ### Fit per condition (data shown with $\pm\sigma_y$ error bars)
 
@@ -71,9 +78,10 @@ for the EIV variant is severely biased here too (Vmax MAP=0.49, Km MAP=0.06)
 
 ![joint mm](plots/mm_joint.png)
 
-The S0_measured cloud sits well away from the truth (black star); S0_oracle
-and S0_estimated clouds straddle the truth. Note the negative Vmax-Km
-correlation common to MM kinetics.
+S0_measured sits high (biased) but tight; S0_oracle straddles the truth
+tightly; S0_estimated is broad and shifted low — the chain in this run
+didn't reach the truth-covering region. Note the strong negative Vmax-Km
+correlation common to MM kinetics in all three.
 
 ## Takeaways for real polypesto fits
 
@@ -82,6 +90,11 @@ correlation common to MM kinetics.
 2. **Without EIV, both bias and confidence-interval coverage suffer.** With
    noisy condition values, the standard "treat measurement as truth" approach
    gives wrong answers with overconfidence — the worst combination.
-3. **AMICI reserves single-letter parameter ids `k, y, t, p, x, w, h`** —
+3. **MCMC marginal estimates for EIV are *fragile* in higher dimensions.**
+   The toy (1 global + 8 nuisance) was stable across runs; the MM problem
+   (2 global + 8 nuisance) gave qualitatively different EIV posteriors on
+   different MCMC realizations. Run multiple seeds and inspect convergence
+   before reporting EIV uncertainties from polypesto's default sampler.
+4. **AMICI reserves single-letter parameter ids `k, y, t, p, x, w, h`** —
    silently rewriting them and breaking pypesto's parameter mapping. Use
    multi-character names.
