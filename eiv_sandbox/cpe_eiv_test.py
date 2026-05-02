@@ -192,16 +192,18 @@ def fit_variant(
     )
     best = result.optimize_result.list[0]
     x_names = list(prob.pypesto_problem.x_names)
+    # best.x is the FULL parameter vector (incl. fixed params); reduce to estimated.
     x_full = np.asarray(best.x)
+    x_reduced = prob.pypesto_problem.get_reduced_vector(x_full)
     scales = list(prob.pypesto_problem.x_scales)
 
     x_lin = {}
-    for name, val, scale in zip(x_names, x_full, scales):
+    for name, val, scale in zip(x_names, x_reduced, scales):
         x_lin[name] = float(10.0 ** val) if scale == PC.LOG10 else float(val)
 
     out: Dict[str, object] = {
         "fval": float(best.fval),
-        "x_scaled": dict(zip(x_names, x_full.tolist())),
+        "x_scaled": dict(zip(x_names, x_reduced.tolist())),
         "x_lin": x_lin,
         "x_scales": dict(zip(x_names, scales)),
         "samples_lin": None,
@@ -218,7 +220,7 @@ def fit_variant(
             problem=prob.pypesto_problem,
             sampler=sampler,
             n_samples=n_samples,
-            x0=x_full,
+            x0=x_reduced,
         )
         trace = np.asarray(sample_result.sample_result.trace_x)[0]
         burn = n_samples // 2
