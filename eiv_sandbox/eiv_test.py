@@ -319,14 +319,11 @@ def main() -> None:
             sigma_c_prior=sigma_c,
         )
         write_problem_dir(prob_dir, model, dfs)
-        # n_starts intentionally large for the EIV variant: the joint posterior
-        # has many local minima and 50 starts is not enough to find the global.
-        n_starts = 200 if variant == "c_estimated" else 50
         out = fit_variant(
             prob_dir, model,
-            n_starts=n_starts,
+            n_starts=500,
             profile_k=True,
-            n_samples=8000,
+            n_samples=10000,
         )
         fits[variant] = out
 
