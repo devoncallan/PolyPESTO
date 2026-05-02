@@ -36,16 +36,9 @@ are committed copies in `plots/`.
 EIV inflates the marginal posterior std by ~5×, and the resulting CI is
 the only one that covers the truth.
 
-### Fit per condition
+### Fit per condition (data shown with $\pm\sigma_y$ error bars)
 
 ![fit toy](plots/toy_fit.png)
-
-### Profile likelihood (joint-MAP curvature)
-
-![profile toy](plots/toy_profile_k.png)
-
-The profile width understates EIV uncertainty — see the posterior plot below
-for the proper marginal.
 
 ### MCMC marginal posterior on k
 
@@ -66,7 +59,7 @@ EIV recovers parameter means close to oracle and CIs cover truth. Joint MAP
 for the EIV variant is severely biased here too (Vmax MAP=0.49, Km MAP=0.06)
 — use MCMC posterior mean/median, not the optimizer's MAP.
 
-### Fit per condition
+### Fit per condition (data shown with $\pm\sigma_y$ error bars)
 
 ![fit mm](plots/mm_fit.png)
 
@@ -86,11 +79,9 @@ correlation common to MM kinetics.
 
 1. **Don't report joint MAP for EIV-style parameters.** It's biased — sometimes
    severely. Use the MCMC posterior mean or median.
-2. **Profile likelihood width is not the EIV marginal uncertainty.** Profile
-   reports joint-mode curvature, which can be narrower than the proper marginal.
-3. **Without EIV, both bias and confidence-interval coverage suffer.** With
+2. **Without EIV, both bias and confidence-interval coverage suffer.** With
    noisy condition values, the standard "treat measurement as truth" approach
    gives wrong answers with overconfidence — the worst combination.
-4. **AMICI reserves single-letter parameter ids `k, y, t, p, x, w, h`** —
+3. **AMICI reserves single-letter parameter ids `k, y, t, p, x, w, h`** —
    silently rewriting them and breaking pypesto's parameter mapping. Use
    multi-character names.

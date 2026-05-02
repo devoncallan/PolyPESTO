@@ -349,7 +349,7 @@ def main() -> None:
 
     # ----- Plots -----
     plot_fit(
-        S0_true, S0_obs, t_obs, y_obs, fits, Vmax_true, Km_true,
+        S0_true, S0_obs, t_obs, y_obs, fits, Vmax_true, Km_true, sigma_y,
         out_path=RESULTS_DIR / "fit.png",
     )
     plot_marginals(
@@ -378,6 +378,7 @@ def plot_fit(
     fits: Dict[str, Dict[str, object]],
     Vmax_true: float,
     Km_true: float,
+    sigma_y: float,
     out_path: Path,
 ) -> None:
     import matplotlib
@@ -393,7 +394,11 @@ def plot_fit(
         if i >= n_cond:
             ax.axis("off")
             continue
-        ax.scatter(t_obs, y_obs[i], color="black", zorder=5, s=22, label="data")
+        ax.errorbar(
+            t_obs, y_obs[i], yerr=sigma_y,
+            fmt="o", color="black", ecolor="black",
+            ms=4, capsize=3, lw=1, zorder=5, label="data $\\pm\\sigma_y$",
+        )
         # Truth
         y_truth = simulate_progress(Vmax_true, Km_true, S0_true[i], t_dense)
         ax.plot(t_dense, y_truth, "k--", lw=1, alpha=0.5, label="truth")

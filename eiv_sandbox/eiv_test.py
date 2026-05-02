@@ -194,14 +194,9 @@ def fit_variant(
     prob_dir: Path,
     model: ModelBase,
     n_starts: int = 10,
-    profile_k: bool = False,
     n_samples: int = 0,
 ) -> Dict[str, object]:
-    """Optimize, optionally profile k_rate, and optionally run MCMC.
-
-    Joint-MAP / profile-likelihood and marginal MCMC report different things
-    for the EIV variant -- this function returns both so they can be compared.
-    """
+    """Optimize and (optionally) run MCMC."""
     import pypesto.optimize as opt  # type: ignore
     import pypesto.engine as engine  # type: ignore
 
@@ -222,26 +217,8 @@ def fit_variant(
     out: Dict[str, object] = {
         "fval": float(best.fval),
         "x": x_dict,
-        "profile": None,
         "samples": None,
     }
-
-    if profile_k:
-        import pypesto.profile as profile  # type: ignore
-
-        k_idx = x_names.index("k_rate")
-        result = profile.parameter_profile(
-            problem=prob.pypesto_problem,
-            result=result,
-            optimizer=optimizer,
-            profile_index=np.array([k_idx]),
-            engine=engine.SingleCoreEngine(),
-            progress_bar=False,
-        )
-        prof = result.profile_result.list[0][k_idx]
-        k_path = np.asarray(prof.x_path[k_idx])
-        f_path = np.asarray(prof.fval_path)
-        out["profile"] = {"k": k_path, "fval": f_path}
 
     if n_samples > 0:
         import pypesto.sample as sample  # type: ignore
@@ -261,8 +238,6 @@ def fit_variant(
         burn = n_samples // 2
         post = trace[burn:]
         out["samples"] = {name: post[:, i] for i, name in enumerate(x_names)}
-
-    return out
 
     return out
 
@@ -322,7 +297,6 @@ def main() -> None:
         out = fit_variant(
             prob_dir, model,
             n_starts=500,
-            profile_k=True,
             n_samples=10000,
         )
         fits[variant] = out
@@ -336,16 +310,6 @@ def main() -> None:
             "rel_err_%": round(100 * (k_hat - k_true) / k_true, 2),
             "fval": round(out["fval"], 4),
         }
-        if out["profile"] is not None:
-            k_path = out["profile"]["k"]
-            f_path = out["profile"]["fval"]
-            df = f_path - f_path.min()
-            mask = df <= 0.5
-            if mask.any():
-                lo = float(np.min(k_path[mask]))
-                hi = float(np.max(k_path[mask]))
-                row["prof_CI"] = f"[{lo:.3f}, {hi:.3f}]"
-                row["prof_width"] = round(hi - lo, 4)
         if out["samples"] is not None:
             k_samp = out["samples"]["k_rate"]
             row["mcmc_mean"] = round(float(np.mean(k_samp)), 4)
@@ -368,17 +332,13 @@ def main() -> None:
 
     # ----- Plots -----
     plot_fit(
-        c_true, c_obs, t_obs, y_obs, fits, k_true,
+        c_true, c_obs, t_obs, y_obs, fits, k_true, sigma_y,
         out_path=RESULTS_DIR / "fit.png",
-    )
-    plot_profile_k(
-        fits, k_true, out_path=RESULTS_DIR / "profile_k.png",
     )
     plot_posterior_k(
         fits, k_true, out_path=RESULTS_DIR / "posterior_k.png",
     )
     print(f"\nSaved fit plot:       {RESULTS_DIR / 'fit.png'}")
-    print(f"Saved profile plot:   {RESULTS_DIR / 'profile_k.png'}")
     print(f"Saved posterior plot: {RESULTS_DIR / 'posterior_k.png'}")
 
 
@@ -394,6 +354,7 @@ def plot_fit(
     y_obs: np.ndarray,
     fits: Dict[str, Dict[str, object]],
     k_true: float,
+    sigma_y: float,
     out_path: Path,
 ) -> None:
     import matplotlib
@@ -409,7 +370,11 @@ def plot_fit(
         if i >= n_cond:
             ax.axis("off")
             continue
-        ax.scatter(t_obs, y_obs[i], color="black", zorder=5, label="data")
+        ax.errorbar(
+            t_obs, y_obs[i], yerr=sigma_y,
+            fmt="o", color="black", ecolor="black",
+            ms=4, capsize=3, lw=1, zorder=5, label="data $\\pm\\sigma_y$",
+        )
         # Truth
         ax.plot(t_dense, k_true * c_true[i] * t_dense, "k--", lw=1, alpha=0.5, label="truth")
         # Each variant's MAP curve
@@ -458,39 +423,6 @@ def plot_posterior_k(
     ax.set_xlabel("k_rate")
     ax.set_ylabel("marginal posterior density")
     ax.set_title("MCMC marginal posterior on k_rate")
-    ax.legend(fontsize=8)
-    fig.tight_layout()
-    fig.savefig(out_path, dpi=120)
-    plt.close(fig)
-
-
-def plot_profile_k(
-    fits: Dict[str, Dict[str, object]],
-    k_true: float,
-    out_path: Path,
-) -> None:
-    import matplotlib
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    fig, ax = plt.subplots(figsize=(7, 4))
-    colors = {"c_measured": "tab:red", "c_oracle": "tab:green", "c_estimated": "tab:blue"}
-    for variant, out in fits.items():
-        if out["profile"] is None:
-            continue
-        k_path = out["profile"]["k"]
-        f_path = out["profile"]["fval"]
-        df = f_path - f_path.min()
-        order = np.argsort(k_path)
-        ax.plot(k_path[order], df[order], color=colors[variant], lw=1.6, marker="o", ms=3,
-                label=variant)
-    ax.axhline(0.5, color="gray", linestyle=":", lw=1, label=r"$\Delta\,$NLL = 0.5  (1$\sigma$)")
-    ax.axhline(2.0, color="gray", linestyle="-.", lw=1, label=r"$\Delta\,$NLL = 2.0  (2$\sigma$)")
-    ax.axvline(k_true, color="black", linestyle="--", lw=1, label=f"k_true={k_true}")
-    ax.set_xlabel("k_rate")
-    ax.set_ylabel(r"profile $-\log\,p\;(k)\;-\;$min")
-    ax.set_title("Profile likelihood for k_rate")
-    ax.set_ylim(-0.05, 4.5)
     ax.legend(fontsize=8)
     fig.tight_layout()
     fig.savefig(out_path, dpi=120)
