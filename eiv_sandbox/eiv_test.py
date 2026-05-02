@@ -190,11 +190,17 @@ def write_problem_dir(prob_dir: Path, model: ModelBase, dfs) -> None:
 # ---------------------------------------------------------------------------
 
 
-def fit_variant(prob_dir: Path, model: ModelBase, n_starts: int = 10) -> Dict[str, float]:
-    """Run optimization directly via pypesto with a single-process engine.
+def fit_variant(
+    prob_dir: Path,
+    model: ModelBase,
+    n_starts: int = 10,
+    profile_k: bool = False,
+    n_samples: int = 0,
+) -> Dict[str, object]:
+    """Optimize, optionally profile k_rate, and optionally run MCMC.
 
-    Bypasses polypesto.run_parameter_estimation to avoid the MultiProcessEngine
-    startup cost for this tiny problem and to suppress saving/plotting.
+    Joint-MAP / profile-likelihood and marginal MCMC report different things
+    for the EIV variant -- this function returns both so they can be compared.
     """
     import pypesto.optimize as opt  # type: ignore
     import pypesto.engine as engine  # type: ignore
@@ -213,8 +219,52 @@ def fit_variant(prob_dir: Path, model: ModelBase, n_starts: int = 10) -> Dict[st
     x_names = list(prob.pypesto_problem.x_names)
     x_dict = dict(zip(x_names, np.asarray(best.x).tolist()))
 
-    # All params here are LIN-scaled, so x_dict values are raw values
-    return {"fval": float(best.fval), "x": x_dict}
+    out: Dict[str, object] = {
+        "fval": float(best.fval),
+        "x": x_dict,
+        "profile": None,
+        "samples": None,
+    }
+
+    if profile_k:
+        import pypesto.profile as profile  # type: ignore
+
+        k_idx = x_names.index("k_rate")
+        result = profile.parameter_profile(
+            problem=prob.pypesto_problem,
+            result=result,
+            optimizer=optimizer,
+            profile_index=np.array([k_idx]),
+            engine=engine.SingleCoreEngine(),
+            progress_bar=False,
+        )
+        prof = result.profile_result.list[0][k_idx]
+        k_path = np.asarray(prof.x_path[k_idx])
+        f_path = np.asarray(prof.fval_path)
+        out["profile"] = {"k": k_path, "fval": f_path}
+
+    if n_samples > 0:
+        import pypesto.sample as sample  # type: ignore
+
+        sampler = sample.AdaptiveParallelTemperingSampler(
+            internal_sampler=sample.AdaptiveMetropolisSampler(),
+            n_chains=3,
+        )
+        sample_result = sample.sample(
+            problem=prob.pypesto_problem,
+            sampler=sampler,
+            n_samples=n_samples,
+            x0=np.asarray(best.x),
+        )
+        # Cold chain only.
+        trace = np.asarray(sample_result.sample_result.trace_x)[0]
+        burn = n_samples // 2
+        post = trace[burn:]
+        out["samples"] = {name: post[:, i] for i, name in enumerate(x_names)}
+
+    return out
+
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -253,6 +303,7 @@ def main() -> None:
         shutil.rmtree(RESULTS_DIR)
     RESULTS_DIR.mkdir(parents=True)
 
+    fits: Dict[str, Dict[str, object]] = {}
     summary_rows: List[Dict[str, object]] = []
     for variant in ["c_measured", "c_oracle", "c_estimated"]:
         prob_dir = RESULTS_DIR / variant
@@ -268,19 +319,44 @@ def main() -> None:
             sigma_c_prior=sigma_c,
         )
         write_problem_dir(prob_dir, model, dfs)
-        out = fit_variant(prob_dir, model, n_starts=50)
+        # n_starts intentionally large for the EIV variant: the joint posterior
+        # has many local minima and 50 starts is not enough to find the global.
+        n_starts = 200 if variant == "c_estimated" else 50
+        out = fit_variant(
+            prob_dir, model,
+            n_starts=n_starts,
+            profile_k=True,
+            n_samples=8000,
+        )
+        fits[variant] = out
 
         k_hat = out["x"]["k_rate"]
-        summary_rows.append(
-            {
-                "variant": variant,
-                "k_hat": round(k_hat, 4),
-                "k_true": k_true,
-                "abs_err": round(k_hat - k_true, 4),
-                "rel_err_%": round(100 * (k_hat - k_true) / k_true, 2),
-                "fval": round(out["fval"], 4),
-            }
-        )
+        row = {
+            "variant": variant,
+            "k_hat": round(k_hat, 4),
+            "k_true": k_true,
+            "abs_err": round(k_hat - k_true, 4),
+            "rel_err_%": round(100 * (k_hat - k_true) / k_true, 2),
+            "fval": round(out["fval"], 4),
+        }
+        if out["profile"] is not None:
+            k_path = out["profile"]["k"]
+            f_path = out["profile"]["fval"]
+            df = f_path - f_path.min()
+            mask = df <= 0.5
+            if mask.any():
+                lo = float(np.min(k_path[mask]))
+                hi = float(np.max(k_path[mask]))
+                row["prof_CI"] = f"[{lo:.3f}, {hi:.3f}]"
+                row["prof_width"] = round(hi - lo, 4)
+        if out["samples"] is not None:
+            k_samp = out["samples"]["k_rate"]
+            row["mcmc_mean"] = round(float(np.mean(k_samp)), 4)
+            row["mcmc_std"] = round(float(np.std(k_samp)), 4)
+            mlo, mhi = np.percentile(k_samp, [2.5, 97.5])
+            row["mcmc_95_CI"] = f"[{mlo:.3f}, {mhi:.3f}]"
+        summary_rows.append(row)
+
         if variant == "c_estimated":
             c_hat = [out["x"][f"c_cond{i + 1}"] for i in range(c_true.size)]
             print(f"\nc_estimated fit details:")
@@ -289,9 +365,139 @@ def main() -> None:
             print(f"  c_hat    = {[round(v, 4) for v in c_hat]}")
 
     print()
-    print("=" * 60)
+    print("=" * 80)
     print(pd.DataFrame(summary_rows).to_string(index=False))
-    print("=" * 60)
+    print("=" * 80)
+
+    # ----- Plots -----
+    plot_fit(
+        c_true, c_obs, t_obs, y_obs, fits, k_true,
+        out_path=RESULTS_DIR / "fit.png",
+    )
+    plot_profile_k(
+        fits, k_true, out_path=RESULTS_DIR / "profile_k.png",
+    )
+    plot_posterior_k(
+        fits, k_true, out_path=RESULTS_DIR / "posterior_k.png",
+    )
+    print(f"\nSaved fit plot:       {RESULTS_DIR / 'fit.png'}")
+    print(f"Saved profile plot:   {RESULTS_DIR / 'profile_k.png'}")
+    print(f"Saved posterior plot: {RESULTS_DIR / 'posterior_k.png'}")
+
+
+# ---------------------------------------------------------------------------
+# Plots
+# ---------------------------------------------------------------------------
+
+
+def plot_fit(
+    c_true: np.ndarray,
+    c_obs: np.ndarray,
+    t_obs: np.ndarray,
+    y_obs: np.ndarray,
+    fits: Dict[str, Dict[str, object]],
+    k_true: float,
+    out_path: Path,
+) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    n_cond = c_true.size
+    fig, axes = plt.subplots(2, 4, figsize=(14, 6), sharex=True, sharey=True)
+    t_dense = np.linspace(0, 1, 50)
+    colors = {"c_measured": "tab:red", "c_oracle": "tab:green", "c_estimated": "tab:blue"}
+
+    for i, ax in enumerate(axes.flat):
+        if i >= n_cond:
+            ax.axis("off")
+            continue
+        ax.scatter(t_obs, y_obs[i], color="black", zorder=5, label="data")
+        # Truth
+        ax.plot(t_dense, k_true * c_true[i] * t_dense, "k--", lw=1, alpha=0.5, label="truth")
+        # Each variant's MAP curve
+        for variant, out in fits.items():
+            k_hat = out["x"]["k_rate"]
+            if variant == "c_estimated":
+                c_used = out["x"][f"c_cond{i + 1}"]
+            elif variant == "c_oracle":
+                c_used = c_true[i]
+            else:  # c_measured
+                c_used = c_obs[i]
+            ax.plot(t_dense, k_hat * c_used * t_dense, color=colors[variant], lw=1.5, label=variant)
+        ax.set_title(f"cond{i+1} (c_true={c_true[i]:.2f}, c_obs={c_obs[i]:.2f})", fontsize=9)
+        if i == 0:
+            ax.legend(fontsize=7, loc="upper left")
+
+    fig.suptitle(f"Fit comparison (k_true={k_true})", fontsize=11)
+    fig.supxlabel("time")
+    fig.supylabel("y")
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+
+
+def plot_posterior_k(
+    fits: Dict[str, Dict[str, object]],
+    k_true: float,
+    out_path: Path,
+) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    colors = {"c_measured": "tab:red", "c_oracle": "tab:green", "c_estimated": "tab:blue"}
+    for variant, out in fits.items():
+        if out["samples"] is None:
+            continue
+        k_samp = out["samples"]["k_rate"]
+        ax.hist(
+            k_samp, bins=50, density=True, histtype="step", lw=2,
+            color=colors[variant],
+            label=f"{variant}  (mean={np.mean(k_samp):.3f}, std={np.std(k_samp):.3f})",
+        )
+    ax.axvline(k_true, color="black", linestyle="--", lw=1, label=f"k_true={k_true}")
+    ax.set_xlabel("k_rate")
+    ax.set_ylabel("marginal posterior density")
+    ax.set_title("MCMC marginal posterior on k_rate")
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
+
+
+def plot_profile_k(
+    fits: Dict[str, Dict[str, object]],
+    k_true: float,
+    out_path: Path,
+) -> None:
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    colors = {"c_measured": "tab:red", "c_oracle": "tab:green", "c_estimated": "tab:blue"}
+    for variant, out in fits.items():
+        if out["profile"] is None:
+            continue
+        k_path = out["profile"]["k"]
+        f_path = out["profile"]["fval"]
+        df = f_path - f_path.min()
+        order = np.argsort(k_path)
+        ax.plot(k_path[order], df[order], color=colors[variant], lw=1.6, marker="o", ms=3,
+                label=variant)
+    ax.axhline(0.5, color="gray", linestyle=":", lw=1, label=r"$\Delta\,$NLL = 0.5  (1$\sigma$)")
+    ax.axhline(2.0, color="gray", linestyle="-.", lw=1, label=r"$\Delta\,$NLL = 2.0  (2$\sigma$)")
+    ax.axvline(k_true, color="black", linestyle="--", lw=1, label=f"k_true={k_true}")
+    ax.set_xlabel("k_rate")
+    ax.set_ylabel(r"profile $-\log\,p\;(k)\;-\;$min")
+    ax.set_title("Profile likelihood for k_rate")
+    ax.set_ylim(-0.05, 4.5)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=120)
+    plt.close(fig)
 
 
 if __name__ == "__main__":
