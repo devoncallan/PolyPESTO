@@ -12,6 +12,17 @@ from pypesto.petab import PetabImporter  # type: ignore
 from polypesto.utils import quiet
 
 
+def get_objective(problem: PypestoProblem) -> AmiciObjective:
+    # Get the AmiciObjective (may be wrapped in AggregatedObjective if priors exist)
+    from pypesto.objective import AggregatedObjective
+
+    obj = problem.objective
+    if isinstance(obj, AggregatedObjective):
+        obj = next(o for o in obj._objectives if isinstance(o, AmiciObjective))
+    assert isinstance(obj, AmiciObjective)
+    return obj
+
+
 def optimize_problem(
     problem: PypestoProblem, method: str = "Nelder-Mead", **kwargs
 ) -> Result:
@@ -162,12 +173,7 @@ def set_solver_options(
         PypestoProblem: The updated Pypesto problem.
     """
 
-    # Get the AmiciObjective (may be wrapped in AggregatedObjective if priors exist)
-    from pypesto.objective import AggregatedObjective
-
-    obj = problem.objective
-    if isinstance(obj, AggregatedObjective):
-        obj = next(o for o in obj._objectives if isinstance(o, AmiciObjective))
+    obj = get_objective(problem)
 
     assert isinstance(obj, AmiciObjective)
     assert isinstance(obj.amici_model, Model)

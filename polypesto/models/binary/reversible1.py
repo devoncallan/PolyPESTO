@@ -34,13 +34,6 @@ class BinaryReversible1(ModelBase):
                 nominal_value=1.0,
                 estimate=True,
             ),
-            "rX": pet.FitParameter(
-                id="rX",
-                scale=pet.C.LOG10,
-                bounds=(1e-2, 1e2),
-                nominal_value=1.0,
-                estimate=False,
-            ),
             "KAA": pet.FitParameter(
                 id="KAA",
                 scale=pet.C.LOG10,

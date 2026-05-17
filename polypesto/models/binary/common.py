@@ -55,3 +55,33 @@ def define_Lowry_I_Temp(model: sbml.Model, **kwargs):
 
     sbml.create_rule(model, "KAA", formula=f"exp(6.21 - 1898.0/T_K)")
     sbml.create_rule(model, "kdAA", formula=f"kpAA*KAA")
+
+
+def define_Lowry_I_Temp_Fit(model: sbml.Model, Tref: float = 350.0, **kwargs):
+    """
+    Same as define_Lowry_I_Temp but with KAA(T) parameterised in terms of two
+    fittable parameters (KAA_Tref, dH_R) instead of the hard-coded Tsarevsky
+    constants. Reparameterised at a reference temperature Tref so the joint
+    prior on (KAA_Tref, dH_R) can be approximated by independent normals.
+
+        KAA(T) = KAA_Tref * exp( -(dH_R) * (1/T - 1/Tref) )
+
+    Equivalent to KAA = exp(dS_R - dH_R/T) with dS_R = ln(KAA_Tref) + dH_R/Tref.
+    Tref is chosen near the median of the calibration data so KAA_Tref is
+    well-determined (residual ~0.04 mol/L SD at Tref=350 K from 9 Tsarevsky
+    points).
+    """
+    define_irreversible_k(model, **kwargs)
+
+    sbml.create_parameter(model, "kdAA", value=0)
+    sbml.create_parameter(model, "KAA", value=0)
+    sbml.create_parameter(model, "KAA_Tref", value=2.27)
+    sbml.create_parameter(model, "dH_R", value=1893.0)
+    sbml.create_parameter(model, "Tref", value=float(Tref), constant=True)
+
+    sbml.create_rule(
+        model,
+        "KAA",
+        formula="KAA_Tref * exp(-dH_R * (1/T_K - 1/Tref))",
+    )
+    sbml.create_rule(model, "kdAA", formula="kpAA*KAA")

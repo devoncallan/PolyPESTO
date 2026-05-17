@@ -13,9 +13,11 @@ from pypesto.C import (  # type: ignore
     EnsembleType,
 )
 from pypesto.ensemble import Ensemble, EnsemblePrediction  # type: ignore
-from pypesto.objective import AmiciObjective  # type: ignore
+from pypesto.objective import AggregatedObjective, AmiciObjective  # type: ignore
 from pypesto.predict import AmiciPredictor  # type: ignore
 from pypesto.problem import Problem as PypestoProblem  # type: ignore
+
+from .base import get_objective
 
 
 def create_ensemble(result: Result, unscale_params: bool = False) -> Ensemble:
@@ -46,7 +48,7 @@ def create_ensemble(result: Result, unscale_params: bool = False) -> Ensemble:
 
 def create_predictor(prob: PypestoProblem, output_type: str) -> AmiciPredictor:
 
-    obj: AmiciObjective = prob.objective
+    obj = get_objective(prob)
 
     if output_type == AMICI_Y:
         output_ids = obj.amici_model.getObservableIds()

@@ -180,3 +180,4 @@ polypesto/examples/**/*/
 !polypesto/examples/data/**
 app/outputs/
 jobs/**
+experiments/**
