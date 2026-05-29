@@ -85,3 +85,35 @@ def define_Lowry_I_Temp_Fit(model: sbml.Model, Tref: float = 350.0, **kwargs):
         formula="KAA_Tref * exp(-dH_R * (1/T_K - 1/Tref))",
     )
     sbml.create_rule(model, "kdAA", formula="kpAA*KAA")
+
+
+def define_Lowry_II_Temp_Fit(model: sbml.Model, Tref: float = 350.0, **kwargs):
+    """
+    Lowry Case II: both AA and BA dyads depropagate. Van't Hoff K_AA(T) with
+    fittable (KAA_Tref, dH_R), plus a fittable ratio f_BA = KBA/KAA. With
+    f_BA = 0 this reduces exactly to define_Lowry_I_Temp_Fit.
+
+        KAA(T) = KAA_Tref * exp(-dH_R * (1/T - 1/Tref))
+        KBA    = f_BA * KAA
+        kdAA   = kpAA * KAA
+        kdBA   = kpBA * KBA
+    """
+    define_irreversible_k(model, **kwargs)
+
+    sbml.create_parameter(model, "kdAA", value=0)
+    sbml.create_parameter(model, "kdBA", value=0)
+    sbml.create_parameter(model, "KAA", value=0)
+    sbml.create_parameter(model, "KBA", value=0)
+    sbml.create_parameter(model, "KAA_Tref", value=2.27)
+    sbml.create_parameter(model, "dH_R", value=1893.0)
+    sbml.create_parameter(model, "f_BA", value=0.0)
+    sbml.create_parameter(model, "Tref", value=float(Tref), constant=True)
+
+    sbml.create_rule(
+        model,
+        "KAA",
+        formula="KAA_Tref * exp(-dH_R * (1/T_K - 1/Tref))",
+    )
+    sbml.create_rule(model, "KBA", formula="f_BA * KAA")
+    sbml.create_rule(model, "kdAA", formula="kpAA*KAA")
+    sbml.create_rule(model, "kdBA", formula="kpBA*KBA")

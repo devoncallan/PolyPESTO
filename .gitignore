@@ -181,3 +181,4 @@ polypesto/examples/**/*/
 app/outputs/
 jobs/**
 experiments/**
+ref/**

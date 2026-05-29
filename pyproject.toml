@@ -29,3 +29,8 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["polypesto*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow: tests that take more than a few seconds (parameter estimation, MCMC)",
+]

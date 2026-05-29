@@ -242,7 +242,7 @@ def create_reaction(
     return r
 
 
-def create_rule(model: Model, var_id: str, formula: str = "") -> libsbml.AssignmentRule:
+def create_rule(model: Model, var_id: str, formula: str) -> libsbml.AssignmentRule:
 
     rule: libsbml.AssignmentRule = model.createAssignmentRule()
     _check(rule.setVariable(var_id), "set variable")
@@ -255,7 +255,15 @@ def create_rule(model: Model, var_id: str, formula: str = "") -> libsbml.Assignm
     return rule
 
 
-def create_rate_rule(model: Model, var_id: str, formula: str = "") -> libsbml.RateRule:
+def create_parameter_rule(
+    model: Model, var_id: str, formula: str, **kwargs
+) -> libsbml.AssignmentRule:
+
+    create_parameter(model, var_id, **kwargs)
+    return create_rule(model, var_id, formula)
+
+
+def create_rate_rule(model: Model, var_id: str, formula: str) -> libsbml.RateRule:
 
     rate_rule: libsbml.RateRule = model.createRateRule()
     _check(rate_rule.setVariable(var_id), "set variable")
