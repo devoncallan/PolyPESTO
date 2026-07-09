@@ -182,3 +182,8 @@ app/outputs/
 jobs/**
 experiments/**
 ref/**
+claude/**
+
+# pixi environments
+.pixi/*
+!.pixi/config.toml

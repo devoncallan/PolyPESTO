@@ -98,6 +98,37 @@ def irr_cpe() -> sbml.ModelDefinition:
     return sbml.create_model(model, document)
 
 
+def irr_cpe() -> sbml.ModelDefinition:
+
+    document, model = sbml.init_model("irr_cpe")
+    sbml.create_compartment(model, "c", spatialDimensions=0, units="dimensionless")
+    sbml.create_parameter(model, "eps", value=1e-10)
+
+    # Define reaction rate parameters
+    define_irreversible_k(model)
+
+    # Initialize all species and parameters
+    sbml.create_all_species(model, ["A", "B", "xA", "xB"])
+    sbml.create_all_parameters(model, ["fA", "fB", "FA", "FB", "dA", "dB"])
+    sbml.create_all_parameters(model, ["A0", "B0"], value=1.0, constant=True)
+
+    # Define species and parameters
+    sbml.create_rule(model, "A", "A0*(1-xA)")
+    sbml.create_rule(model, "B", "(A0+B0)*(1-time)-A")
+    sbml.create_rule(model, "xB", "1-B/B0")
+    sbml.create_rule(model, "fA", "A/(A+B+eps)")
+    sbml.create_rule(model, "fB", "1-fA")
+    sbml.create_rule(model, "FA", "(A0/(A0+B0) - (1-time)*fA)/(time+eps)")
+    sbml.create_rule(model, "FB", "1-FA")
+    sbml.create_rule(model, "dA", "-A*(rA*A+B)")
+    sbml.create_rule(model, "dB", "-B*(rB*B+A)")
+
+    # Define differential equation
+    sbml.create_rate_rule(model, "xA", "(A0+B0)/A0 * ((dA+eps)/(dA+dB+eps))")
+
+    return sbml.create_model(model, document)
+
+
 def irr_ode() -> sbml.ModelDefinition:
 
     document, model = sbml.init_model("irr_ode")

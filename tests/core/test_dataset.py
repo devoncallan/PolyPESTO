@@ -127,7 +127,7 @@ def test_dataset_load_noise_column_propagates_to_petab():
     )
 
     exp = Experiment.load(id="exp1", conds={"A0": 1.0}, data=[dataset])
-    _, meas_df = experiments_to_petab([exp])
+    _, meas_df = experiments_to_petab([exp], observables=["x"])
 
     assert pet.C.NOISE_PARAMETERS in meas_df.columns
     assert meas_df[pet.C.NOISE_PARAMETERS].tolist() == df["noise"].tolist()

@@ -31,6 +31,26 @@ dependencies = [
 include = ["polypesto*"]
 
 [tool.pytest.ini_options]
+testpaths = ["tests"]
 markers = [
     "slow: tests that take more than a few seconds (parameter estimation, MCMC)",
 ]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[tool.pixi.pypi-dependencies]
+polypesto = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+app = "streamlit run polypesto/app/home.py"
+
+[tool.pixi.dependencies]
+python = "3.11.*"
+hdf5 = "*"
+libblas = "*"
+liblapack = "*"
+swig = "*"
+cxx-compiler = "*"    # cross-platform g++/clang++/msvc
+cmake = "*"
